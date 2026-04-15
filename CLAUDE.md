@@ -76,6 +76,10 @@ src/
 │   ├── PaymentSucceeded/Failed.php, RefundProcessed.php
 ├── Models/              # Abstract Eloquent
 │   ├── Subscription.php, SubscriptionItem.php
+│   └── Invoice.php              # Local invoice model (provider-independent)
+├── Invoice/                     # Invoice generation (shared, not provider-dependent)
+│   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
+│   └── InvoiceRenderer.php      # Render to PDF (dompdf/spatie-pdf)
 ├── Billable.php         # Meta-trait, includes all Concerns
 ├── Cashier.php          # Static config + ensureSupports(), supports()
 └── CashierSupportServiceProvider.php
@@ -96,6 +100,24 @@ src/
 ## Capability system
 
 Providers declare what they support. Unsupported operations throw `UnsupportedOperationException`.
+
+```php
+enum Capability: string {
+    case Charges = 'charges';
+    case Refunds = 'refunds';
+    case Customers = 'customers';
+    case Subscriptions = 'subscriptions';
+    case SubscriptionPause = 'subscription.pause';
+    case SubscriptionResume = 'subscription.resume';
+    case SubscriptionSwap = 'subscription.swap';
+    case SubscriptionTrials = 'subscription.trials';
+    case PaymentMethodsAdd = 'payment_methods.add';
+    case PaymentMethodsList = 'payment_methods.list';
+    case PaymentMethodsDelete = 'payment_methods.delete';
+    case Checkout = 'checkout';
+    case Webhooks = 'webhooks';
+}
+```
 
 ```php
 // GatewayProvider contract
