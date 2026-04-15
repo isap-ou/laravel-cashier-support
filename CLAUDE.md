@@ -93,5 +93,5 @@ src/
 
 ```php
 // In the ServiceProvider of a concrete package (cashier-revolut)
-$this->app->singleton(\IsApp\CashierSupport\Contracts\GatewayProvider::class, RevolutGateway::class);
+$this->app->singleton(\Isapp\CashierSupport\Contracts\GatewayProvider::class, RevolutGateway::class);
 ```

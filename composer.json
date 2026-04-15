@@ -22,18 +22,18 @@
     },
     "autoload": {
         "psr-4": {
-            "IsApp\\CashierSupport\\": "src/"
+            "Isapp\\CashierSupport\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "IsApp\\CashierSupport\\Tests\\": "tests/"
+            "Isapp\\CashierSupport\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "IsApp\\CashierSupport\\CashierSupportServiceProvider"
+                "Isapp\\CashierSupport\\CashierSupportServiceProvider"
             ]
         }
     },
