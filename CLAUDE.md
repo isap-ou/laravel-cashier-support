@@ -42,7 +42,7 @@ $user->downloadInvoice('inv_xxx');
 ```
 src/
 ├── Contracts/           # Interfaces
-│   ├── GatewayProvider.php
+│   ├── GatewayProvider.php          # capabilities(), supports(Capability)
 │   ├── CustomerOperations.php
 │   ├── ChargeOperations.php
 │   ├── SubscriptionOperations.php
@@ -59,11 +59,13 @@ src/
 │   ├── PaymentStatus.php, SubscriptionStatus.php, Currency.php
 │   ├── PaymentMethodType.php, RefundReason.php, WebhookEvent.php
 │   ├── Interval.php, CheckoutMode.php
+│   └── Capability.php               # Granular feature flags per provider
 ├── Exceptions/          # Hierarchy from CashierException
 │   ├── CashierException.php, PaymentFailedException.php
 │   ├── IncompletePaymentException.php, CustomerNotFoundException.php
 │   ├── InvalidConfigurationException.php, WebhookVerificationException.php
-│   └── SubscriptionUpdateFailure.php
+│   ├── SubscriptionUpdateFailure.php
+│   └── UnsupportedOperationException.php  # Thrown for unsupported capabilities
 ├── Concerns/            # Traits for Billable model
 │   ├── ManagesCustomer.php, ManagesSubscriptions.php
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php
@@ -75,7 +77,7 @@ src/
 ├── Models/              # Abstract Eloquent
 │   ├── Subscription.php, SubscriptionItem.php
 ├── Billable.php         # Meta-trait, includes all Concerns
-├── Cashier.php          # Static config: useCustomerModel, useSubscriptionModel, formatAmount
+├── Cashier.php          # Static config + ensureSupports(), supports()
 └── CashierSupportServiceProvider.php
 ```
 
@@ -88,6 +90,34 @@ src/
 - Method names strictly from Stripe Cashier
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
 - Concerns delegate to `app(GatewayProvider::class)`
+- Concerns call `Cashier::ensureSupports(Capability)` before delegating
+- No custom workarounds for unsupported features — throw `UnsupportedOperationException`
+
+## Capability system
+
+Providers declare what they support. Unsupported operations throw `UnsupportedOperationException`.
+
+```php
+// GatewayProvider contract
+interface GatewayProvider {
+    /** @return array<Capability> */
+    public function capabilities(): array;
+    public function supports(Capability $capability): bool;
+}
+
+// Concern checks before delegating
+trait ManagesSubscriptions {
+    public function newSubscription(string $type, string $price): SubscriptionBuilder {
+        Cashier::ensureSupports(Capability::Subscriptions);
+        return app(GatewayProvider::class)->createSubscription($this, $type, $price);
+    }
+}
+
+// App-level check
+if (Cashier::supports(Capability::SubscriptionPause)) {
+    $user->subscription('default')->pause();
+}
+```
 
 ## How a provider connects
 
