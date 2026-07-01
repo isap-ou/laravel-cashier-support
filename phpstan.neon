@@ -1,0 +1,12 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 8
+    paths:
+        - src
+    tmpDir: build/phpstan
+    ignoreErrors:
+        # Billable/Concern traits are public API consumed by the host app's
+        # models, so they have no in-package usage for PHPStan to analyse.
+        - identifier: trait.unused
