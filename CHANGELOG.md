@@ -28,5 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `track-cashier` skill for detecting upstream `laravel/cashier-stripe` API drift.
 - Tooling: PHPStan (larastan) level 8, Pint, deptrac boundary rules, and a
   Laravel 11/12/13 CI matrix.
+- Release checklist (`RELEASING.md`) and a PR changelog enforcer.
 
 [Unreleased]: https://github.com/isap-ou/laravel-cashier-support/commits/main
