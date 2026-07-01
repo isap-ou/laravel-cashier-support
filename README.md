@@ -11,6 +11,15 @@ traits and events — **zero business logic, zero HTTP calls**. Concrete drivers
 (e.g. `isapp/laravel-cashier-revolut`) implement the contracts and are drop-in
 replacements for each other.
 
+## Requirements
+
+PHP `^8.2` and Laravel **11, 12 or 13**.
+
+> **UUID note:** the local models use `HasUuids`. On Laravel 12+ that yields
+> UUIDv7 primary keys; on Laravel 11 it falls back to ordered UUIDs (v4), which
+> is Laravel 11's `HasUuids` default. Both are valid UUIDs — only the version
+> differs.
+
 ## Installation
 
 ```bash
