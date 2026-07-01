@@ -22,6 +22,10 @@ class CashierSupportServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'cashier-support');
 
         if ($this->app->runningInConsole()) {
+            $this->publishesMigrations([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], 'cashier-support-migrations');
+
             $this->publishes([
                 __DIR__.'/../config/cashier-support.php' => config_path('cashier-support.php'),
             ], 'cashier-support-config');

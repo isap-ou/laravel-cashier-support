@@ -24,6 +24,8 @@ use Isapp\CashierSupport\Enums\PaymentStatus;
  */
 abstract class Invoice extends Model
 {
+    protected $table = 'cashier_invoices';
+
     /**
      * @var list<string>
      */

@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 abstract class SubscriptionItem extends Model
 {
+    protected $table = 'cashier_subscription_items';
+
     /**
      * @var list<string>
      */

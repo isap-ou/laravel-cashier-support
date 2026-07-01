@@ -23,6 +23,16 @@ Publish the config if you need to customise it:
 php artisan vendor:publish --tag=cashier-support-config
 ```
 
+The abstract `Subscription`, `SubscriptionItem` and `Invoice` models are
+optional local records. If you want to persist them, publish and run the
+provider-agnostic migrations (tables `cashier_subscriptions`,
+`cashier_subscription_items`, `cashier_invoices`):
+
+```bash
+php artisan vendor:publish --tag=cashier-support-migrations
+php artisan migrate
+```
+
 ## How it works
 
 ```

@@ -23,6 +23,8 @@ use Isapp\CashierSupport\Enums\SubscriptionStatus;
  */
 abstract class Subscription extends Model
 {
+    protected $table = 'cashier_subscriptions';
+
     /**
      * @var list<string>
      */
