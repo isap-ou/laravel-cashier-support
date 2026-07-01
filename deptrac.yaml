@@ -1,0 +1,110 @@
+deptrac:
+  paths:
+    - ./src
+  layers:
+    - name: Enums
+      collectors:
+        - type: directory
+          value: src/Enums/.*
+    - name: Exceptions
+      collectors:
+        - type: directory
+          value: src/Exceptions/.*
+    - name: DTO
+      collectors:
+        - type: directory
+          value: src/DTO/.*
+    - name: Contracts
+      collectors:
+        - type: directory
+          value: src/Contracts/.*
+    - name: Concerns
+      collectors:
+        - type: directory
+          value: src/Concerns/.*
+        - type: classLike
+          value: .*\\Billable$
+    - name: Events
+      collectors:
+        - type: directory
+          value: src/Events/.*
+    - name: Models
+      collectors:
+        - type: directory
+          value: src/Models/.*
+    - name: Invoice
+      collectors:
+        - type: directory
+          value: src/Invoice/.*
+    - name: Facades
+      collectors:
+        - type: directory
+          value: src/Facades/.*
+    - name: Manager
+      collectors:
+        - type: classLike
+          value: .*CashierManager
+    - name: ServiceProvider
+      collectors:
+        - type: classLike
+          value: .*CashierSupportServiceProvider
+    - name: HttpClient
+      collectors:
+        - type: classLike
+          value: GuzzleHttp\\.*
+        - type: classLike
+          value: Illuminate\\Http\\Client\\.*
+        - type: classLike
+          value: Symfony\\Component\\HttpClient\\.*
+
+  ruleset:
+    # Foundation layers depend on nothing internal.
+    Enums: ~
+
+    Exceptions:
+      - Enums
+
+    # DTO and Contracts are intentionally co-dependent: DTOs are the operation
+    # payloads, while DTO\PaymentMethod type-hints the PaymentMethodType contract.
+    DTO:
+      - Enums
+      - Contracts
+    Contracts:
+      - Enums
+      - Exceptions
+      - DTO
+
+    Events:
+      - Enums
+      - DTO
+
+    Models:
+      - Enums
+
+    Invoice:
+      - Enums
+      - DTO
+
+    Manager:
+      - Enums
+      - Exceptions
+      - Contracts
+
+    Facades:
+      - Manager
+      - Contracts
+      - Enums
+
+    Concerns:
+      - Enums
+      - Exceptions
+      - DTO
+      - Contracts
+      - Facades
+
+    ServiceProvider:
+      - Manager
+
+    # HttpClient is intentionally unreachable: no layer may depend on it, which
+    # enforces the "zero HTTP calls" rule for this package.
+    HttpClient: ~

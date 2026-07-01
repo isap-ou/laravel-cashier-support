@@ -173,8 +173,12 @@ package's contracts, so parity can be maintained on a cadence.
 ```bash
 composer test      # phpunit
 composer analyse   # phpstan (larastan) level 8
+composer deptrac   # architecture boundary rules (deptrac)
 composer format    # laravel pint
 ```
+
+`deptrac` enforces the layering (DTO/Contracts/Enums stay free of Models,
+Concerns and the Manager) and the "zero HTTP" rule — see `deptrac.yaml`.
 
 ## License
 
