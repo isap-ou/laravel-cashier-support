@@ -16,6 +16,7 @@ enum Capability: string
     case Refunds = 'refunds';
     case Customers = 'customers';
     case Subscriptions = 'subscriptions';
+    case SubscriptionCancelNow = 'subscription.cancel_now';
     case SubscriptionPause = 'subscription.pause';
     case SubscriptionResume = 'subscription.resume';
     case SubscriptionSwap = 'subscription.swap';

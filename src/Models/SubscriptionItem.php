@@ -7,6 +7,7 @@ namespace Isapp\CashierSupport\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Isapp\CashierSupport\Facades\Cashier;
 
 /**
  * Abstract local record of a single item within a subscription.
@@ -42,9 +43,6 @@ abstract class SubscriptionItem extends Model
      */
     public function subscription(): BelongsTo
     {
-        /** @var class-string<Subscription> $model */
-        $model = config('cashier-support.models.subscription') ?? Subscription::class;
-
-        return $this->belongsTo($model);
+        return $this->belongsTo(Cashier::subscriptionModel(), 'subscription_id');
     }
 }

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Macroable `CashierManager` (macros first, unknown calls still forward to the
+  default driver).
+- Per-driver model registry: `Cashier::useModels()` +
+  `subscriptionModel()/subscriptionItemModel()/invoiceModel()` — replaces the
+  single global `cashier-support.models.*` slot for multi-driver installs.
+- Query-side Billable API reading local records: `subscriptions()`,
+  `subscription()`, `subscribed()`, `onTrial()`, `onGracePeriod()`,
+  `subscribedToPrice()`.
+- `Gateway\ManagesLocalInvoices` — default local-record InvoiceOperations for
+  drivers whose provider has no invoice API.
+- `Capability::SubscriptionCancelNow`; `cancelSubscriptionNow()` is now gated
+  by it instead of silently sharing the plain cancel capability.
+
 ### Changed
 
 - Dropped the unused `moneyphp/money` and `ext-intl` requirements (money is

@@ -17,12 +17,12 @@ use IsapOu\EnumHelpers\Contracts\HasLabel;
  *
  * Example provider implementation:
  *
- *     enum RevolutPaymentMethodType: string implements PaymentMethodType
+ *     enum AcmePaymentMethodType: string implements PaymentMethodType
  *     {
  *         use HasCashierLabel;
  *
  *         case Card = 'card';
- *         case RevolutPay = 'revolut_pay';
+ *         case Wallet = 'wallet';
  *     }
  */
 interface PaymentMethodType extends BackedEnum, HasLabel {}

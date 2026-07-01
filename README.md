@@ -38,6 +38,7 @@ replacements for each other.
 - [Events](#events)
 - [Localized enum labels](#localized-enum-labels)
 - [Keeping in sync with Stripe Cashier](#keeping-in-sync-with-stripe-cashier)
+- [Extending](#extending)
 - [Quality](#quality)
 - [Changelog & releases](#changelog--releases)
 - [License](#license)
@@ -219,6 +220,35 @@ Translations live under the `cashier-support` namespace; publish them with
 The `track-cashier` skill (`.claude/skills/track-cashier`) detects API changes
 in `laravel/cashier-stripe` since a pinned baseline and maps them onto this
 package's contracts, so parity can be maintained on a cadence.
+
+## Extending
+
+**Custom or overridden driver.** Drivers are plain `Cashier::extend()`
+registrations. Your application's service providers boot after the package
+ones, so re-registering a name replaces the driver — subclass a concrete
+gateway (or implement `GatewayProvider` from scratch) and register it:
+
+```php
+// AppServiceProvider::boot()
+Cashier::extend('revolut', fn ($app) => $app->make(MyRevolutGateway::class));
+
+// or side-by-side under its own name, selected per model via cashierDriver()
+Cashier::extend('revolut-b2b', fn ($app) => $app->make(B2bRevolutGateway::class));
+```
+
+**Macros.** `CashierManager` is macroable, so you can attach helpers to the
+`Cashier` facade without subclassing. Non-macro calls still forward to the
+default driver:
+
+```php
+Cashier::macro('chargeInCents', function (Model $billable, int $amount): Payment {
+    return $this->provider()->charge($billable, $amount, 'pm_default');
+});
+```
+
+Methods a custom gateway exposes beyond the `GatewayProvider` contract are not
+visible through the `Billable` trait — call them via `Cashier::provider()` (or
+`Cashier::driver('name')`) and narrow the type.
 
 ## Quality
 
