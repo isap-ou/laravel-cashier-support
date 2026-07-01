@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cashier_invoices', function (Blueprint $table): void {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->morphs('owner');
             $table->string('provider')->nullable();
             $table->string('provider_id')->nullable();

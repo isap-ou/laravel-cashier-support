@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Models;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -23,6 +24,8 @@ use Isapp\CashierSupport\Enums\SubscriptionStatus;
  */
 abstract class Subscription extends Model
 {
+    use HasUuids;
+
     protected $table = 'cashier_subscriptions';
 
     /**

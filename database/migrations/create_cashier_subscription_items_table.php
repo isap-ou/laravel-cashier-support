@@ -11,8 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cashier_subscription_items', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('subscription_id')->index();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('subscription_id')->index();
             $table->string('provider_id')->nullable()->index();
             $table->string('price');
             $table->integer('quantity')->default(1);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Feature;
 
+use Illuminate\Support\Str;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
@@ -35,6 +36,8 @@ class MigrationsTest extends TestCase
             'price' => 'price_monthly',
             'quantity' => 2,
         ]);
+
+        $this->assertTrue(Str::isUuid($subscription->getKey()));
 
         $fresh = ConcreteSubscription::query()->with('items')->find($subscription->getKey());
 

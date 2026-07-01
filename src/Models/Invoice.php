@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Models;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Isapp\CashierSupport\Enums\Currency;
@@ -24,6 +25,8 @@ use Isapp\CashierSupport\Enums\PaymentStatus;
  */
 abstract class Invoice extends Model
 {
+    use HasUuids;
+
     protected $table = 'cashier_invoices';
 
     /**
