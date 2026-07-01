@@ -15,7 +15,7 @@ jobs:
       matrix:
         include:
           - { laravel: 11, testbench: 9, php: '8.2', stability: prefer-stable }
-          - { laravel: 11, testbench: 9, php: '8.3', stability: prefer-lowest }
+          - { laravel: 12, testbench: 10, php: '8.2', stability: prefer-lowest }
           - { laravel: 12, testbench: 10, php: '8.3', stability: prefer-stable }
           - { laravel: 12, testbench: 10, php: '8.4', stability: prefer-stable }
           - { laravel: 13, testbench: 11, php: '8.4', stability: prefer-stable }
