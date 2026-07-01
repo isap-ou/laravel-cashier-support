@@ -1,5 +1,10 @@
 # isapp/laravel-cashier-support
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/isapp/laravel-cashier-support.svg?style=flat-square)](https://packagist.org/packages/isapp/laravel-cashier-support)
+[![Tests](https://img.shields.io/github/actions/workflow/status/isap-ou/laravel-cashier-support/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/isap-ou/laravel-cashier-support/actions/workflows/tests.yml)
+[![PHP Version](https://img.shields.io/packagist/php-v/isapp/laravel-cashier-support.svg?style=flat-square)](https://packagist.org/packages/isapp/laravel-cashier-support)
+[![License](https://img.shields.io/packagist/l/isapp/laravel-cashier-support.svg?style=flat-square)](LICENSE)
+
 Provider-agnostic contracts for Laravel Cashier. This package gives your
 application the **same developer experience as `laravel/cashier-stripe`**
 (`$user->charge()`, `newSubscription()->create()`, `checkout()`, ...) while
@@ -10,6 +15,32 @@ It contains **only** interfaces, DTOs, enums, exceptions, abstract models,
 traits and events — **zero business logic, zero HTTP calls**. Concrete drivers
 (e.g. `isapp/laravel-cashier-revolut`) implement the contracts and are drop-in
 replacements for each other.
+
+> **Status — pre-release.** No version is tagged on Packagist yet. Until the
+> first `v1.0.0` is published, require it from the VCS repository (add to your
+> app's `composer.json`):
+>
+> ```json
+> "repositories": [
+>     { "type": "vcs", "url": "https://github.com/isap-ou/laravel-cashier-support" }
+> ]
+> ```
+
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [How it works](#how-it-works)
+- [Making a model billable](#making-a-model-billable)
+- [Capabilities](#capabilities)
+- [Provider-defined types](#provider-defined-types)
+- [Invoices](#invoices)
+- [Events](#events)
+- [Localized enum labels](#localized-enum-labels)
+- [Keeping in sync with Stripe Cashier](#keeping-in-sync-with-stripe-cashier)
+- [Quality](#quality)
+- [Changelog & releases](#changelog--releases)
+- [License](#license)
 
 ## Requirements
 
@@ -31,6 +62,10 @@ Publish the config if you need to customise it:
 ```bash
 php artisan vendor:publish --tag=cashier-support-config
 ```
+
+`config/cashier-support.php` exposes the default `driver`, the default
+`currency`, the concrete `models` bindings, and `invoices` (view, paper size,
+seller details).
 
 The abstract `Subscription`, `SubscriptionItem` and `Invoice` models are
 optional local records. If you want to persist them, publish and run the
@@ -131,7 +166,9 @@ driver returns its own implementation:
   method types (`card`, `sepa`, `revolut_pay`, ...). `DTO\PaymentMethod::$type`
   type-hints this contract.
 - `Contracts\CheckoutSession` — a hosted checkout session (redirect URL, widget
-  token, ...). Returned by `checkout()`.
+  token, ...) returned by `checkout()`. A driver may also implement
+  `Illuminate\Contracts\Support\Responsable`, so you can `return $user->checkout(...)`
+  straight from a controller.
 
 ## Invoices
 
@@ -139,6 +176,7 @@ Invoices are generated **locally** from stored data — a shared feature, not a
 provider call:
 
 ```php
+use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Invoice\InvoiceBuilder;
 use Isapp\CashierSupport\Invoice\InvoiceRenderer;
 
@@ -189,6 +227,12 @@ composer format    # laravel pint
 `deptrac` enforces the layering (DTO/Contracts/Enums stay free of Models,
 Concerns and the Manager) and the "zero HTTP" rule — see `deptrac.yaml`.
 
+## Changelog & releases
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed between versions, and
+[RELEASING.md](RELEASING.md) for the release process. This package follows
+[Semantic Versioning](https://semver.org).
+
 ## License
 
-MIT.
+Released under the MIT License. See [LICENSE](LICENSE).

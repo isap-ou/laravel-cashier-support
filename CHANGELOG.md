@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dropped the unused `moneyphp/money` and `ext-intl` requirements (money is
+  represented as integer minor units plus the `Currency` enum).
+
 ### Added
 
 - Provider-agnostic billing contracts mirroring the Laravel Cashier (Stripe) API.

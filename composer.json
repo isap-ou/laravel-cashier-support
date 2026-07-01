@@ -4,14 +4,23 @@
     "type": "library",
     "license": "MIT",
     "keywords": ["laravel", "cashier", "contracts", "billing", "subscriptions", "payments", "revolut", "adyen", "wise"],
+    "homepage": "https://github.com/isap-ou/laravel-cashier-support",
+    "authors": [
+        {
+            "name": "ISAPP",
+            "homepage": "https://isapp.be"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/isap-ou/laravel-cashier-support/issues",
+        "source": "https://github.com/isap-ou/laravel-cashier-support"
+    },
     "require": {
         "php": "^8.2",
-        "ext-intl": "*",
         "illuminate/contracts": "^11.0|^12.0|^13.0",
         "illuminate/database": "^11.0|^12.0|^13.0",
         "illuminate/support": "^11.0|^12.0|^13.0",
         "isap-ou/laravel-enum-helpers": "^1.5",
-        "moneyphp/money": "^4.5",
         "nesbot/carbon": "^3.0",
         "spatie/laravel-data": "^4.23",
         "spatie/laravel-pdf": "^2.12"
@@ -45,7 +54,14 @@
         "test": "vendor/bin/phpunit",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
         "deptrac": "vendor/bin/deptrac analyse",
-        "format": "vendor/bin/pint"
+        "format": "vendor/bin/pint",
+        "lint": "vendor/bin/pint --test",
+        "ci": [
+            "@test",
+            "@analyse",
+            "@deptrac",
+            "@lint"
+        ]
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
