@@ -44,7 +44,12 @@ replacements for each other.
 
 ## Requirements
 
-PHP `^8.2` and Laravel **11, 12 or 13**.
+PHP `^8.2` and Laravel **11, 12 or 13** (Laravel **12+ recommended**).
+
+> **Laravel 11 is EOL.** It is supported for compatibility, but is past its
+> security-support window — all `11.x` releases are flagged by Composer's
+> advisory audit, so installing on Laravel 11 requires allowing insecure
+> packages. Prefer Laravel 12 or 13 for production.
 
 > **UUID note:** the local models use `HasUuids`. On Laravel 12+ that yields
 > UUIDv7 primary keys; on Laravel 11 it falls back to ordered UUIDs (v4), which

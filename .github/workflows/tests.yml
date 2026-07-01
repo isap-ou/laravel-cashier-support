@@ -37,6 +37,13 @@ jobs:
           "illuminate/contracts:^${{ matrix.laravel }}.0"
           "orchestra/testbench:^${{ matrix.testbench }}.0"
 
+      # Laravel 11 is past its security-support window; all 11.x releases are
+      # flagged by Composer's advisory audit. Allow the install so we can still
+      # verify compatibility. Newer, supported lines (12/13) keep the audit on.
+      - name: Allow EOL framework install
+        if: matrix.laravel == 11
+        run: composer config audit.block-insecure false
+
       - name: Install dependencies
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
