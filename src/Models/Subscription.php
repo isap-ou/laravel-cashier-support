@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
+use Isapp\CashierSupport\Facades\Cashier;
 
 /**
  * Abstract local record of a provider subscription.
@@ -58,14 +59,16 @@ abstract class Subscription extends Model
     /**
      * The items belonging to the subscription.
      *
+     * Resolved per driver via the CashierManager model registry, using this
+     * record's provider column.
+     *
      * @return HasMany<SubscriptionItem, $this>
      */
     public function items(): HasMany
     {
-        /** @var class-string<SubscriptionItem> $model */
-        $model = config('cashier-support.models.subscription_item') ?? SubscriptionItem::class;
+        $provider = $this->getAttribute('provider');
 
-        return $this->hasMany($model);
+        return $this->hasMany(Cashier::subscriptionItemModel(is_string($provider) ? $provider : null), 'subscription_id');
     }
 
     /**

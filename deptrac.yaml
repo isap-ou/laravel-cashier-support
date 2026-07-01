@@ -36,6 +36,10 @@ deptrac:
       collectors:
         - type: directory
           value: src/Invoice/.*
+    - name: Gateway
+      collectors:
+        - type: directory
+          value: src/Gateway/.*
     - name: Facades
       collectors:
         - type: directory
@@ -78,22 +82,29 @@ deptrac:
       - Enums
       - DTO
 
+    # Models resolve their per-driver relations through the manager registry
+    # (via the facade).
     Models:
       - Enums
+      - Facades
 
     Invoice:
       - Enums
       - DTO
 
+    # The manager owns the per-driver model registry, hence the Models edge.
     Manager:
       - Enums
       - Exceptions
       - Contracts
+      - Models
 
+    # Facades mirror the manager's typed API, including model-registry types.
     Facades:
       - Manager
       - Contracts
       - Enums
+      - Models
 
     Concerns:
       - Enums
@@ -101,6 +112,17 @@ deptrac:
       - DTO
       - Contracts
       - Facades
+      - Models
+
+    # Driver-side defaults (local invoice operations) composed into gateways.
+    Gateway:
+      - Enums
+      - Exceptions
+      - DTO
+      - Contracts
+      - Facades
+      - Models
+      - Invoice
 
     ServiceProvider:
       - Manager

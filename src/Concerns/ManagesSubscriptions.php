@@ -5,18 +5,85 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Facades\Cashier;
+use Isapp\CashierSupport\Models\Subscription as SubscriptionRecord;
 
 /**
  * Subscription lifecycle for a billable model.
+ *
+ * Mutations delegate to the gateway provider; the query-side methods
+ * (subscription(), subscribed(), onTrial(), ...) read the local subscription
+ * records kept in sync by the driver.
  *
  * @phpstan-require-extends Model
  */
 trait ManagesSubscriptions
 {
     use InteractsWithProvider;
+
+    /**
+     * All local subscription records of this entity for its driver.
+     *
+     * @return MorphMany<SubscriptionRecord, $this>
+     */
+    public function subscriptions(): MorphMany
+    {
+        return $this->morphMany(Cashier::subscriptionModel($this->cashierDriver()), 'owner')->latest();
+    }
+
+    /**
+     * The entity's local subscription record of the given type, if any.
+     */
+    public function subscription(string $type = 'default'): ?SubscriptionRecord
+    {
+        /** @var SubscriptionRecord|null */
+        return $this->subscriptions()->where('name', $type)->first();
+    }
+
+    /**
+     * Whether the entity has an active (or trialing) subscription of the type.
+     */
+    public function subscribed(string $type = 'default'): bool
+    {
+        return (bool) $this->subscription($type)?->active();
+    }
+
+    /**
+     * Whether the entity's subscription of the given type is on trial.
+     */
+    public function onTrial(string $type = 'default'): bool
+    {
+        return (bool) $this->subscription($type)?->onTrial();
+    }
+
+    /**
+     * Whether the entity's subscription of the given type is within its
+     * cancellation grace period.
+     */
+    public function onGracePeriod(string $type = 'default'): bool
+    {
+        return (bool) $this->subscription($type)?->onGracePeriod();
+    }
+
+    /**
+     * Whether the entity is subscribed to any of the given price identifiers.
+     *
+     * @param  string|array<int, string>  $prices
+     */
+    public function subscribedToPrice(string|array $prices, string $type = 'default'): bool
+    {
+        $subscription = $this->subscription($type);
+
+        if ($subscription === null || ! $subscription->active()) {
+            return false;
+        }
+
+        return $subscription->items()->whereIn('price', (array) $prices)->exists();
+    }
 
     /**
      * Begin creating a new subscription of the given type.
@@ -45,7 +112,7 @@ trait ManagesSubscriptions
      */
     public function cancelSubscriptionNow(string $type = 'default'): Subscription
     {
-        $this->ensureCashierSupports(Capability::Subscriptions);
+        $this->ensureCashierSupports(Capability::SubscriptionCancelNow);
 
         return $this->cashierProvider()->cancelSubscriptionNow($this, $type);
     }

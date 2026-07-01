@@ -93,7 +93,7 @@ src/
 - Money — `int` (cents) + `Currency` enum + `moneyphp/money`
 - Method names strictly from Stripe Cashier
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
-- Concerns delegate to `app(GatewayProvider::class)`
+- Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`
 - Concerns call `Cashier::ensureSupports(Capability)` before delegating
 - No custom workarounds for unsupported features — throw `UnsupportedOperationException`
 
@@ -115,7 +115,10 @@ enum Capability: string {
     case PaymentMethodsList = 'payment_methods.list';
     case PaymentMethodsDelete = 'payment_methods.delete';
     case Checkout = 'checkout';
+    case Invoices = 'invoices';
+    case Taxes = 'taxes';
     case Webhooks = 'webhooks';
+    case SubscriptionCancelNow = 'subscription.cancel_now';
 }
 ```
 
@@ -127,11 +130,11 @@ interface GatewayProvider {
     public function supports(Capability $capability): bool;
 }
 
-// Concern checks before delegating
+// Concern checks before delegating, then resolves the driver via CashierManager
 trait ManagesSubscriptions {
     public function newSubscription(string $type, string $price): SubscriptionBuilder {
-        Cashier::ensureSupports(Capability::Subscriptions);
-        return app(GatewayProvider::class)->createSubscription($this, $type, $price);
+        $this->ensureCashierSupports(Capability::Subscriptions);
+        return $this->cashierProvider()->newSubscription($this, $type, $price);
     }
 }
 
@@ -145,5 +148,6 @@ if (Cashier::supports(Capability::SubscriptionPause)) {
 
 ```php
 // In the ServiceProvider of a concrete package (cashier-revolut)
-$this->app->singleton(\Isapp\CashierSupport\Contracts\GatewayProvider::class, RevolutGateway::class);
+Cashier::extend('revolut', fn ($app) => $app->make(RevolutGateway::class));
+Cashier::useModels('revolut', ['subscription' => RevolutSubscription::class /* ... */]);
 ```
