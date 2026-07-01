@@ -10,6 +10,7 @@
         "illuminate/contracts": "^12.0",
         "illuminate/database": "^12.0",
         "illuminate/support": "^12.0",
+        "isap-ou/laravel-enum-helpers": "^1.5",
         "moneyphp/money": "^4.5",
         "nesbot/carbon": "^3.0",
         "spatie/laravel-data": "^4.23",
