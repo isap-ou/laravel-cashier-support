@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
-use Isapp\CashierSupport\DTO\CheckoutSession;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 
 /**

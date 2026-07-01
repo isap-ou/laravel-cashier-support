@@ -7,6 +7,18 @@ use Isapp\CashierSupport\Enums\Currency;
 return [
     /*
     |--------------------------------------------------------------------------
+    | Default Gateway Driver
+    |--------------------------------------------------------------------------
+    |
+    | The gateway provider driver resolved by CashierManager when no driver is
+    | given explicitly. A concrete provider package (e.g. cashier-revolut)
+    | registers its driver via Cashier::extend('revolut', ...).
+    |
+    */
+    'default' => env('CASHIER_DRIVER'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Currency
     |--------------------------------------------------------------------------
     |
