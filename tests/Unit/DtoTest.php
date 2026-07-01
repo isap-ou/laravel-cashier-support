@@ -52,7 +52,7 @@ class DtoTest extends TestCase
     {
         $subscription = new Subscription(
             id: 'sub_1',
-            name: 'default',
+            type: 'default',
             status: SubscriptionStatus::Active,
             items: [new SubscriptionItem(id: 'si_1', price: 'price_monthly', quantity: 2)],
         );

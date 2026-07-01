@@ -14,6 +14,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_id')->index();
             $table->string('provider_id')->nullable()->index();
+            $table->string('provider')->nullable();
             $table->string('price');
             $table->integer('quantity')->default(1);
             $table->timestamps();

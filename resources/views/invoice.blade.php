@@ -1,8 +1,18 @@
 @php
     /** @var \Isapp\CashierSupport\DTO\Invoice $invoice */
     $minor = $invoice->currency->minorUnits();
-    $money = static fn (int $cents): string => number_format($cents / (10 ** $minor), $minor);
-    $symbol = $invoice->currency->value;
+    // Integer-only money formatting — no float arithmetic on amounts.
+    $money = static function (int $cents) use ($minor): string {
+        if ($minor === 0) {
+            return number_format($cents, 0);
+        }
+
+        $units = intdiv($cents, 10 ** $minor);
+        $fraction = str_pad((string) abs($cents % (10 ** $minor)), $minor, '0', STR_PAD_LEFT);
+
+        return number_format($units, 0).'.'.$fraction;
+    };
+    $currencyCode = $invoice->currency->value;
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -55,14 +65,14 @@
                 <tr>
                     <td>{{ $line->description }}</td>
                     <td class="amount">{{ $line->quantity }}</td>
-                    <td class="amount">{{ $symbol }} {{ $money($line->amount) }}</td>
+                    <td class="amount">{{ $currencyCode }} {{ $money($line->amount) }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="2">Total</td>
-                <td class="amount">{{ $symbol }} {{ $money($invoice->amount) }}</td>
+                <td class="amount">{{ $currencyCode }} {{ $money($invoice->amount) }}</td>
             </tr>
         </tfoot>
     </table>

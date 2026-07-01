@@ -35,7 +35,7 @@ class FakeSubscriptionBuilder implements SubscriptionBuilder
 
     public function create(?string $paymentMethod = null, array $options = []): Subscription
     {
-        return new Subscription(id: 'sub_fake', name: $this->type, status: SubscriptionStatus::Active);
+        return new Subscription(id: 'sub_fake', type: $this->type, status: SubscriptionStatus::Active);
     }
 
     public function add(array $options = []): Subscription

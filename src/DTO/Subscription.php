@@ -19,7 +19,7 @@ class Subscription extends Data
      */
     public function __construct(
         public string $id,
-        public string $name,
+        public string $type,
         public SubscriptionStatus $status,
         #[DataCollectionOf(SubscriptionItem::class)]
         public array $items = [],

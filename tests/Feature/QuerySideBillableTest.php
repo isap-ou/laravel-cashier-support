@@ -8,6 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
+use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscription;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscriptionItem;
@@ -51,7 +52,7 @@ class QuerySideBillableTest extends TestCase
         ConcreteSubscription::query()->create(array_merge([
             'owner_type' => $user->getMorphClass(),
             'owner_id' => $user->getKey(),
-            'name' => 'default',
+            'type' => 'default',
             'provider' => 'fake',
             'provider_id' => 'sub_1',
             'status' => $status,
@@ -85,6 +86,46 @@ class QuerySideBillableTest extends TestCase
         ]);
 
         $this->assertTrue($graced->onGracePeriod('default'));
+        // A canceled subscription within its paid-through grace period still
+        // grants access — the customer paid until ends_at.
+        $this->assertTrue($graced->subscribed('default'));
+    }
+
+    public function test_a_fully_ended_subscription_is_not_subscribed(): void
+    {
+        $user = $this->userWithSubscription(SubscriptionStatus::Canceled, [
+            'ends_at' => now()->subDay(),
+        ]);
+
+        $this->assertFalse($user->subscribed('default'));
+        $this->assertFalse($user->onGracePeriod('default'));
+    }
+
+    public function test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial(): void
+    {
+        $user = $this->userWithSubscription(SubscriptionStatus::Trialing, [
+            'trial_ends_at' => now()->subDay(),
+        ]);
+
+        $this->assertFalse($user->onTrial('default'));
+    }
+
+    public function test_subscriptions_are_scoped_to_the_model_driver(): void
+    {
+        $user = $this->userWithSubscription(SubscriptionStatus::Active);
+
+        // A record written by another driver must not leak into this view.
+        ConcreteSubscription::query()->create([
+            'owner_type' => $user->getMorphClass(),
+            'owner_id' => $user->getKey(),
+            'type' => 'default',
+            'provider' => 'other-driver',
+            'provider_id' => 'sub_foreign',
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $this->assertCount(1, $user->subscriptions()->get());
+        $this->assertSame('sub_1', $user->subscription('default')?->getAttribute('provider_id'));
     }
 
     public function test_subscribed_to_price_checks_the_items(): void
@@ -92,11 +133,22 @@ class QuerySideBillableTest extends TestCase
         $user = $this->userWithSubscription(SubscriptionStatus::Active);
 
         $user->subscription('default')?->items()->create([
+            'provider' => 'fake',
             'price' => 'price_monthly',
             'quantity' => 1,
         ]);
 
         $this->assertTrue($user->subscribedToPrice('price_monthly'));
         $this->assertFalse($user->subscribedToPrice('price_yearly'));
+        $this->assertTrue($user->subscribed('default', 'price_monthly'));
+        $this->assertFalse($user->subscribed('default', 'price_yearly'));
+        $this->assertFalse($user->onTrial('default', 'price_monthly'));
+    }
+
+    public function test_an_unregistered_driver_slot_is_a_configuration_error(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        Cashier::invoiceModel('fake');
     }
 }

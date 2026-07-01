@@ -60,7 +60,9 @@ abstract class Subscription extends Model
      * The items belonging to the subscription.
      *
      * Resolved per driver via the CashierManager model registry, using this
-     * record's provider column.
+     * record's provider column. Note: eager loading (with('items')) resolves
+     * relations on an unhydrated model, so it falls back to the DEFAULT
+     * driver's class — lazy access on hydrated records is driver-exact.
      *
      * @return HasMany<SubscriptionItem, $this>
      */
@@ -72,11 +74,17 @@ abstract class Subscription extends Model
     }
 
     /**
-     * Whether the subscription is currently active or trialing.
+     * Whether the subscription grants access: active, trialing, or canceled
+     * but still within its paid-through grace period (Stripe Cashier
+     * semantics — the customer paid until ends_at).
      */
     public function active(): bool
     {
-        return $this->status->isActive() && ! $this->hasEnded();
+        if ($this->hasEnded()) {
+            return false;
+        }
+
+        return $this->status->isActive() || $this->onGracePeriod();
     }
 
     /**
@@ -88,12 +96,16 @@ abstract class Subscription extends Model
     }
 
     /**
-     * Whether the subscription is on trial.
+     * Whether the subscription is on trial. A stale Trialing status (webhook
+     * lag) does not count once trial_ends_at is in the past.
      */
     public function onTrial(): bool
     {
-        return $this->status === SubscriptionStatus::Trialing
-            || ($this->trial_ends_at !== null && $this->trial_ends_at->isFuture());
+        if ($this->trial_ends_at !== null) {
+            return $this->trial_ends_at->isFuture();
+        }
+
+        return $this->status === SubscriptionStatus::Trialing;
     }
 
     /**

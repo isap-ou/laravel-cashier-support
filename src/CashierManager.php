@@ -7,6 +7,7 @@ namespace Isapp\CashierSupport;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Traits\Macroable;
+use InvalidArgumentException;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
@@ -68,11 +69,16 @@ class CashierManager extends Manager
     /**
      * Resolve a gateway provider driver.
      *
-     * @throws InvalidConfigurationException When the resolved driver is not a gateway provider.
+     * @throws InvalidConfigurationException When the driver is unknown or not a gateway provider.
      */
     public function provider(?string $driver = null): GatewayProvider
     {
-        $provider = $this->driver($driver);
+        try {
+            $provider = $this->driver($driver);
+        } catch (InvalidArgumentException $exception) {
+            // Keep unknown drivers inside the CashierException hierarchy.
+            throw new InvalidConfigurationException($exception->getMessage());
+        }
 
         if (! $provider instanceof GatewayProvider) {
             throw InvalidConfigurationException::noProviderBound();
@@ -160,23 +166,31 @@ class CashierManager extends Manager
     }
 
     /**
-     * Resolve a model slot: driver registry first, then the published
-     * cashier-support.models.* config.
+     * Resolve a model slot from the driver registry. The published
+     * cashier-support.models.* config acts as an app-level override for the
+     * DEFAULT driver only — it must never bleed one driver's models into
+     * another.
      *
      * @param  class-string<Model>  $abstract  The abstract model the slot must extend.
      * @return class-string<Model>
      *
-     * @throws InvalidConfigurationException When nothing concrete is registered.
+     * @throws InvalidConfigurationException When the driver registered nothing for the slot.
      */
     protected function model(string $slot, string $abstract, ?string $driver = null): string
     {
         $driver ??= $this->getDefaultDriver();
 
-        $class = $this->models[$driver][$slot]
-            ?? $this->config->get("cashier-support.models.{$slot}");
+        $class = $this->models[$driver][$slot] ?? null;
+
+        if ($class === null && $driver === $this->config->get('cashier-support.default')) {
+            $configured = $this->config->get("cashier-support.models.{$slot}");
+            $class = is_string($configured) ? $configured : null;
+        }
 
         if (! is_string($class) || ! is_subclass_of($class, $abstract)) {
-            throw InvalidConfigurationException::missingKey("cashier-support.models.{$slot} (driver [{$driver}])");
+            throw new InvalidConfigurationException(
+                "The [{$driver}] driver has not registered a [{$slot}] model — call Cashier::useModels('{$driver}', [...]) in its service provider.",
+            );
         }
 
         return $class;
