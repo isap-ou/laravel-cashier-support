@@ -23,6 +23,8 @@
         "isap-ou/laravel-enum-helpers": "^1.5",
         "nesbot/carbon": "^3.0",
         "spatie/laravel-data": "^4.23",
+        "symfony/http-foundation": "^7.0|^8.0",
+        "symfony/http-kernel": "^7.0|^8.0",
         "spatie/laravel-pdf": "^2.12"
     },
     "require-dev": {

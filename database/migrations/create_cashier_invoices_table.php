@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('issued_at')->nullable();
             $table->timestamps();
 
-            $table->index(['provider', 'provider_id']);
+            $table->unique(['provider', 'provider_id']);
         });
     }
 

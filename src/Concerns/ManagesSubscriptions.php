@@ -28,36 +28,63 @@ trait ManagesSubscriptions
     /**
      * All local subscription records of this entity for its driver.
      *
+     * Scoped by provider: the table is shared between drivers, so records
+     * written by another gateway must never leak into this driver's view.
+     *
      * @return MorphMany<SubscriptionRecord, $this>
      */
     public function subscriptions(): MorphMany
     {
-        return $this->morphMany(Cashier::subscriptionModel($this->cashierDriver()), 'owner')->latest();
+        $driver = $this->cashierDriver() ?? Cashier::getDefaultDriver();
+
+        return $this->morphMany(Cashier::subscriptionModel($driver), 'owner')
+            ->where('provider', $driver)
+            ->latest();
     }
 
     /**
      * The entity's local subscription record of the given type, if any.
+     *
+     * Reads the already-loaded relation when available (supports eager
+     * loading) and falls back to a query otherwise.
      */
     public function subscription(string $type = 'default'): ?SubscriptionRecord
     {
+        if ($this->relationLoaded('subscriptions')) {
+            /** @var SubscriptionRecord|null */
+            return $this->getRelation('subscriptions')->firstWhere('type', $type);
+        }
+
         /** @var SubscriptionRecord|null */
-        return $this->subscriptions()->where('name', $type)->first();
+        return $this->subscriptions()->where('type', $type)->first();
     }
 
     /**
-     * Whether the entity has an active (or trialing) subscription of the type.
+     * Whether the entity has an active subscription of the type (optionally
+     * narrowed to a specific price identifier).
      */
-    public function subscribed(string $type = 'default'): bool
+    public function subscribed(string $type = 'default', ?string $price = null): bool
     {
+        if ($price !== null) {
+            return $this->subscribedToPrice($price, $type);
+        }
+
         return (bool) $this->subscription($type)?->active();
     }
 
     /**
-     * Whether the entity's subscription of the given type is on trial.
+     * Whether the entity's subscription of the given type is on trial
+     * (optionally narrowed to a specific price identifier).
      */
-    public function onTrial(string $type = 'default'): bool
+    public function onTrial(string $type = 'default', ?string $price = null): bool
     {
-        return (bool) $this->subscription($type)?->onTrial();
+        $subscription = $this->subscription($type);
+
+        if ($subscription === null || ! $subscription->onTrial()) {
+            return false;
+        }
+
+        return $price === null || $subscription->items()->where('price', $price)->exists();
     }
 
     /**

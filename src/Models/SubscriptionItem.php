@@ -39,10 +39,16 @@ abstract class SubscriptionItem extends Model
     /**
      * The subscription this item belongs to.
      *
+     * Resolved per driver via this record's provider column (mirroring
+     * Subscription::items()), so the inverse relation hydrates the right
+     * concrete class in multi-driver installs.
+     *
      * @return BelongsTo<Subscription, $this>
      */
     public function subscription(): BelongsTo
     {
-        return $this->belongsTo(Cashier::subscriptionModel(), 'subscription_id');
+        $provider = $this->getAttribute('provider');
+
+        return $this->belongsTo(Cashier::subscriptionModel(is_string($provider) ? $provider : null), 'subscription_id');
     }
 }

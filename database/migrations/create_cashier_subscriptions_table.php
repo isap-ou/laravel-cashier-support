@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('cashier_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->morphs('owner');
-            $table->string('name');
+            $table->string('type');
             $table->string('provider')->nullable();
             $table->string('provider_id')->nullable();
             $table->string('status');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();
 
-            $table->index(['provider', 'provider_id']);
+            $table->unique(['provider', 'provider_id']);
         });
     }
 

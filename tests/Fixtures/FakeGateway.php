@@ -72,27 +72,27 @@ class FakeGateway implements GatewayProvider
 
     public function cancelSubscription(Model $billable, string $type = 'default'): Subscription
     {
-        return new Subscription(id: 'sub_fake', name: $type, status: SubscriptionStatus::Canceled);
+        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Canceled);
     }
 
     public function cancelSubscriptionNow(Model $billable, string $type = 'default'): Subscription
     {
-        return new Subscription(id: 'sub_fake', name: $type, status: SubscriptionStatus::Canceled);
+        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Canceled);
     }
 
     public function resumeSubscription(Model $billable, string $type = 'default'): Subscription
     {
-        return new Subscription(id: 'sub_fake', name: $type, status: SubscriptionStatus::Active);
+        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
 
     public function pauseSubscription(Model $billable, string $type = 'default'): Subscription
     {
-        return new Subscription(id: 'sub_fake', name: $type, status: SubscriptionStatus::Paused);
+        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Paused);
     }
 
     public function swapSubscription(Model $billable, string $type, string|array $prices, array $options = []): Subscription
     {
-        return new Subscription(id: 'sub_fake', name: $type, status: SubscriptionStatus::Active);
+        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
 
     public function invoices(Model $billable, array $parameters = []): array

@@ -6,23 +6,26 @@ namespace Isapp\CashierSupport\Gateway;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\InvoiceLine;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Invoice\InvoiceRenderer;
 use Isapp\CashierSupport\Models\Invoice as InvoiceRecord;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Default InvoiceOperations implementation for drivers whose provider has no
  * invoice API: invoices are local records (written by the driver, typically
  * from payment webhooks) rendered to PDF by cashier-support.
  *
- * The composing gateway supplies its driver name and an InvoiceRenderer.
+ * The composing gateway supplies its driver name; the renderer may be
+ * constructor-injected or is lazily resolved from the container.
  */
 trait ManagesLocalInvoices
 {
-    protected InvoiceRenderer $invoiceRenderer;
+    protected ?InvoiceRenderer $invoiceRenderer = null;
 
     /**
      * The driver name whose invoice records this gateway owns.
@@ -31,11 +34,18 @@ trait ManagesLocalInvoices
 
     /**
      * {@inheritDoc}
+     *
+     * Supported parameters: 'limit' (int) — cap the number of records.
      */
     public function invoices(Model $billable, array $parameters = []): array
     {
-        return $this->invoiceQuery($billable)
-            ->latest('issued_at')
+        $query = $this->invoiceQuery($billable)->latest('issued_at');
+
+        if (is_int($parameters['limit'] ?? null)) {
+            $query->limit($parameters['limit']);
+        }
+
+        return $query
             ->get()
             ->map(fn (InvoiceRecord $record): Invoice => $this->toInvoiceDto($record))
             ->all();
@@ -62,13 +72,24 @@ trait ManagesLocalInvoices
         $record = $this->findInvoiceRecord($billable, $invoiceId);
 
         if ($record === null) {
-            abort(404, "Invoice [{$invoiceId}] not found.");
+            throw new NotFoundHttpException('Invoice not found.');
         }
 
-        return $this->invoiceRenderer
+        $number = $record->getAttribute('number');
+        $filename = 'invoice-'.(is_string($number) && $number !== '' ? $number : (string) $record->getKey()).'.pdf';
+
+        return $this->renderer()
             ->render($this->toInvoiceDto($record, $this->linesFrom($data)), $data)
-            ->download("invoice-{$invoiceId}.pdf")
+            ->download($filename)
             ->toResponse(request());
+    }
+
+    /**
+     * The renderer: constructor-injected by the gateway, or lazily resolved.
+     */
+    protected function renderer(): InvoiceRenderer
+    {
+        return $this->invoiceRenderer ??= app(InvoiceRenderer::class);
     }
 
     /**
@@ -88,7 +109,15 @@ trait ManagesLocalInvoices
     {
         /** @var InvoiceRecord|null */
         return $this->invoiceQuery($billable)
-            ->where(fn ($query) => $query->whereKey($invoiceId)->orWhere('provider_id', $invoiceId))
+            ->where(function ($query) use ($invoiceId): void {
+                // The primary key is a native uuid column on PostgreSQL —
+                // comparing it against a non-uuid provider id would throw.
+                if (Str::isUuid($invoiceId)) {
+                    $query->whereKey($invoiceId);
+                }
+
+                $query->orWhere('provider_id', $invoiceId);
+            })
             ->first();
     }
 

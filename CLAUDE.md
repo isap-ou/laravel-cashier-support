@@ -81,7 +81,8 @@ src/
 │   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
 │   └── InvoiceRenderer.php      # Render to PDF (dompdf/spatie-pdf)
 ├── Billable.php         # Meta-trait, includes all Concerns
-├── Cashier.php          # Static config + ensureSupports(), supports()
+├── CashierManager.php   # Macroable driver manager + per-driver model registry
+├── Facades/Cashier.php  # Facade over the manager
 └── CashierSupportServiceProvider.php
 ```
 
@@ -90,7 +91,7 @@ src/
 - `declare(strict_types=1)` everywhere
 - DTOs — extend `Spatie\LaravelData\Data` (`spatie/laravel-data`)
 - Enums — `string`-backed, `snake_case` values
-- Money — `int` (cents) + `Currency` enum + `moneyphp/money`
+- Money — `int` (minor units) + `Currency` enum (no float, no money library)
 - Method names strictly from Stripe Cashier
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
 - Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`

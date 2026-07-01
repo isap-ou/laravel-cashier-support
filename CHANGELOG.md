@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking (accepted pre-adoption, no external consumers yet):** the
+  subscription type column and DTO field are renamed `name` → `type` to match
+  Stripe Cashier v15+; `(provider, provider_id)` indexes on subscriptions and
+  invoices are now **unique** (concurrency-safe webhook writes);
+  `cashier_subscription_items` gains a `provider` column so the inverse
+  relation resolves per driver.
+- `active()` now includes canceled subscriptions within their paid-through
+  grace period (Stripe semantics) — a canceling customer keeps access until
+  `ends_at`.
+- `subscriptions()` is scoped by the model's driver (`provider` column), so
+  records written by another gateway never leak between drivers.
+- The `cashier-support.models.*` config now only overrides models for the
+  default driver; other drivers must register via `Cashier::useModels()`
+  (clear exception otherwise).
+- `onTrial()` no longer trusts a stale `Trialing` status once `trial_ends_at`
+  is past; `subscribed()`/`onTrial()` accept an optional `$price` argument;
+  `subscription()` reads the eager-loaded relation when available.
+- Unknown drivers raised through `provider()` are wrapped in
+  `InvalidConfigurationException` (the `CashierException` hierarchy).
+
+### Fixed
+
+- `Gateway\ManagesLocalInvoices`: uuid-safe invoice lookup on PostgreSQL,
+  `limit` list parameter, lazily resolved renderer, sanitized download
+  filename, `NotFoundHttpException` instead of `abort()`.
+- Integer-only money formatting in the invoice Blade view.
+- The changelog CI enforcer diffs against the merge base (no false passes).
+
 ## [1.0.0] - 2026-07-01
 
 ### Added
