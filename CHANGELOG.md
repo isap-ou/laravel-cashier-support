@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-02
+
 ### Changed
 
 - **Breaking (accepted pre-adoption, no external consumers yet):** the
@@ -67,5 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tooling: PHPStan (larastan) level 8, Pint, deptrac boundary rules, a Laravel
   11/12/13 CI matrix, release checklist (`RELEASING.md`) and a PR changelog enforcer.
 
-[Unreleased]: https://github.com/isap-ou/laravel-cashier-support/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/isap-ou/laravel-cashier-support/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/isap-ou/laravel-cashier-support/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/isap-ou/laravel-cashier-support/releases/tag/v1.0.0
