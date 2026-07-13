@@ -22,6 +22,8 @@ use Isapp\CashierSupport\Facades\Cashier;
  * @property SubscriptionStatus $status
  * @property CarbonImmutable|null $trial_ends_at
  * @property CarbonImmutable|null $ends_at
+ * @property CarbonImmutable|null $current_period_start
+ * @property CarbonImmutable|null $current_period_end
  */
 abstract class Subscription extends Model
 {
@@ -43,7 +45,33 @@ abstract class Subscription extends Model
             'status' => SubscriptionStatus::class,
             'trial_ends_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
+            'current_period_start' => 'immutable_datetime',
+            'current_period_end' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * When the current billing period started.
+     *
+     * Null when the gateway exposes no billing cycle, or has not reported one
+     * yet — "unknown", not "none".
+     */
+    public function currentPeriodStart(): ?CarbonImmutable
+    {
+        return $this->current_period_start;
+    }
+
+    /**
+     * When the current billing period ends: the paid-through date, and the date
+     * of the next charge while the subscription is live.
+     *
+     * Distinct from ends_at, which says when *access* stops and is only set once
+     * the subscription is cancelled. On cancellation a driver sets
+     * ends_at = current_period_end — the customer paid through the cycle.
+     */
+    public function currentPeriodEnd(): ?CarbonImmutable
+    {
+        return $this->current_period_end;
     }
 
     /**

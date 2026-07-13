@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\DTO;
 
 use Carbon\CarbonImmutable;
+use Isapp\CashierSupport\Enums\BillingReason;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
@@ -28,5 +29,9 @@ class Invoice extends Data
         #[DataCollectionOf(InvoiceLine::class)]
         public array $lines = [],
         public ?CarbonImmutable $issuedAt = null,
+        public ?string $subscriptionId = null,
+        public ?CarbonImmutable $periodStart = null,
+        public ?CarbonImmutable $periodEnd = null,
+        public ?BillingReason $billingReason = null,
     ) {}
 }

@@ -129,6 +129,8 @@ trait ManagesLocalInvoices
         $providerId = $record->getAttribute('provider_id');
         $number = $record->getAttribute('number');
 
+        $subscriptionId = $record->getAttribute('subscription_id');
+
         return new Invoice(
             id: is_string($providerId) && $providerId !== '' ? $providerId : (string) $record->getKey(),
             amount: $record->amount,
@@ -137,6 +139,10 @@ trait ManagesLocalInvoices
             number: is_string($number) ? $number : null,
             lines: $lines,
             issuedAt: $record->issued_at,
+            subscriptionId: is_string($subscriptionId) ? $subscriptionId : null,
+            periodStart: $record->period_start,
+            periodEnd: $record->period_end,
+            billingReason: $record->billing_reason,
         );
     }
 
