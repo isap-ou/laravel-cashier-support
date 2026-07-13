@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Capability::SubscriptionMetadata`, gating `SubscriptionBuilder::withMetadata()` — the
+  last ungated method on the builder. A gateway with nowhere to put a metadata map used
+  to accept the call and let the driver drop the data on the floor.
+
 - **A scheduled price change now has somewhere to live.** `next_price` /
   `next_price_starts_at` on `cashier_subscriptions`, `DTO\Subscription::$pendingPrice` /
   `$pendingPriceStartsAt`, `Models\Subscription::hasPendingPriceChange()` /

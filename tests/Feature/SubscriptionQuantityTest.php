@@ -74,6 +74,26 @@ class SubscriptionQuantityTest extends TestCase
         $this->assertSame(5, $gateway->lastBuilder?->quantity);
     }
 
+    public function test_metadata_throws_when_the_provider_stores_none(): void
+    {
+        // The sibling of the quantity hole, and the last ungated method on the
+        // builder: a gateway with nowhere to put metadata used to accept the call
+        // and drop the data on the floor.
+        $this->driverSupporting([Capability::Subscriptions]);
+
+        $this->expectException(UnsupportedOperationException::class);
+        (new User)->newSubscription('default', 'price_1')->withMetadata(['order_id' => '7']);
+    }
+
+    public function test_metadata_reaches_the_providers_builder_when_supported(): void
+    {
+        $gateway = $this->driverSupporting([Capability::Subscriptions, Capability::SubscriptionMetadata]);
+
+        (new User)->newSubscription('default', 'price_1')->withMetadata(['order_id' => '7'])->create();
+
+        $this->assertSame(['order_id' => '7'], $gateway->lastBuilder?->metadata);
+    }
+
     public function test_an_item_row_persists_an_unknown_quantity_as_null(): void
     {
         // The payoff: a driver whose gateway has no quantity can now write the
