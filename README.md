@@ -125,7 +125,7 @@ $user->charge(1500, 'pm_visa', ['currency' => 'eur']);
 $user->refund('pay_123');
 $user->newSubscription('default', 'price_monthly')->trialDays(14)->create();
 $user->cancelSubscription('default');
-$user->checkout('price_monthly', ['success_url' => '...', 'cancel_url' => '...']);
+$user->checkout(CheckoutRequest::forPrices('price_monthly', successUrl: '...', cancelUrl: '...'));
 $user->addPaymentMethod('pm_visa');
 $user->invoices();
 ```
@@ -162,6 +162,39 @@ if (Cashier::supports(Capability::SubscriptionPause)) {
     $user->pauseSubscription('default');
 }
 ```
+
+### Capabilities gate an intent, not just an operation
+
+Where two gateways do the "same" operation with semantics an app cannot ignore,
+the capability splits, and the caller states which one it means. It never
+inspects the driver name.
+
+**Swap timing.** Stripe and Paddle change the plan immediately; Revolut only ever
+schedules it for the end of the billing cycle. So the caller says which it needs,
+and a gateway that cannot honour it says so:
+
+```php
+use Isapp\CashierSupport\Enums\SwapTiming;
+
+// Default. Throws UnsupportedOperationException on a defer-only gateway
+// rather than quietly giving you a change that lands next month.
+$user->swapSubscription('default', 'price_yearly');
+
+$user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
+```
+
+**Checkout shape.** Some gateways check out a catalogue of prices, others an
+ad-hoc amount. `CheckoutRequest` names both, and the gate keys on the shape — so
+a mis-shaped request throws here, before any driver sees it:
+
+```php
+use Isapp\CashierSupport\DTO\CheckoutRequest;
+
+$user->checkout(CheckoutRequest::forPrices(['price_monthly' => 1], successUrl: '...'));
+$user->checkout(CheckoutRequest::forAmount(1500, Currency::EUR, 'One coffee'));
+```
+
+A bare price id or an items map still works — it is a price-shaped request.
 
 ## Provider-defined types
 

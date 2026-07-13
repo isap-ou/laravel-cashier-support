@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A capability now gates an intent, not merely an operation.** `Capability::SubscriptionSwap`
+  became `SubscriptionSwapImmediate` + `SubscriptionSwapAtPeriodEnd`, chosen by a new
+  `Enums\SwapTiming` the caller passes to `swapSubscription()` (default `Immediate` —
+  Stripe's and Paddle's semantics). `Capability::Checkout` became `CheckoutPrices` +
+  `CheckoutAmount`, gated on the shape of a new `DTO\CheckoutRequest`
+  (`forPrices()` / `forAmount()`), plus `Contracts\CheckoutSession::clientSecret()`.
+
+  A boolean "supports swap" was true both for a gateway that swaps immediately and for
+  one that defers the change to the end of the billing cycle — a difference an app cannot
+  ignore and could not ask about, so it branched on the driver name instead. Same for
+  checkout: one gateway takes price ids, another takes an amount, and the contract typed
+  only the first, so the amount had to be smuggled through an untyped options bag and the
+  driver threw its own exception when it was missing. Gating on the request's shape means
+  a mis-shaped request is refused **in this package**, before any driver sees it.
+
 - **The gateway customer identity is a first-class record.** New `cashier_customers`
   table (morphed owner + `provider` + `provider_id`), abstract `Models\Customer`, a
   `'customer'` model slot, `Billable::hasCustomerId()` / `customerId()` /
@@ -70,6 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is not a usable invoice.
 
 ### Changed
+
+- **Breaking for implementors and callers of swap/checkout.** `swapSubscription()` takes
+  `SwapTiming $timing` as its third argument, ahead of `$options`; `checkout()` on the
+  `CheckoutOperations` contract takes a `CheckoutRequest`; `CheckoutSession` gained
+  `clientSecret()`. `Billable::checkout()` still accepts a price id or an items map — that
+  is the same price-shaped request — but an amount is no longer smuggled through options,
+  so a gateway that checks out an amount refuses the price-shaped form (that is the point).
+  Nothing was ever published, so no installation is affected.
 
 - `quantity` on a subscription item is nullable —
   `DTO\SubscriptionItem::$quantity` is `?int` (default `null`, was `int` default

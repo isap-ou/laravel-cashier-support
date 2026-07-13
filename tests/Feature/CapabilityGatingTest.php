@@ -37,7 +37,7 @@ class CapabilityGatingTest extends TestCase
     private const BASE = [
         Capability::Charges,
         Capability::Subscriptions,
-        Capability::Checkout,
+        Capability::CheckoutPrices,
     ];
 
     public function test_declared_tax_rates_throw_when_the_driver_has_no_tax_support(): void
@@ -52,7 +52,7 @@ class CapabilityGatingTest extends TestCase
     {
         // Swap re-applies the billable's tax rates to the subscription items —
         // it is a consumption point, exactly like creation.
-        $this->driverSupporting([...self::BASE, Capability::SubscriptionSwap]);
+        $this->driverSupporting([...self::BASE, Capability::SubscriptionSwapImmediate]);
 
         $this->expectException(UnsupportedOperationException::class);
         (new TaxedUser)->swapSubscription('default', 'price_2');

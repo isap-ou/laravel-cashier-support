@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Isapp\CashierSupport\Contracts\CheckoutSession;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
+use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\DTO\Customer;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\Payment;
@@ -20,6 +21,7 @@ use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
+use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Enums\WebhookEvent;
 
 /**
@@ -32,6 +34,12 @@ class FakeGateway implements GatewayProvider
      * what a decorator actually forwarded.
      */
     public ?FakeSubscriptionBuilder $lastBuilder = null;
+
+    /**
+     * The request handed to the last checkout() call — lets a test see what the
+     * legacy arguments normalized into.
+     */
+    public ?CheckoutRequest $lastCheckoutRequest = null;
 
     /**
      * @param  array<int, Capability>  $capabilities
@@ -96,7 +104,7 @@ class FakeGateway implements GatewayProvider
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Paused);
     }
 
-    public function swapSubscription(Model $billable, string $type, string|array $prices, array $options = []): Subscription
+    public function swapSubscription(Model $billable, string $type, string|array $prices, SwapTiming $timing = SwapTiming::Immediate, array $options = []): Subscription
     {
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
@@ -133,8 +141,10 @@ class FakeGateway implements GatewayProvider
 
     public function deletePaymentMethod(Model $billable, string $paymentMethodId): void {}
 
-    public function checkout(Model $billable, array|string $items, array $options = []): CheckoutSession
+    public function checkout(Model $billable, CheckoutRequest $request): CheckoutSession
     {
+        $this->lastCheckoutRequest = $request;
+
         return new FakeCheckoutSession(id: 'cs_fake');
     }
 

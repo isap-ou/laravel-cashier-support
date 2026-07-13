@@ -55,12 +55,12 @@ class CashierManagerTest extends TestCase
     public function test_supports_and_ensure_supports(): void
     {
         $this->assertTrue(Cashier::supports(Capability::Charges));
-        $this->assertFalse(Cashier::supports(Capability::Checkout));
+        $this->assertFalse(Cashier::supports(Capability::CheckoutPrices));
 
         Cashier::ensureSupports(Capability::Charges);
 
         $this->expectException(UnsupportedOperationException::class);
-        Cashier::ensureSupports(Capability::Checkout);
+        Cashier::ensureSupports(Capability::CheckoutPrices);
     }
 
     public function test_a_missing_default_driver_is_a_configuration_error(): void
