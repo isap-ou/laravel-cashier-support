@@ -178,6 +178,36 @@ class GranularCapabilitiesTest extends TestCase
         $zero->capability();
     }
 
+    public function test_an_amount_without_a_currency_is_refused_rather_than_charged_in_the_default(): void
+    {
+        // A default here would charge 15.00 EUR for an intended 15.00 GBP and
+        // the app would never learn it happened.
+        $request = CheckoutRequest::from(['amount' => 1500]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $request->capability();
+    }
+
+    public function test_a_zero_quantity_is_refused(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        CheckoutRequest::forPrices(['price_1' => 0]);
+    }
+
+    public function test_options_alongside_a_request_are_refused_rather_than_dropped(): void
+    {
+        // The request names every field the bag used to carry, so options next
+        // to it can only be a mistake — and silently dropping a success_url the
+        // caller believes they passed is the worst way to answer it.
+        $this->driverSupporting([Capability::CheckoutPrices]);
+
+        $this->expectException(InvalidArgumentException::class);
+        (new User)->checkout(
+            CheckoutRequest::forPrices(['price_1' => 1]),
+            ['success_url' => 'https://app.test/ok'],
+        );
+    }
+
     public function test_a_request_carries_its_urls_and_mode_as_first_class_fields(): void
     {
         $request = CheckoutRequest::forAmount(

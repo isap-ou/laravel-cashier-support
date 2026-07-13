@@ -39,6 +39,15 @@ trait HandlesCheckout
      */
     public function checkout(array|string|CheckoutRequest $items, array $options = []): CheckoutSession
     {
+        if ($items instanceof CheckoutRequest && $options !== []) {
+            // The request already names every field the options bag used to
+            // carry. Merging them would resurrect the bag; ignoring them would
+            // silently drop a success_url the caller believes they passed.
+            throw new InvalidArgumentException(
+                'Pass options through CheckoutRequest; the second argument is only for the price-and-options form.',
+            );
+        }
+
         $request = $items instanceof CheckoutRequest
             ? $items
             : $this->checkoutRequestFromLegacyArguments($items, $options);
@@ -69,19 +78,24 @@ trait HandlesCheckout
         $cancelUrl = $options['cancel_url'] ?? null;
         $mode = $options['mode'] ?? null;
 
-        if (is_string($mode)) {
-            // Not a silent fallback to Payment: quietly checking out in the
-            // wrong mode because the mode was misspelled is how a subscription
-            // becomes a one-off charge.
-            $mode = CheckoutMode::tryFrom($mode)
-                ?? throw new InvalidArgumentException("Unknown checkout mode [{$mode}].");
-        }
+        // Not a silent fallback to Payment for anything unrecognised: quietly
+        // checking out in the wrong mode is how a subscription becomes a one-off
+        // charge, and the caller never hears about it.
+        $mode = match (true) {
+            $mode === null => CheckoutMode::Payment,
+            $mode instanceof CheckoutMode => $mode,
+            is_string($mode) => CheckoutMode::tryFrom($mode)
+                ?? throw new InvalidArgumentException("Unknown checkout mode [{$mode}]."),
+            default => throw new InvalidArgumentException(
+                'The checkout mode must be a CheckoutMode or its string value; got ['.get_debug_type($mode).'].',
+            ),
+        };
 
         return CheckoutRequest::forPrices(
             items: $items,
             successUrl: is_string($successUrl) ? $successUrl : null,
             cancelUrl: is_string($cancelUrl) ? $cancelUrl : null,
-            mode: $mode instanceof CheckoutMode ? $mode : CheckoutMode::Payment,
+            mode: $mode,
             options: Arr::except($options, ['success_url', 'cancel_url', 'mode']),
         );
     }

@@ -61,6 +61,14 @@ class CheckoutRequest extends Data
             throw new InvalidArgumentException('Please provide at least one price when checking out.');
         }
 
+        foreach ($items as $price => $quantity) {
+            if ($quantity < 1) {
+                throw new InvalidArgumentException(
+                    "The quantity for price [{$price}] must be at least 1; got [{$quantity}].",
+                );
+            }
+        }
+
         return new self(
             items: $items,
             successUrl: $successUrl,
@@ -136,6 +144,13 @@ class CheckoutRequest extends Data
             throw new InvalidArgumentException(
                 "A checkout amount must be positive in minor units; got [{$this->amount}].",
             );
+        }
+
+        // An amount without a currency is not an amount. Falling back to the
+        // configured default here would charge 15.00 EUR for an intended
+        // 15.00 GBP, and the app would never learn it happened.
+        if ($this->isAmount() && $this->currency === null) {
+            throw new InvalidArgumentException('A checkout request carrying an amount must carry a currency.');
         }
 
         return $this->isAmount() ? Capability::CheckoutAmount : Capability::CheckoutPrices;
