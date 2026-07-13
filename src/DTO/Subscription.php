@@ -37,5 +37,7 @@ class Subscription extends Data
         public ?CarbonImmutable $createdAt = null,
         public ?CarbonImmutable $currentPeriodStart = null,
         public ?CarbonImmutable $currentPeriodEnd = null,
+        public ?string $pendingPrice = null,
+        public ?CarbonImmutable $pendingPriceStartsAt = null,
     ) {}
 }

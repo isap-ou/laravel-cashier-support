@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A scheduled price change now has somewhere to live.** `next_price` /
+  `next_price_starts_at` on `cashier_subscriptions`, `DTO\Subscription::$pendingPrice` /
+  `$pendingPriceStartsAt`, `Models\Subscription::hasPendingPriceChange()` /
+  `pendingPrice()` / `pendingPriceStartsAt()`, and a new
+  `Events\SubscriptionPriceChangeScheduled`.
+
+  Where a gateway defers a plan change to the end of the billing cycle, the
+  subscription stays billed on the old price — and the item row must keep naming it,
+  or the record would lie about what the customer pays. That left the requested price
+  in no column, no DTO field and no event: a *successful* swap was indistinguishable
+  from no swap, and "you'll move to Pro on 1 Aug" could not be rendered.
+
+  The scheduling event is deliberately not `SubscriptionUpdated`: nothing the customer
+  is billed on has changed yet, and a listener provisioning entitlements on "updated"
+  would grant the new plan a cycle early. `SubscriptionUpdated` still announces the
+  moment the change lands.
+
 - **A capability now gates an intent, not merely an operation.** `Capability::SubscriptionSwap`
   became `SubscriptionSwapImmediate` + `SubscriptionSwapAtPeriodEnd`, chosen by a new
   `Enums\SwapTiming` the caller passes to `swapSubscription()` (default `Immediate` —

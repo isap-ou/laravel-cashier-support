@@ -75,6 +75,8 @@ src/
 ├── Events/              # Laravel events
 │   ├── WebhookReceived.php, WebhookHandled.php
 │   ├── SubscriptionCreated/Updated/Canceled.php
+│   ├── SubscriptionRenewed.php, SubscriptionPastDue.php
+│   ├── SubscriptionPriceChangeScheduled.php   # scheduled, not yet in effect
 │   ├── PaymentSucceeded/Failed.php, RefundProcessed.php
 ├── Models/              # Abstract Eloquent
 │   ├── Subscription.php, SubscriptionItem.php
