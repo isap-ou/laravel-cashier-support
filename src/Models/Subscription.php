@@ -24,6 +24,8 @@ use Isapp\CashierSupport\Facades\Cashier;
  * @property CarbonImmutable|null $ends_at
  * @property CarbonImmutable|null $current_period_start
  * @property CarbonImmutable|null $current_period_end
+ * @property string|null $next_price
+ * @property CarbonImmutable|null $next_price_starts_at
  */
 abstract class Subscription extends Model
 {
@@ -47,6 +49,7 @@ abstract class Subscription extends Model
             'ends_at' => 'immutable_datetime',
             'current_period_start' => 'immutable_datetime',
             'current_period_end' => 'immutable_datetime',
+            'next_price_starts_at' => 'immutable_datetime',
         ];
     }
 
@@ -72,6 +75,37 @@ abstract class Subscription extends Model
     public function currentPeriodEnd(): ?CarbonImmutable
     {
         return $this->current_period_end;
+    }
+
+    /**
+     * Whether a price change has been scheduled and has not taken effect yet.
+     *
+     * The subscription is still billed on the current price — items() names it,
+     * and subscribedToPrice() keeps answering for it — until the change lands.
+     */
+    public function hasPendingPriceChange(): bool
+    {
+        return $this->next_price !== null;
+    }
+
+    /**
+     * The price the subscription will move to, once the scheduled change lands.
+     */
+    public function pendingPrice(): ?string
+    {
+        return $this->next_price;
+    }
+
+    /**
+     * When the scheduled change takes effect — normally the end of the current
+     * billing period.
+     *
+     * Null while a change is pending means the gateway scheduled it without
+     * saying when: unknown date, not absent change.
+     */
+    public function pendingPriceStartsAt(): ?CarbonImmutable
+    {
+        return $this->next_price_starts_at;
     }
 
     /**

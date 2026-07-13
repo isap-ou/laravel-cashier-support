@@ -183,6 +183,26 @@ $user->swapSubscription('default', 'price_yearly');
 $user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
 ```
 
+A deferred change needs somewhere to live. The subscription keeps being billed on
+the current price — `items()` names it, and `subscribedToPrice()` keeps answering
+for it, because that is what the customer is paying — while the price it will move
+to is recorded separately:
+
+```php
+$subscription = $user->subscription('default');
+
+if ($subscription->hasPendingPriceChange()) {
+    // "You'll move to Pro on 1 Aug"
+    $subscription->pendingPrice();          // 'price_yearly'
+    $subscription->pendingPriceStartsAt();  // CarbonImmutable|null — null means the
+                                            // gateway did not say when
+}
+```
+
+`SubscriptionPriceChangeScheduled` fires when the change is scheduled, and
+`SubscriptionUpdated` when it actually lands — so a listener that provisions
+entitlements does not grant the new plan a cycle early.
+
 **Checkout shape.** Some gateways check out a catalogue of prices, others an
 ad-hoc amount. `CheckoutRequest` names both, and the gate keys on the shape — so
 a mis-shaped request throws here, before any driver sees it:
@@ -232,9 +252,15 @@ Rendering uses `spatie/laravel-pdf`; the PDF engine is your application's choice
 ## Events
 
 `WebhookReceived`, `WebhookHandled`, `SubscriptionCreated`,
-`SubscriptionUpdated`, `SubscriptionCanceled`, `PaymentSucceeded`,
+`SubscriptionUpdated`, `SubscriptionCanceled`, `SubscriptionRenewed`,
+`SubscriptionPastDue`, `SubscriptionPriceChangeScheduled`, `PaymentSucceeded`,
 `PaymentFailed`, `RefundProcessed`. Dispatch them from your driver via
 `event(...)`.
+
+`SubscriptionPriceChangeScheduled` and `SubscriptionUpdated` are not
+interchangeable: the first says a change **will** happen at the end of the cycle,
+the second that it **has**. A listener that provisions entitlements wants the
+second, or it grants the new plan a cycle early.
 
 ## Localized enum labels
 
