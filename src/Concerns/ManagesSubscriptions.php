@@ -6,6 +6,7 @@ namespace Isapp\CashierSupport\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
@@ -23,6 +24,10 @@ use Isapp\CashierSupport\Models\Subscription as SubscriptionRecord;
  */
 trait ManagesSubscriptions
 {
+    // Subscriptions are where tax rates are consumed (create and swap), so this
+    // concern carries the tax surface rather than requiring it of every other
+    // concern — ManagesCustomer and friends stay usable on their own.
+    use HandlesTaxes;
     use InteractsWithProvider;
 
     /**
@@ -115,13 +120,21 @@ trait ManagesSubscriptions
     /**
      * Begin creating a new subscription of the given type.
      *
+     * The provider's builder is wrapped so the capabilities it exposes — a
+     * trial, today — are gated like every other operation, instead of being
+     * silently dropped by a provider that cannot honour them.
+     *
      * @param  string|array<int, string>  $prices
      */
     public function newSubscription(string $type, string|array $prices): SubscriptionBuilder
     {
         $this->ensureCashierSupports(Capability::Subscriptions);
+        $this->ensureTaxRatesSupported();
 
-        return $this->cashierProvider()->newSubscription($this, $type, $prices);
+        return new GuardedSubscriptionBuilder(
+            $this->cashierProvider()->newSubscription($this, $type, $prices),
+            $this->cashierDriver(),
+        );
     }
 
     /**
@@ -173,6 +186,7 @@ trait ManagesSubscriptions
     public function swapSubscription(string $type, string|array $prices, array $options = []): Subscription
     {
         $this->ensureCashierSupports(Capability::SubscriptionSwap);
+        $this->ensureTaxRatesSupported();
 
         return $this->cashierProvider()->swapSubscription($this, $type, $prices, $options);
     }
