@@ -12,6 +12,7 @@ use Isapp\CashierSupport\Contracts\GatewayProvider;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
+use Isapp\CashierSupport\Models\Customer as CustomerModel;
 use Isapp\CashierSupport\Models\Invoice as InvoiceModel;
 use Isapp\CashierSupport\Models\Subscription as SubscriptionModel;
 use Isapp\CashierSupport\Models\SubscriptionItem as SubscriptionItemModel;
@@ -130,6 +131,36 @@ class CashierManager extends Manager
     public function useModels(string $driver, array $models): void
     {
         $this->models[$driver] = array_merge($this->models[$driver] ?? [], $models);
+    }
+
+    /**
+     * Whether a driver has registered a model for a slot.
+     *
+     * Lets a read path answer "no record" instead of exploding: a driver that
+     * stores no customers is a legitimate driver, and asking whether a billable
+     * is a customer must not require it to register a model it never writes.
+     */
+    public function hasModel(string $slot, ?string $driver = null): bool
+    {
+        $driver ??= $this->getDefaultDriver();
+
+        if (isset($this->models[$driver][$slot])) {
+            return true;
+        }
+
+        return $driver === $this->config->get('cashier-support.default')
+            && is_string($this->config->get("cashier-support.models.{$slot}"));
+    }
+
+    /**
+     * The customer model class for a driver.
+     *
+     * @return class-string<CustomerModel>
+     */
+    public function customerModel(?string $driver = null): string
+    {
+        /** @var class-string<CustomerModel> */
+        return $this->model('customer', CustomerModel::class, $driver);
     }
 
     /**

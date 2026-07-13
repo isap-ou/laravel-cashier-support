@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The gateway customer identity is a first-class record.** New `cashier_customers`
+  table (morphed owner + `provider` + `provider_id`), abstract `Models\Customer`, a
+  `'customer'` model slot, `Billable::hasCustomerId()` / `customerId()` /
+  `createOrGetCustomer()` / `cashierCustomer()`, and a driver-facing
+  `Gateway\ManagesCustomerRecords` (sibling of `ManagesLocalInvoices`).
+
+  It previously lived as a driver-named column on the app's own users table, which
+  forbade two things **structurally**: a second driver needed a second column, and a
+  reverse lookup by customer id — which every order webhook needs — could only ever
+  search one configured class. A Team could not be billed alongside a User: its
+  order webhook resolved no owner, and its invoice was silently dropped.
+
+  `resolveOwnerByCustomerId()` is the point of the whole change: it finds the owner
+  of **any** billable type.
+
+  The **write** stays in the driver, deliberately. If `createAsCustomer()` wrote the
+  row, a driver that had not registered a `'customer'` model would start throwing the
+  moment it created a customer. Support ships the table, the model and the read API.
+  For the same reason the read API answers "no" rather than exploding when a driver
+  has registered no customer model — a driver that stores no customers is a
+  legitimate driver.
+
+
 - **A subscription knows the period it is paid through.** New nullable
   `current_period_start` / `current_period_end` columns, `Models\Subscription::currentPeriodStart()`
   / `currentPeriodEnd()` (Stripe's names), and trailing DTO fields. `ends_at` only
