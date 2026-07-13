@@ -67,6 +67,8 @@ final class GuardedSubscriptionBuilder implements SubscriptionBuilder
      */
     public function quantity(int $quantity): static
     {
+        Cashier::ensureSupports(Capability::SubscriptionQuantity, $this->driver);
+
         $this->builder = $this->builder->quantity($quantity);
 
         return $this;

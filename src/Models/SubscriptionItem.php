@@ -13,7 +13,9 @@ use Isapp\CashierSupport\Facades\Cashier;
  * Abstract local record of a single item within a subscription.
  *
  * @property string $price
- * @property int $quantity
+ * @property int|null $quantity Null when the gateway has no per-subscription
+ *                              quantity, or will not report one back. "Unknown",
+ *                              never zero and never one.
  */
 abstract class SubscriptionItem extends Model
 {
