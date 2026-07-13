@@ -28,6 +28,12 @@ use Isapp\CashierSupport\Enums\WebhookEvent;
 class FakeGateway implements GatewayProvider
 {
     /**
+     * The builder handed to the last newSubscription() call — lets a test see
+     * what a decorator actually forwarded.
+     */
+    public ?FakeSubscriptionBuilder $lastBuilder = null;
+
+    /**
      * @param  array<int, Capability>  $capabilities
      */
     public function __construct(private array $capabilities = []) {}
@@ -67,7 +73,7 @@ class FakeGateway implements GatewayProvider
 
     public function newSubscription(Model $billable, string $type, string|array $prices): SubscriptionBuilder
     {
-        return new FakeSubscriptionBuilder($type);
+        return $this->lastBuilder = new FakeSubscriptionBuilder($type);
     }
 
     public function cancelSubscription(Model $billable, string $type = 'default'): Subscription

@@ -70,6 +70,8 @@ src/
 │   ├── ManagesCustomer.php, ManagesSubscriptions.php
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php
 │   ├── PerformsCharges.php, HandlesCheckout.php, HandlesTaxes.php
+├── Builders/
+│   └── GuardedSubscriptionBuilder.php  # wraps a provider's builder, gates trials
 ├── Events/              # Laravel events
 │   ├── WebhookReceived.php, WebhookHandled.php
 │   ├── SubscriptionCreated/Updated/Canceled.php

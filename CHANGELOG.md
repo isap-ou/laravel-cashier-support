@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Breaking behaviour, deliberately:** declared tax rates are no longer silently
+  discarded. Of the 16 capabilities, `Taxes` and `SubscriptionTrials` were the
+  only two the package never gated — so an app that overrode `taxRates()` on a
+  provider without tax support got **silence**, and its configuration was thrown
+  away. Every other unsupported operation throws; these two now do too.
+  - `newSubscription()` and `swapSubscription()` throw
+    `UnsupportedOperationException` when the billable declares tax rates and the
+    provider does not declare `Capability::Taxes`. An app in that position was
+    already broken — it simply did not know it. Those two are the consumption
+    points, following Stripe Cashier, which reads `taxRates()`/`priceTaxRates()`
+    only when building or swapping a subscription: a one-off `charge()` and a
+    `checkout()` never read them, so guarding those would turn a supported,
+    tax-free operation into an outage.
+  - `trialDays()` / `trialUntil()` throw when the provider does not declare
+    `Capability::SubscriptionTrials`. The check lives in a new
+    `Builders\GuardedSubscriptionBuilder`, which `newSubscription()` wraps around
+    the provider's builder, so a driver cannot reopen the hole by forgetting to
+    guard. The return type is still the `SubscriptionBuilder` contract.
+
+  Tax rates remain a Stripe-family extension point and are **not** promoted into
+  the portable core: a Stripe tax-rate id means nothing to a gateway that models
+  tax as a percentage, and nothing at all to a Merchant-of-Record gateway. No
+  contract method was added.
+
+  Note the boundary: gating lives on the `Billable` surface, as all capability
+  gating already did. Calling a `GatewayProvider` directly is a driver-level
+  contract and is not gated.
+
 ## [1.1.0] - 2026-07-02
 
 ### Changed
