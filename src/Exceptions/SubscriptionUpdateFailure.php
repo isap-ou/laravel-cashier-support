@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Exceptions;
 
 /**
- * Thrown when a subscription update (swap, quantity change, resume) fails.
+ * Thrown when a subscription update (swap, cancel, pause, resume) fails.
+ *
+ * The failure is about the subscription's STATE — there is no such subscription,
+ * the gateway refused the change. A malformed argument (no price, more prices than
+ * the gateway bills on) is a programmer error and raises InvalidArgumentException;
+ * dressing it up as an update failure invites an app to catch its own bug.
  */
-class SubscriptionUpdateFailure extends CashierException
-{
-    /**
-     * Create the exception when swapping to an unknown price.
-     */
-    public static function invalidPrice(string $price): self
-    {
-        return new self("Cannot swap the subscription to unknown price [{$price}].");
-    }
-}
+class SubscriptionUpdateFailure extends CashierException {}

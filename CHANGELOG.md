@@ -103,6 +103,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The exception boundary is stated, and true.** `CashierException` claimed that
+  *every* exception thrown by the package and its drivers extends it. It never did:
+  a malformed argument raises SPL's `InvalidArgumentException`, here and in the
+  reference alike (`laravel/cashier`'s `Subscription::swap()`: "Please provide at
+  least one price when swapping").
+
+  The docblock now says what actually holds — a **billing** failure is catchable
+  (`catch (CashierException)` gets all of them), a **malformed argument** is a
+  programmer error to be fixed, not caught — and every gateway operation on every
+  contract now declares what it throws. `SubscriptionUpdateFailure::invalidPrice()`
+  is gone: it encoded a bad argument as an update failure, which invites an app to
+  catch its own bug.
+
+  `charge()` now enforces its own half of that boundary: a non-positive amount raises
+  `InvalidArgumentException` instead of travelling to the gateway and coming back as a
+  4xx — i.e. as a *billing* failure the app is invited to catch and swallow.
+
 - **Breaking for implementors and callers of swap/checkout.** `swapSubscription()` takes
   `SwapTiming $timing` as its third argument, ahead of `$options`; `checkout()` on the
   `CheckoutOperations` contract takes a `CheckoutRequest`; `CheckoutSession` gained

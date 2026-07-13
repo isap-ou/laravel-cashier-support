@@ -216,6 +216,26 @@ $user->checkout(CheckoutRequest::forAmount(1500, Currency::EUR, 'One coffee'));
 
 A bare price id or an items map still works — it is a price-shaped request.
 
+## Exceptions — what to catch
+
+A **billing** failure is a fact about the world: the card was declined, the gateway
+cannot pause, the customer does not exist, the API is down. The app cannot prevent
+it, so it must be able to catch it — every one of them extends `CashierException`,
+in this package and in every driver.
+
+A **malformed argument** — swapping to no price, checking out a negative amount —
+is a programmer error. It raises SPL's `InvalidArgumentException`, exactly as
+Stripe Cashier does, and is meant to be fixed rather than caught.
+
+```php
+try {
+    $user->swapSubscription('default', 'price_yearly');
+} catch (CashierException $e) {
+    // Declined, unsupported, gateway down — recoverable, show the user something.
+}
+// An InvalidArgumentException here means the call itself is wrong. Do not catch it.
+```
+
 ## Provider-defined types
 
 Some shapes are provider-specific and are expressed as **contracts**, so each
