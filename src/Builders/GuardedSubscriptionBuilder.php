@@ -11,14 +11,16 @@ use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Facades\Cashier;
 
 /**
- * Wraps a provider's subscription builder and gates the capabilities the
- * builder itself exposes.
+ * Wraps a provider's subscription builder and gates every capability the builder
+ * exposes: trials, quantity, metadata.
  *
  * The gate lives here rather than in each driver on purpose: a driver cannot
- * forget to declare a trial unsupported, because the check is not its to make.
- * Every other capability is already gated in the Billable concerns; the builder
- * was the one surface that escaped, so trialDays()/trialUntil() would silently
- * do nothing on a provider without trials.
+ * forget to declare a feature unsupported, because the check is not its to make.
+ * The builder was the one surface that escaped the gating in the Billable
+ * concerns, and each ungated setter behaved the same way — it accepted the call
+ * and the value went nowhere. A trial that does not trial, a quantity that is
+ * not billed, metadata a gateway has nowhere to put: silence, and data on the
+ * floor.
  */
 final class GuardedSubscriptionBuilder implements SubscriptionBuilder
 {
@@ -79,6 +81,8 @@ final class GuardedSubscriptionBuilder implements SubscriptionBuilder
      */
     public function withMetadata(array $metadata): static
     {
+        Cashier::ensureSupports(Capability::SubscriptionMetadata, $this->driver);
+
         $this->builder = $this->builder->withMetadata($metadata);
 
         return $this;

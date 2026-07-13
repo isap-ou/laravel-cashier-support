@@ -71,7 +71,8 @@ src/
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php
 │   ├── PerformsCharges.php, HandlesCheckout.php, HandlesTaxes.php
 ├── Builders/
-│   └── GuardedSubscriptionBuilder.php  # wraps a provider's builder, gates trials
+│   └── GuardedSubscriptionBuilder.php  # wraps a provider's builder, gates every
+│                                        # capability it exposes (trials, quantity, metadata)
 ├── Events/              # Laravel events
 │   ├── WebhookReceived.php, WebhookHandled.php
 │   ├── SubscriptionCreated/Updated/Canceled.php
@@ -117,6 +118,8 @@ enum Capability: string {
     case SubscriptionSwapImmediate = 'subscription.swap.immediate';
     case SubscriptionSwapAtPeriodEnd = 'subscription.swap.at_period_end';
     case SubscriptionTrials = 'subscription.trials';
+    case SubscriptionQuantity = 'subscription.quantity';
+    case SubscriptionMetadata = 'subscription.metadata';
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
     case PaymentMethodsDelete = 'payment_methods.delete';

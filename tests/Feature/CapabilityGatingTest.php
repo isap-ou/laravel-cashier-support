@@ -127,7 +127,7 @@ class CapabilityGatingTest extends TestCase
 
     public function test_the_guard_forwards_every_other_builder_call(): void
     {
-        $gateway = new FakeGateway([...self::BASE, Capability::SubscriptionQuantity]);
+        $gateway = new FakeGateway([...self::BASE, Capability::SubscriptionQuantity, Capability::SubscriptionMetadata]);
         Cashier::extend('fake', fn () => $gateway);
 
         $subscription = (new User)->newSubscription('default', 'price_1')
