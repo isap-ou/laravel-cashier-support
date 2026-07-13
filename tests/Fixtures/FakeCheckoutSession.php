@@ -31,6 +31,11 @@ class FakeCheckoutSession implements CheckoutSession
         return $this->url;
     }
 
+    public function clientSecret(): ?string
+    {
+        return 'secret_fake';
+    }
+
     public function expiresAt(): ?CarbonImmutable
     {
         return null;

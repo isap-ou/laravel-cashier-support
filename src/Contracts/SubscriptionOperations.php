@@ -6,6 +6,7 @@ namespace Isapp\CashierSupport\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\DTO\Subscription;
+use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 
@@ -49,11 +50,21 @@ interface SubscriptionOperations
     /**
      * Swap a subscription to one or more new prices.
      *
+     * $timing is the caller's intent, not a hint: a gateway that can only change
+     * the plan at cycle end cannot honour Immediate, and says so rather than
+     * silently deferring an upgrade the caller believed was applied.
+     *
      * @param  string|array<int, string>  $prices
      * @param  array<string, mixed>  $options
      *
      * @throws SubscriptionUpdateFailure When the swap fails.
-     * @throws UnsupportedOperationException When the provider cannot swap subscriptions.
+     * @throws UnsupportedOperationException When the provider cannot swap with this timing.
      */
-    public function swapSubscription(Model $billable, string $type, string|array $prices, array $options = []): Subscription;
+    public function swapSubscription(
+        Model $billable,
+        string $type,
+        string|array $prices,
+        SwapTiming $timing = SwapTiming::Immediate,
+        array $options = [],
+    ): Subscription;
 }

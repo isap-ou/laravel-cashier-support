@@ -112,12 +112,14 @@ enum Capability: string {
     case Subscriptions = 'subscriptions';
     case SubscriptionPause = 'subscription.pause';
     case SubscriptionResume = 'subscription.resume';
-    case SubscriptionSwap = 'subscription.swap';
+    case SubscriptionSwapImmediate = 'subscription.swap.immediate';
+    case SubscriptionSwapAtPeriodEnd = 'subscription.swap.at_period_end';
     case SubscriptionTrials = 'subscription.trials';
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
     case PaymentMethodsDelete = 'payment_methods.delete';
-    case Checkout = 'checkout';
+    case CheckoutPrices = 'checkout.prices';
+    case CheckoutAmount = 'checkout.amount';
     case Invoices = 'invoices';
     case Taxes = 'taxes';
     case Webhooks = 'webhooks';

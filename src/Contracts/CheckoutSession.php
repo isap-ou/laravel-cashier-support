@@ -39,4 +39,15 @@ interface CheckoutSession
      * When the session expires, if applicable.
      */
     public function expiresAt(): ?CarbonImmutable;
+
+    /**
+     * The secret a client-side SDK needs to take over the session, if the
+     * provider uses one.
+     *
+     * Provider-neutral rather than a special case: Stripe's embedded checkout
+     * has a client_secret, Adyen a sessionData, Braintree a client token,
+     * Revolut an order token. Without it on the contract, an app using the
+     * client-side flow has to type-hint the concrete driver class.
+     */
+    public function clientSecret(): ?string;
 }

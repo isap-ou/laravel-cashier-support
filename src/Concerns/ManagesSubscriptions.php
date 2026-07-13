@@ -10,6 +10,7 @@ use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Models\Subscription as SubscriptionRecord;
 
@@ -183,11 +184,18 @@ trait ManagesSubscriptions
      * @param  string|array<int, string>  $prices
      * @param  array<string, mixed>  $options
      */
-    public function swapSubscription(string $type, string|array $prices, array $options = []): Subscription
-    {
-        $this->ensureCashierSupports(Capability::SubscriptionSwap);
+    public function swapSubscription(
+        string $type,
+        string|array $prices,
+        SwapTiming $timing = SwapTiming::Immediate,
+        array $options = [],
+    ): Subscription {
+        // The intent is gated, not the operation: a gateway that only defers
+        // cannot honour Immediate, and must say so rather than quietly giving
+        // the caller a change that lands next month.
+        $this->ensureCashierSupports($timing->capability());
         $this->ensureTaxRatesSupported();
 
-        return $this->cashierProvider()->swapSubscription($this, $type, $prices, $options);
+        return $this->cashierProvider()->swapSubscription($this, $type, $prices, $timing, $options);
     }
 }
