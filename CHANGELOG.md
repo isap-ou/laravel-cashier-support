@@ -25,6 +25,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   2.0 driver writes `null` to it — every subscription write then fails with an
   integrity-constraint violation.
 
+### Added
+
+- **A subscription knows the period it is paid through.** New nullable
+  `current_period_start` / `current_period_end` columns, `Models\Subscription::currentPeriodStart()`
+  / `currentPeriodEnd()` (Stripe's names), and trailing DTO fields. `ends_at` only
+  ever said when *access* stops, and only on cancellation — so a live subscription
+  could not answer "when am I next billed?", nor, after a plan change scheduled at
+  cycle end, "when does the new plan start?" (the same date).
+
+  The period is **persisted**, not fetched live. Stripe can afford a live accessor
+  because the period is inline on the object it already holds; for a gateway whose
+  period sits behind a separate call, that would be a round-trip per read. `NULL`
+  means "unknown" — a gateway may expose no billing cycle at all, so this is data,
+  not a capability, and no contract method was added.
+
+- **`Events\SubscriptionRenewed`** — a paid billing cycle, carrying the invoice
+  that settled it. A plain renewal previously fired *no* subscription event at all
+  (`SubscriptionUpdated` is gated on a plan change), so an app had nothing to hang
+  "extend entitlement, send receipt" on. It is a typed event rather than a
+  `WebhookEvent` case because a gateway may not be able to classify a renewal at
+  parse time — Revolut only says "an order completed", and that it paid for a
+  cycle is learned after a refetch.
+
+- **`Events\SubscriptionPastDue`** and `WebhookEvent::SubscriptionPastDue` — a
+  failed payment is not "something changed". Dunning, grace-period warnings and
+  suspension all need their own signal instead of inferring it from
+  `SubscriptionUpdated`.
+
+- **Invoices are tied to what they paid for.** New nullable `subscription_id`,
+  `period_start`, `period_end` and `billing_reason` (`Enums\BillingReason`) on
+  `cashier_invoices`, plus `Models\Invoice::subscription()`. A renewal invoice was
+  previously unlinkable to either the subscription or the cycle — and this package
+  renders these invoices to PDF, so an invoice that cannot state its service period
+  is not a usable invoice.
+
 ### Changed
 
 - **Breaking for readers:** `quantity` on a subscription item is now nullable —

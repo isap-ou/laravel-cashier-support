@@ -17,6 +17,15 @@ class Subscription extends Data
     /**
      * @param  array<int, SubscriptionItem>  $items
      */
+    /**
+     * @param  array<int, SubscriptionItem>  $items
+     * @param  CarbonImmutable|null  $endsAt  When access stops (cancellation).
+     * @param  CarbonImmutable|null  $currentPeriodEnd  Paid through — and, while
+     *                                                  the subscription is live,
+     *                                                  the next charge date. Null
+     *                                                  when the gateway exposes no
+     *                                                  billing cycle.
+     */
     public function __construct(
         public string $id,
         public string $type,
@@ -26,5 +35,7 @@ class Subscription extends Data
         public ?CarbonImmutable $trialEndsAt = null,
         public ?CarbonImmutable $endsAt = null,
         public ?CarbonImmutable $createdAt = null,
+        public ?CarbonImmutable $currentPeriodStart = null,
+        public ?CarbonImmutable $currentPeriodEnd = null,
     ) {}
 }
