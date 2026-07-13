@@ -6,6 +6,8 @@ namespace Isapp\CashierSupport\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\DTO\Invoice;
+use Isapp\CashierSupport\Exceptions\CashierException;
+use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -18,11 +20,17 @@ interface InvoiceOperations
      *
      * @param  array<string, mixed>  $parameters
      * @return array<int, Invoice>
+     *
+     * @throws UnsupportedOperationException When the provider does not support invoices.
+     * @throws CashierException When the gateway call fails.
      */
     public function invoices(Model $billable, array $parameters = []): array;
 
     /**
      * Find a single invoice by identifier.
+     *
+     * @throws UnsupportedOperationException When the provider does not support invoices.
+     * @throws CashierException When the gateway call fails.
      */
     public function findInvoice(Model $billable, string $invoiceId): ?Invoice;
 
@@ -30,6 +38,9 @@ interface InvoiceOperations
      * Build a downloadable response (typically a PDF) for an invoice.
      *
      * @param  array<string, mixed>  $data  Additional data for rendering (seller, notes, ...).
+     *
+     * @throws UnsupportedOperationException When the provider does not support invoices.
+     * @throws CashierException When the invoice does not exist or cannot be rendered.
      */
     public function downloadInvoice(Model $billable, string $invoiceId, array $data = []): Response;
 }
