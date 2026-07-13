@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> Targets **2.0.0**. The changes below break implementers and readers, so they do
+> not belong in a minor.
+
+### Upgrading
+
+- **Republish and run the migrations.** This package *publishes* its migrations
+  (they are copied into the app, not loaded from the vendor directory), so a
+  `composer update` alone leaves the schema behind:
+
+  ```bash
+  php artisan vendor:publish --tag=cashier-support-migrations
+  php artisan migrate
+  ```
+
+  Skipping this leaves `cashier_subscription_items.quantity` `NOT NULL` while a
+  2.0 driver writes `null` to it — every subscription write then fails with an
+  integrity-constraint violation.
+
+### Changed
+
+- **Breaking for readers:** `quantity` on a subscription item is now nullable —
+  `DTO\SubscriptionItem::$quantity` is `?int` (default `null`, was `int` default
+  `1`), and a new migration makes the column nullable. `NULL` means **"unknown /
+  not applicable"** — never zero, never one. Code typed `int $q = $item->quantity`
+  must widen; the default silently changes from `1` to `null`.
+
+  Not every gateway has a per-subscription quantity. Revolut's, for one, lives on
+  the *plan variation* and is fixed when the plan is created. `NOT NULL` forced
+  its driver to either invent a value — billing a five-seat plan as one seat — or
+  refuse to write the item row at all, which left `subscribedToPrice()` false
+  forever for any subscription the builder had not created. Nullable is what lets
+  a driver record the truth.
+
+  Rows written before the migration keep their value, so a stored `1` can no
+  longer be told apart from a defaulted one.
+
+- `Capability::SubscriptionQuantity` added, and `SubscriptionBuilder::quantity()`
+  is gated on it: a provider that has no quantity concept now throws
+  `UnsupportedOperationException` instead of silently accepting a number it
+  cannot honour. The interface method stays — removing it would break every
+  caller that type-hints the contract.
+
+  **The gate denies by default.** Any driver that does not enumerate the new
+  capability — every driver written against 1.x — loses a `quantity()` call that
+  used to work. Driver authors must add `Capability::SubscriptionQuantity` to
+  `capabilities()` if their gateway really supports it. This is the second reason
+  the release is a major.
+
 ### Fixed
 
 - **Breaking behaviour, deliberately:** declared tax rates are no longer silently

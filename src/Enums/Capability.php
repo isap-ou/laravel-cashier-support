@@ -21,6 +21,7 @@ enum Capability: string
     case SubscriptionResume = 'subscription.resume';
     case SubscriptionSwap = 'subscription.swap';
     case SubscriptionTrials = 'subscription.trials';
+    case SubscriptionQuantity = 'subscription.quantity';
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
     case PaymentMethodsDelete = 'payment_methods.delete';
