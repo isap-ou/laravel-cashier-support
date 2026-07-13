@@ -65,7 +65,8 @@ src/
 │   ├── IncompletePaymentException.php, CustomerNotFoundException.php
 │   ├── InvalidConfigurationException.php, WebhookVerificationException.php
 │   ├── SubscriptionUpdateFailure.php
-│   └── UnsupportedOperationException.php  # Thrown for unsupported capabilities
+│   ├── UnsupportedOperationException.php  # Thrown for unsupported capabilities
+│   └── UnexpectedWebhookEventException.php # Gateway sent an event the driver skips
 ├── Concerns/            # Traits for Billable model
 │   ├── ManagesCustomer.php, ManagesSubscriptions.php
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php

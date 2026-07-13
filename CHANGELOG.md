@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Exceptions\UnexpectedWebhookEventException` — "the gateway sent an event this driver
+  does not handle" is provider-agnostic, and it used to be a driver-private type thrown
+  from a contract method: undeclared, and uncatchable without naming the driver.
+  `Contracts\WebhookHandler` now declares what both its methods throw, and
+  `ExceptionBoundaryTest` sweeps it too — the contract had escaped the sweep, which is
+  precisely why the hole survived.
+
 - `Capability::SubscriptionMetadata`, gating `SubscriptionBuilder::withMetadata()` — the
   last ungated method on the builder. A gateway with nowhere to put a metadata map used
   to accept the call and let the driver drop the data on the floor.
