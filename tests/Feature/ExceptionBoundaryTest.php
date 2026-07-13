@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Tests\Feature;
 
 use InvalidArgumentException;
-use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\CashierException;
@@ -134,12 +133,26 @@ class ExceptionBoundaryTest extends TestCase
     {
         $contracts = [];
 
+        // Inclusion by default. An allowlist ("*Operations, plus these two") is how
+        // WebhookHandler escaped the sweep in the first place — and how a mistyped
+        // entry escapes it silently, since ClassName::class resolves to a string
+        // whether or not the class exists. A new contract is swept unless it is
+        // named here as a value type: something that describes a result rather than
+        // performing an operation.
+        $valueTypes = [
+            'Isapp\\CashierSupport\\Contracts\\CheckoutSession',
+            'Isapp\\CashierSupport\\Contracts\\PaymentMethodType',
+            'Isapp\\CashierSupport\\Contracts\\GatewayProvider',
+        ];
+
+        foreach ($valueTypes as $excluded) {
+            $this->assertTrue(interface_exists($excluded), "[{$excluded}] is excluded from the sweep but does not exist.");
+        }
+
         foreach (glob(dirname(__DIR__, 2).'/src/Contracts/*.php') ?: [] as $file) {
             $class = 'Isapp\\CashierSupport\\Contracts\\'.basename($file, '.php');
 
-            // The operations a gateway performs — not the value types (a checkout
-            // session, a payment method type) that merely describe their results.
-            if (str_ends_with($class, 'Operations') || $class === SubscriptionBuilder::class) {
+            if (! in_array($class, $valueTypes, true)) {
                 $contracts[] = $class;
             }
         }
