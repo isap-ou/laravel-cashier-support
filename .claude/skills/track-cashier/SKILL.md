@@ -15,10 +15,23 @@ explicitly approve), because the baseline is the contract for "what we currently
 
 ## Why this exists
 
-`cashier-support` mirrors the Stripe Cashier public API 1:1 (see `CLAUDE.md`).
-When upstream adds a method, renames one, changes a signature, adds a webhook event,
-or changes a subscription status, our contracts/DTOs/enums silently fall out of parity.
+`cashier-support` *aims* to mirror the Stripe Cashier public API where that API is
+gateway-neutral. When upstream adds a method, renames one, changes a signature, adds a webhook
+event, or changes a subscription status, our contracts/DTOs/enums silently fall out of parity.
 This skill closes that gap on a cadence instead of by accident.
+
+> ⚠️ **It does not mirror it 1:1 today.** An audit on 2026-07-14 found we implement ~35% of
+> Stripe's `Billable` surface, and that `baseline.md`'s manifest describes an intended API
+> rather than the built one. **Read the warning block at the top of `baseline.md` before
+> trusting a "no drift" result** — the manifest rows marked ❌ will never report drift,
+> because there is nothing on our side to drift.
+>
+> Two consequences for a run of this skill:
+> 1. A *pre-existing* gap is not upstream drift. Do not open a new issue for something already
+>    tracked in isap-ou/laravel-cashier-support#22-#39 — cross-reference it instead.
+> 2. Whether we even want 1:1 parity is an **open question** (#39: subscription mutations were
+>    deliberately moved off the model). Do not "restore parity" on your own initiative; that
+>    decision is the user's.
 
 ## Sources of truth (in priority order — never trust training data)
 

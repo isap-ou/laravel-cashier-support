@@ -9,25 +9,28 @@ abstraction; where they differ, the difference is what a `Capability` is for.
 `mollie/laravel-cashier-mollie` is a last resort only — it builds its own local
 subscription engine, which the smart-stub rule forbids, so it is not a design authority.
 
-This package contains ONLY: interfaces, DTOs, enums, exceptions, abstract models, traits, events.
-**Zero business logic. Zero HTTP calls.**
+This package contains mostly: interfaces, DTOs, enums, exceptions, abstract models, traits, events.
+**Zero HTTP calls** (enforced by `deptrac.yaml`).
+
+It is *not* literally zero business logic — `src/Invoice/` (PDF rendering, total summation) and
+`src/Gateway/` (Eloquent reads/writes, HTTP responses) hold real behaviour. Do not repeat the
+"zero business logic" claim; it was false and it misled agents into the wrong file. See #38.
 
 Concrete implementations (`isapp/laravel-cashier-revolut`, future `-adyen`, `-wise`) are drop-in replacements for each other.
 
 ## Reference — laravel/cashier-stripe
 
-Method names are 1:1 with Stripe Cashier:
+Method names follow Stripe Cashier **where they exist**. They do not all exist — read
+"Known divergences" below before assuming a Cashier method is here.
+
+This is the API as it actually is today (verified against `src/`, 2026-07-14):
 
 ```php
 // Billable trait on User model
 $user->charge(1000, 'pm_xxx', ['currency' => 'eur']);
 $user->refund('pi_xxx');
 $user->newSubscription('default', 'price_monthly')->trialDays(14)->create();
-$user->subscription('default')->cancel();
-$user->subscription('default')->resume();
-$user->subscription('default')->swap('price_yearly');
 $user->subscribed('default');
-$user->subscribedToProduct('pro_basic');
 $user->subscribedToPrice('price_monthly');
 $user->onTrial('default');
 $user->onGracePeriod('default');
@@ -36,10 +39,23 @@ $user->createAsCustomer(['name' => '...', 'email' => '...']);
 $user->asCustomer();
 $user->defaultPaymentMethod();
 $user->addPaymentMethod('pm_xxx');
-$user->deletePaymentMethods();
 $user->invoices();
 $user->downloadInvoice('inv_xxx');
+
+// Subscription MUTATIONS live on Billable, NOT on the model — unlike Cashier.
+// `$user->subscription('default')` returns a read-only model with no mutators.
+$user->cancelSubscription('default');
+$user->cancelSubscriptionNow('default');
+$user->resumeSubscription('default');
+$user->pauseSubscription('default');
+$user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
 ```
+
+**Not implemented, despite existing in Cashier** (do not call, do not document as working):
+`$user->subscription(...)->cancel()/resume()/swap()`, `subscribedToProduct()`, `trialEndsAt()`,
+`onGenericTrial()`, `hasIncompletePayment()`, `deletePaymentMethods()`,
+`updateDefaultPaymentMethod()`, `upcomingInvoice()`, `tab()`/`invoiceFor()`, coupons/promotion
+codes, proration, quantity mutation (`incrementQuantity` etc.).
 
 ## Architecture
 
@@ -54,15 +70,17 @@ src/
 │   ├── InvoiceOperations.php
 │   ├── PaymentMethodOperations.php
 │   ├── CheckoutOperations.php
+│   ├── CheckoutSession.php          # contract, NOT a DTO — drivers return their own
+│   ├── PaymentMethodType.php        # interface over a driver-owned enum
 │   └── WebhookHandler.php
 ├── DTO/                 # Spatie Laravel Data classes
 │   ├── Customer.php, Payment.php, Subscription.php, SubscriptionItem.php
 │   ├── Invoice.php, InvoiceLine.php, PaymentMethod.php
-│   ├── Refund.php, CheckoutSession.php, WebhookPayload.php
+│   ├── Refund.php, CheckoutRequest.php, WebhookPayload.php
 ├── Enums/               # String-backed BackedEnum
 │   ├── PaymentStatus.php, SubscriptionStatus.php, Currency.php
-│   ├── PaymentMethodType.php, RefundReason.php, WebhookEvent.php
-│   ├── Interval.php, CheckoutMode.php
+│   ├── RefundReason.php, WebhookEvent.php, BillingReason.php
+│   ├── Interval.php, CheckoutMode.php, SwapTiming.php
 │   └── Capability.php               # Granular feature flags per provider
 ├── Exceptions/          # Hierarchy from CashierException
 │   ├── CashierException.php, PaymentFailedException.php
@@ -84,12 +102,14 @@ src/
 │   ├── SubscriptionRenewed.php, SubscriptionPastDue.php
 │   ├── SubscriptionPriceChangeScheduled.php   # scheduled, not yet in effect
 │   ├── PaymentSucceeded/Failed.php, RefundProcessed.php
-├── Models/              # Abstract Eloquent
-│   ├── Subscription.php, SubscriptionItem.php
+├── Models/              # Abstract Eloquent — READ-ONLY: predicates + relations, no mutators
+│   ├── Subscription.php, SubscriptionItem.php, Customer.php
 │   └── Invoice.php              # Local invoice model (provider-independent)
 ├── Invoice/                     # Invoice generation (shared, not provider-dependent)
 │   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
-│   └── InvoiceRenderer.php      # Render to PDF (dompdf/spatie-pdf)
+│   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf (#33)
+├── Gateway/                     # Traits a driver mixes in (DB reads/writes — real logic)
+│   ├── ManagesCustomerRecords.php, ManagesLocalInvoices.php
 ├── Billable.php         # Meta-trait, includes all Concerns
 ├── CashierManager.php   # Macroable driver manager + per-driver model registry
 ├── Facades/Cashier.php  # Facade over the manager
@@ -101,7 +121,9 @@ src/
 - `declare(strict_types=1)` everywhere
 - DTOs — extend `Spatie\LaravelData\Data` (`spatie/laravel-data`)
 - Enums — `string`-backed, `snake_case` values
-- Money — `int` (minor units) + `Currency` enum (no float, no money library)
+- Money — `int` (minor units) + `Currency` enum, never `float`. A money library
+  (`moneyphp/money`, as both references use) is **allowed** if a task needs one — it was left
+  out only because we had never used it, not as a ban. See #32.
 - Method names strictly from Stripe Cashier
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
 - Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`
@@ -159,7 +181,7 @@ trait ManagesSubscriptions {
 
 // App-level check
 if (Cashier::supports(Capability::SubscriptionPause)) {
-    $user->subscription('default')->pause();
+    $user->pauseSubscription('default');
 }
 ```
 
@@ -170,3 +192,65 @@ if (Cashier::supports(Capability::SubscriptionPause)) {
 Cashier::extend('revolut', fn ($app) => $app->make(RevolutGateway::class));
 Cashier::useModels('revolut', ['subscription' => RevolutSubscription::class /* ... */]);
 ```
+
+## Known divergences from the reference (audited 2026-07-14)
+
+A five-way audit compared this package against `vendor/laravel/cashier` and
+`vendor/laravel/cashier-paddle` method-by-method. Result: **~35% of Stripe's Billable surface,
+~60-65% of the gateway-neutral subset**. Conformance was scored 6/10 — the abstraction is real,
+but the subscription mutation surface was reinvented without a multi-gateway reason.
+
+**Do not "fix" any of these by inventing a local workaround — each has an open issue.**
+
+Correctness bugs (fix first; each is self-contained):
+- **#22** `SubscriptionStatus` lacks `unpaid` / `incomplete_expired`. The cast uses
+  `BackedEnum::from()`, so such a row throws `ValueError` on read. Real Stripe states.
+- **#23** No `SerializesModels` on any of the 11 events → queued listeners get a stale snapshot.
+- **#24** No unique key on `cashier_subscription_items` → a redelivered webhook duplicates rows.
+- **#25** `active()` is really Cashier's `valid()`. A `past_due` subscription in its grace period
+  still gets access; Stripe/Paddle deny it (`$deactivatePastDue = true`). No toggle exists.
+- **#26** `config('cashier-support.models.customer')` is read by `CashierManager` but absent
+  from the published config — dead branch.
+- **#27** `GuardedSubscriptionBuilder` is in no deptrac layer, so the "zero HTTP" rule misses it.
+
+Structural:
+- **#28** `GatewayProvider` is not segregated → **any** new operations method is an instant
+  BC-break for every driver. This is the root blocker: #30/#35/#36/#37 all queue behind it.
+- **#29** `Models\Subscription` has zero query scopes (the references have 17).
+- **#39** *(breaking, undecided)* Mutations live on `Billable`, not the model. **The open
+  question is whether we hold API compatibility with Cashier at all.** Until that is answered,
+  do not "restore" Cashier-style methods on the model on your own initiative.
+
+Abstraction cannot express (not "the driver lacks it" — the contract lacks it):
+- **#31** tax / discount / subtotal are absent from `DTO\Invoice` and `DTO\InvoiceLine`.
+  A VAT invoice is not representable. Coupons/promotions have no `Capability` case at all.
+- **#32** no money formatting API (`formatAmount`, `currency_locale`), and `Currency` is a
+  closed 15-value whitelist. `moneyphp/money` is an acceptable fix — the old "no money library"
+  note was habit, not a constraint.
+- **#33** `InvoiceRenderer` is a concrete class hard-bound to `spatie/laravel-pdf`, whose engine
+  (Node + headless Chrome) is only a `suggest` — PDF does not work out of the box.
+- **#34** `FakeGateway` lives in `tests/` and is not shipped → apps cannot `Cashier::fake()`.
+- **#35** `DTO\Payment` has no `clientSecret` → a 3DS/SCA payment cannot be completed.
+- **#30** `Paused` has no `paused_at` column and no pause timing → "pause at period end" is
+  not representable.
+- **#36** a customer can be created but never updated/synced.
+
+Where we are deliberately **better** than the references (keep it this way):
+signature verification is mandatory (both references skip it when the secret is unset),
+webhook throttling, transient-only retry with backoff, idempotency on a unique index,
+`SwapTiming` instead of a boolean swap flag, `CheckoutRequest` typing, PHPStan 8 + deptrac.
+
+## Navigating this package — use the graph, not grep
+
+`graphify-out/graph.json` exists (831 nodes / 1560 edges / 62 communities, AST + semantic).
+Start here instead of reading `src/` file by file:
+
+```bash
+graphify query "how does a Concern reach the gateway driver"   # scoped subgraph
+graphify explain "Capability"                                   # one concept + neighbours
+graphify path "Billable" "GatewayProvider"                      # how two things connect
+graphify affected "SubscriptionStatus"                          # what breaks if I change X
+```
+
+After changing code: `graphify update .` (AST-only, no LLM cost).
+`GRAPH_REPORT.md` is for broad architecture review only — prefer the scoped commands.
