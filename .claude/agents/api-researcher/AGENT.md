@@ -23,7 +23,9 @@ You are an API documentation researcher. Your job is to fetch and analyze **offi
 
 - Laravel Cashier Stripe: https://laravel.com/docs/12.x/billing
 - Stripe Cashier source: https://github.com/laravel/cashier-stripe
-- Mollie Cashier (fallback): https://github.com/mollie/laravel-cashier-mollie
+- Paddle Cashier (second opinion): `vendor/laravel/cashier-paddle`, read from disk
+- Mollie Cashier: last resort only — it builds a local subscription engine this package
+  forbids, so it is not a design authority. Say so when you cite it.
 - Spatie Laravel Data: https://spatie.be/docs/laravel-data
 
 ## Output format

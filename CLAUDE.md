@@ -3,7 +3,11 @@
 ## Purpose
 
 Provider-agnostic contracts for Laravel Cashier.
-**Primary reference — `laravel/cashier-stripe` v16 (Laravel 12).** Fallback — `mollie/laravel-cashier-mollie` v2.
+**Primary reference — `laravel/cashier-stripe` v16 (Laravel 12).** Second opinion —
+`laravel/cashier-paddle`: where Stripe and Paddle agree, that is the shape of the
+abstraction; where they differ, the difference is what a `Capability` is for.
+`mollie/laravel-cashier-mollie` is a last resort only — it builds its own local
+subscription engine, which the smart-stub rule forbids, so it is not a design authority.
 
 This package contains ONLY: interfaces, DTOs, enums, exceptions, abstract models, traits, events.
 **Zero business logic. Zero HTTP calls.**
@@ -103,6 +107,10 @@ src/
 - Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`
 - Concerns call `Cashier::ensureSupports(Capability)` before delegating
 - No custom workarounds for unsupported features — throw `UnsupportedOperationException`
+- Capabilities gate the caller's INTENT, and every builder setter is gated — see
+  `.claude/rules/capabilities.md`
+- Billing failure → `CashierException`; malformed argument → `InvalidArgumentException` —
+  see `.claude/rules/exceptions.md`
 
 ## Capability system
 

@@ -18,6 +18,15 @@ When a provider does not natively support a feature:
 
 If the provider API doesn't do it, the method throws. The app decides how to handle it.
 
+**"Throws" beats "quietly does nothing", every time.** An ungated setter — one that accepts
+a value the gateway has nowhere to put — is the same defect wearing a friendlier face: the
+call succeeds, the data is dropped, and the app never learns. See `capabilities.md`.
+
+**And do not half-support it.** Mapping a one-entry metadata array onto a gateway's single
+reference field would make the same call work or fail depending on how much the caller
+happened to put in the array. If the gateway has no such concept, say so and expose the
+concept it *does* have under its own name.
+
 ## Provider-independent features (NOT workarounds)
 
 Invoices are generated locally by cashier-support from payment/subscription data stored in the DB.
