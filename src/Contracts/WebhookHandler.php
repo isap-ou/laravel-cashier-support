@@ -27,19 +27,9 @@ interface WebhookHandler
     /**
      * Translate a raw provider webhook body into a normalized payload.
      *
-     * An event this driver does not map is NOT a failure and must not throw: return
-     * a payload with a null $event and the provider's native name in $rawEvent. This
-     * is the contract's half of the WebhookReceived escape hatch — while "I do not
-     * map this" was an exception, a conforming driver had to drop the event before
-     * any listener could ever see it, and no app could react to anything outside the
-     * agnostic catalogue. Deciding what to DO with an unmapped event is the caller's
-     * business; refusing to describe it is not.
-     *
      * @param  array<string, string>  $headers
      *
-     * @throws UnexpectedWebhookEventException When the body cannot be read as an event at
-     *                                         all — malformed, or naming no event. Not for
-     *                                         an event that is merely unmapped.
+     * @throws UnexpectedWebhookEventException When the event is one this driver does not handle.
      */
     public function parseWebhook(string $payload, array $headers): WebhookPayload;
 }

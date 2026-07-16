@@ -181,61 +181,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`WebhookReceived` can finally carry an event the driver never mapped.**
-  `DTO\WebhookPayload::$event` is now `?WebhookEvent` — null means "the driver did not
-  map this" — and a new required `$rawEvent` carries the provider's native event name.
+- **`WebhookReceived` / `WebhookHandled` carry the provider's raw decoded body, so an
+  event the package never mapped can finally reach a listener.** They took a typed
+  `DTO\WebhookPayload`; they now take `array $payload`, which is what both references do.
 
-  **The DTO was the escape hatch's ceiling.** Both references dispatch `WebhookReceived`
-  with a **raw array**, before any dispatch decision, precisely so an app can react to
-  events the package never mapped (`laravel/cashier`'s
-  `Http/Controllers/WebhookController.php:45`, `laravel/cashier-paddle`'s `:49`). We
-  dispatch a typed DTO instead — so an event this class could not express was an event
-  no listener could ever receive. And it could not express much: `$event` was a
-  non-nullable `WebhookEvent`, an 8-case closed enum with no case meaning "unmapped".
-  There was no valid payload to construct, so no event to dispatch.
+  **The DTO was the escape hatch's ceiling, and the ceiling was below the floor.**
+  `WebhookReceived` exists to fire for every verified webhook *before* any dispatch
+  decision, precisely so an app can react to what we never mapped — both references
+  dispatch a **raw array** there for exactly that reason
+  (`laravel/cashier`'s `Http/Controllers/WebhookController.php:45`, `-paddle`'s `:49`).
+  Ours demanded a `WebhookPayload`, whose `$event` was a non-nullable 8-case enum:
 
-  **No gateway's catalogue is a subset of eight agnostic cases**, which is what makes
-  this the contract's problem rather than any one driver's. `cashier-revolut` is the
-  measured instance: Revolut documents 22 event types and the driver maps 8, so 14
-  arrive and vanish behind a 200 — including every `DISPUTE_*`, i.e. a customer
-  disputing a charge reached no listener at all. `-adyen` and `-wise` would hit the
-  same wall.
+  ```
+  WebhookEvent::tryFrom('PAYOUT_INITIATED')  => NULL       (8 cases)
+  new WebhookPayload(event: null, id: 'x')   => TypeError
+  ```
 
-  **Null rather than a `WebhookEvent::Unknown` sentinel**, though *not* for the
-  static-analysis reason it is tempting to give: PHPStan flags a forgotten `null` arm
-  and a forgotten `Unknown` arm identically (`match.unhandled`, level 8, measured both
-  ways), and a `default =>` absorbs either. The reason is that `WebhookEvent` is a
-  catalogue of meanings a driver *asserts*, and "I did not recognise this" is not one.
-  As a case it would be a member of that set — returned by `cases()`, persisted via
-  `->value`, and reachable from a driver's `toWebhookEvent()` — so it would read as an
-  assertion in every place a real case does. Null is the absence of an assertion, which
-  is what actually happened.
+  For any event outside those 8 the payload could not be **constructed**, so there was
+  nothing to dispatch and the event was dropped behind a 200. No gateway's catalogue is
+  a subset of 8 agnostic cases, which is what made this the contract's problem rather
+  than any one driver's: `cashier-revolut` maps 8 of Revolut's 22 documented types, so
+  14 vanished — every `DISPUTE_*` among them, i.e. a customer disputing a charge reached
+  no listener at all. `-adyen` and `-wise` would have hit the same wall.
 
-  `$rawEvent` is required and has no `''` default, because an empty native name says
-  nothing while looking like an answer. It stays populated for **mapped** events too:
-  native events can share one agnostic case — three of Revolut's (`ORDER_FAILED`,
-  `ORDER_PAYMENT_DECLINED`, `ORDER_PAYMENT_FAILED`) all mean `PaymentFailed` — and the
-  distinction survives nowhere else.
+  **The typing was not paying for itself.** Nothing in this package or in any driver ever
+  read `$payload->event`. Meaning already travels on the nine **typed** events —
+  `PaymentSucceeded`, `SubscriptionCreated`, `SubscriptionRenewed` and the rest — which
+  carry the billable and a real DTO, and which a driver dispatches from its synchronizer.
+  That is the reference's split exactly: typed events for what we understand, one raw
+  event for everything that arrives. The DTO was decoration on the one channel whose
+  entire job is to not be selective.
 
-  **`WebhookHandler::parseWebhook()` changed meaning to match, and had to.** Its
-  docblock made an unmapped event an `UnexpectedWebhookEventException`, so a
-  *conforming* driver was obliged to drop it before any listener could run — widening
-  the DTO alone would have left the hatch shut for everyone following the contract. An
-  unmapped event is now a returned payload; the exception narrows to a body that cannot
-  be read as an event at all.
+  The payload is provider-shaped, and that is the honest part rather than a wart: an event
+  nobody mapped has no agnostic meaning to render, and inventing one would be the lie the
+  hatch exists to prevent. An app that wants agnostic meaning listens to the typed events.
 
-  `UnexpectedWebhookEventException::forEvent(string $event)` is replaced by
-  `::unreadableBody()`, which takes nothing: neither remaining case *has* an event name,
-  so the old factory's only surviving argument would have been `''`.
+  `DTO\WebhookPayload` is unchanged and still `WebhookHandler::parseWebhook()`'s return —
+  it is now purely a driver-side normalization, which is all it ever was in practice. That
+  method may still throw `UnexpectedWebhookEventException` for an event a driver does not
+  map: harmless now, because the hatch has already fired above it.
 
-  While here, `$data`'s docblock stopped claiming to be "provider-agnostic event data".
-  It never was — the one driver we have puts the whole raw decoded body in it, and the
-  one reader of it digs out a provider-native key. No behaviour changed; whether `$data`
-  *should* be normalized is a separate question this does not answer.
-
-  **Breaking for driver authors:** every `new WebhookPayload(...)` must pass `$rawEvent`;
-  a consumer reading `$payload->event` must handle null; `parseWebhook()` must stop
-  throwing for an unmapped event; and `forEvent()` calls become `unreadableBody()`.
+  **Breaking for anyone listening:** `$event->payload` is an `array`, not a `WebhookPayload`.
+  A listener that read `$payload->event` should listen to the typed events instead.
 
 - **`cashier_subscription_items` now constrains what it always meant.**
   `unique(subscription_id, price)` — a subscription bills a given price once.

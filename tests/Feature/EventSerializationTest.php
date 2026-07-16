@@ -13,11 +13,9 @@ use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
-use Isapp\CashierSupport\DTO\WebhookPayload;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
-use Isapp\CashierSupport\Enums\WebhookEvent;
 use Isapp\CashierSupport\Events\SubscriptionCreated;
 use Isapp\CashierSupport\Events\WebhookHandled;
 use Isapp\CashierSupport\Events\WebhookReceived;
@@ -297,7 +295,12 @@ class EventSerializationTest extends TestCase
             Payment::class,
             Refund::class,
             Invoice::class,
-            WebhookPayload::class,
+            // The raw webhook body on WebhookReceived / WebhookHandled. Listed as a
+            // decision, which is what this sweep demands: it is json_decode output, so
+            // it holds scalars and arrays and can never hold an Eloquent model —
+            // SerializesModels is not load-bearing for it. The events are still swept
+            // for round-tripping below; they are only skipped for the billable check.
+            'array',
         ], true);
     }
 
@@ -348,7 +351,7 @@ class EventSerializationTest extends TestCase
             Payment::class => $this->paymentDto(),
             Refund::class => $this->refundDto(),
             Invoice::class => $this->invoiceDto(),
-            WebhookPayload::class => $this->webhookPayload(),
+            'array' => $this->webhookBody(),
             default => $this->fail(
                 "[{$class}] takes a {$type} \${$parameter}, and this sweep has no fixture for it. "
                 .'Add one — an event must not escape the sweep by carrying an unfamiliar payload.'
@@ -386,74 +389,52 @@ class EventSerializationTest extends TestCase
         );
     }
 
-    private function webhookPayload(): WebhookPayload
+    /**
+     * A provider's decoded webhook body, of the shape json_decode actually returns.
+     *
+     * @return array<string, mixed>
+     */
+    private function webhookBody(): array
     {
-        return new WebhookPayload(
-            event: WebhookEvent::PaymentSucceeded,
-            rawEvent: 'ORDER_COMPLETED',
-            id: 'evt_1',
-            data: ['order_id' => 'ord_1'],
-        );
+        return ['event' => 'ORDER_COMPLETED', 'order_id' => 'ord_1', 'amount' => 1000];
     }
 
     /**
-     * A DTO-only event has no model to reference. This does not prove the traits
+     * A body-only event has no model to reference. This does not prove the traits
      * do anything — it pins that they do no HARM: the identity substitution must
      * leave a payload that has no model in it alone.
      *
      * Both of them, not one: the sweep skips these two by design, so this is the
      * only thing that touches them at all.
      *
-     * @param  class-string  $class
-     */
-    #[DataProvider('dtoOnlyEvents')]
-    public function test_a_dto_only_event_survives_serialization(string $class): void
-    {
-        $event = new $class(new WebhookPayload(
-            event: WebhookEvent::PaymentSucceeded,
-            rawEvent: 'ORDER_COMPLETED',
-            id: 'evt_1',
-            data: ['order_id' => 'ord_1'],
-        ));
-
-        /** @var WebhookReceived|WebhookHandled $restored */
-        $restored = unserialize(serialize($event));
-
-        $this->assertSame(WebhookEvent::PaymentSucceeded, $restored->payload->event);
-        $this->assertSame('ORDER_COMPLETED', $restored->payload->rawEvent);
-        $this->assertSame('evt_1', $restored->payload->id);
-        $this->assertSame(['order_id' => 'ord_1'], $restored->payload->data);
-    }
-
-    /**
-     * The unmapped shape has to survive the queue too, and nothing else here would
-     * have carried it: every other fixture names a WebhookEvent, so a null $event
-     * was never once serialized. WebhookReceived is a queueable listener's event —
-     * an escape hatch that only works synchronously is not one.
+     * The body is nested and mixed-type on purpose. It is the provider's, not ours,
+     * so nothing constrains its shape — and a queued listener is exactly where an
+     * over-clever serializer would flatten it.
      *
      * @param  class-string  $class
      */
-    #[DataProvider('dtoOnlyEvents')]
-    public function test_an_unmapped_event_survives_serialization(string $class): void
+    #[DataProvider('rawBodyEvents')]
+    public function test_a_raw_body_event_survives_serialization(string $class): void
     {
-        $event = new $class(new WebhookPayload(
-            event: null,
-            rawEvent: 'PAYOUT_INITIATED',
-            id: 'po_1',
-        ));
+        $body = [
+            'event' => 'DISPUTE_ACTION_REQUIRED',
+            'id' => 'dis_1',
+            'nested' => ['reason' => 'fraud', 'amount' => 1000, 'evidence_due' => null],
+            'flagged' => true,
+        ];
+
+        $event = new $class($body);
 
         /** @var WebhookReceived|WebhookHandled $restored */
         $restored = unserialize(serialize($event));
 
-        $this->assertNull($restored->payload->event);
-        $this->assertSame('PAYOUT_INITIATED', $restored->payload->rawEvent);
-        $this->assertSame('po_1', $restored->payload->id);
+        $this->assertSame($body, $restored->payload);
     }
 
     /**
      * @return array<string, array{class-string}>
      */
-    public static function dtoOnlyEvents(): array
+    public static function rawBodyEvents(): array
     {
         return [
             'WebhookReceived' => [WebhookReceived::class],
