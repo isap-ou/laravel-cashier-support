@@ -246,15 +246,29 @@ webhook throttling, transient-only retry with backoff, idempotency on a unique i
 
 ## Navigating this package — use the graph, not grep
 
-`graphify-out/graph.json` exists (831 nodes / 1560 edges / 62 communities, AST + semantic).
-Start here instead of reading `src/` file by file:
+`graphify-out/` is a **local build artifact and is not in git** — a fresh clone has no graph
+until you build one. Once `graphify-out/graph.json` exists, start there instead of reading
+`src/` file by file:
 
 ```bash
+graphify update .                                               # build/refresh it (AST, seconds)
 graphify query "how does a Concern reach the gateway driver"   # scoped subgraph
 graphify explain "Capability"                                   # one concept + neighbours
 graphify path "Billable" "GatewayProvider"                      # how two things connect
 graphify affected "SubscriptionStatus"                          # what breaks if I change X
 ```
 
-After changing code: `graphify update .` (AST-only, no LLM cost).
+`graphify update` builds the AST layer only — no API key, no cost. The semantic layer
+(INFERRED edges, hyperedges, community names) needs an LLM: `graphify extract . --mode deep`
+with a backend key set (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, …), or without one graphify
+leaves `Community N` placeholders. Everything works without it; the queries are just blunter.
+
+The last semantically-built graph is still in git history if you want it back rather than
+rebuilt: `git show cd9a034:graphify-out/graph.json > graphify-out/graph.json`. It reflects the
+code as of that commit — run `graphify update .` after to bring the AST layer forward.
+
+Do not commit `graphify-out/`. It used to be tracked so a clone could inherit the semantic
+layer; the post-commit hook rebuilds without a key and the rebuild is lossy, so tracking
+eroded that layer commit by commit while adding ~27k lines of diff to unrelated PRs.
+
 `GRAPH_REPORT.md` is for broad architecture review only — prefer the scoped commands.
