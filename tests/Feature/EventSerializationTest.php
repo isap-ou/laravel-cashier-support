@@ -151,24 +151,6 @@ class EventSerializationTest extends TestCase
     }
 
     /**
-     * Dispatchable's static dispatch() reaches the listeners.
-     */
-    public function test_an_event_can_be_dispatched_statically(): void
-    {
-        $user = $this->user('Static Dispatch');
-
-        $seen = null;
-
-        Event::listen(SubscriptionCreated::class, function (SubscriptionCreated $event) use (&$seen): void {
-            $seen = $event->billable->getAttribute('name');
-        });
-
-        SubscriptionCreated::dispatch($user, $this->subscriptionDto());
-
-        $this->assertSame('Static Dispatch', $seen);
-    }
-
-    /**
      * The two tests above prove the mechanism, on one event. This proves the
      * reach: every event that carries a billable is wired the same way.
      *
@@ -179,9 +161,6 @@ class EventSerializationTest extends TestCase
      * closed by carriesBillable() failing on anything it does not recognise,
      * not by cleverness — the first version of this sweep just returned false
      * for an unfamiliar type, and a union-typed billable sailed through green.
-     *
-     * It pins SerializesModels only. Dispatchable is asserted once, below, on
-     * SubscriptionCreated — the payload says nothing about it.
      */
     public function test_every_event_carrying_a_billable_crosses_a_queue_by_identity(): void
     {

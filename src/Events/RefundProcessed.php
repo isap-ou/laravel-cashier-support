@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Events;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Isapp\CashierSupport\DTO\Refund;
 
@@ -14,7 +13,7 @@ use Isapp\CashierSupport\DTO\Refund;
  */
 class RefundProcessed
 {
-    use Dispatchable, SerializesModels;
+    use SerializesModels;
 
     public function __construct(
         public readonly Model $billable,
