@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Feature;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Str;
 use Isapp\CashierSupport\Enums\Currency;
@@ -78,6 +79,71 @@ class MigrationsTest extends TestCase
 
         // Inverse relation resolves the concrete class via the registry too.
         $this->assertInstanceOf(ConcreteSubscription::class, $item->subscription()->first());
+    }
+
+    public function test_a_price_cannot_be_billed_twice_on_one_subscription(): void
+    {
+        $subscription = ConcreteSubscription::create([
+            'owner_type' => User::class,
+            'owner_id' => 1,
+            'type' => 'default',
+            'provider' => 'fake',
+            'provider_id' => 'sub_ext',
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $subscription->items()->create(['provider' => 'fake', 'price' => 'price_monthly']);
+
+        // The table is shared by every driver, and a driver that misses the row
+        // on a redelivered webhook would insert a second one. Nothing downstream
+        // notices: subscribedToPrice() (ManagesSubscriptions.php:118) just sees
+        // the price twice and still returns true, so the duplicate is silent.
+        $this->expectException(QueryException::class);
+
+        $subscription->items()->create(['provider' => 'fake', 'price' => 'price_monthly']);
+    }
+
+    public function test_a_subscription_may_still_carry_several_distinct_prices(): void
+    {
+        $subscription = ConcreteSubscription::create([
+            'owner_type' => User::class,
+            'owner_id' => 1,
+            'type' => 'default',
+            'provider' => 'fake',
+            'provider_id' => 'sub_ext',
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        // The constraint is on the pair, not on subscription_id. A multi-item
+        // subscription is the normal case for a Stripe-shaped driver, and the
+        // unique key must not be the thing that forbids it.
+        $subscription->items()->create(['provider' => 'fake', 'price' => 'price_monthly']);
+        $subscription->items()->create(['provider' => 'fake', 'price' => 'price_seats']);
+
+        $this->assertCount(2, $subscription->refresh()->items);
+    }
+
+    public function test_the_same_price_may_be_billed_on_two_different_subscriptions(): void
+    {
+        $prices = [];
+
+        foreach (['sub_a', 'sub_b'] as $providerId) {
+            $subscription = ConcreteSubscription::create([
+                'owner_type' => User::class,
+                'owner_id' => 1,
+                'type' => $providerId,
+                'provider' => 'fake',
+                'provider_id' => $providerId,
+                'status' => SubscriptionStatus::Active,
+            ]);
+
+            $subscription->items()->create(['provider' => 'fake', 'price' => 'price_monthly']);
+
+            $prices[] = $subscription->refresh()->items->pluck('price')->all();
+        }
+
+        // Two customers on the same plan is not a conflict.
+        $this->assertSame([['price_monthly'], ['price_monthly']], $prices);
     }
 
     public function test_invoice_schema_matches_the_model(): void

@@ -18,6 +18,11 @@ return new class extends Migration
             $table->string('price');
             $table->integer('quantity')->default(1);
             $table->timestamps();
+
+            // A subscription bills a given price once. The pair — not
+            // subscription_id alone — because the table stays multi-item for
+            // drivers whose subscriptions carry several distinct prices.
+            $table->unique(['subscription_id', 'price']);
         });
     }
 
