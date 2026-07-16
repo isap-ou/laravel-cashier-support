@@ -19,11 +19,13 @@ use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\WebhookEvent;
 use Isapp\CashierSupport\Events\SubscriptionCreated;
+use Isapp\CashierSupport\Events\WebhookHandled;
 use Isapp\CashierSupport\Events\WebhookReceived;
 use Isapp\CashierSupport\Tests\Fixtures\QueuedEventProbe;
 use Isapp\CashierSupport\Tests\Fixtures\RecordingBillableListener;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -174,8 +176,14 @@ class EventSerializationTest extends TestCase
      *
      * Swept over src/Events/ rather than listed — inclusion by default, as
      * ExceptionBoundaryTest sweeps the contracts. An event added later is
-     * covered the moment it exists, and an event carrying a payload this
-     * sweep cannot build fails loudly instead of quietly opting out.
+     * covered the moment it exists, and one this sweep cannot classify fails
+     * loudly instead of quietly opting out. Note what that costs: the exit is
+     * closed by carriesBillable() failing on anything it does not recognise,
+     * not by cleverness — the first version of this sweep just returned false
+     * for an unfamiliar type, and a union-typed billable sailed through green.
+     *
+     * It pins SerializesModels only. Dispatchable is asserted once, below, on
+     * SubscriptionCreated — the payload says nothing about it.
      */
     public function test_every_event_carrying_a_billable_crosses_a_queue_by_identity(): void
     {
@@ -236,19 +244,61 @@ class EventSerializationTest extends TestCase
      * Whether the event holds an Eloquent model, i.e. whether SerializesModels
      * is load-bearing for it rather than merely present.
      *
+     * Every parameter must be classifiable, and an unfamiliar type fails here
+     * rather than returning false: "no billable" and "I could not tell" look
+     * identical from outside, and the second one is how an event slips out of
+     * the sweep while the suite stays green. A union-typed billable and an
+     * Eloquent Collection both used to take that exit.
+     *
      * @param  class-string  $class
      */
     private function carriesBillable(string $class): bool
     {
+        $carries = false;
+
         foreach ($this->constructorParameters($class) as $parameter) {
             $type = $parameter->getType();
 
-            if ($type instanceof ReflectionNamedType && is_a($type->getName(), Model::class, true)) {
-                return true;
+            if (! $type instanceof ReflectionNamedType) {
+                $this->fail(
+                    "[{$class}] parameter \${$parameter->getName()} is not a single named type. "
+                    .'This sweep cannot tell whether it carries a billable, so it must not guess — '
+                    .'classify it here.'
+                );
+            }
+
+            if (is_a($type->getName(), Model::class, true)) {
+                $carries = true;
+
+                continue;
+            }
+
+            if (! $this->hasFixtureFor($type->getName())) {
+                $this->fail(
+                    "[{$class}] parameter \${$parameter->getName()} is a {$type->getName()}, which "
+                    .'this sweep does not know. If it can carry an Eloquent model — a Collection, '
+                    .'say — then SerializesModels is load-bearing and this event must be swept. '
+                    .'Add a fixture either way, so that skipping is a decision and not an accident.'
+                );
             }
         }
 
-        return false;
+        return $carries;
+    }
+
+    /**
+     * The types this sweep can stand in for. Kept beside fixtureFor() on purpose:
+     * the two must agree, or an event skips for a reason nobody chose.
+     */
+    private function hasFixtureFor(string $type): bool
+    {
+        return in_array($type, [
+            Subscription::class,
+            Payment::class,
+            Refund::class,
+            Invoice::class,
+            WebhookPayload::class,
+        ], true);
     }
 
     /**
@@ -349,20 +399,37 @@ class EventSerializationTest extends TestCase
      * A DTO-only event has no model to reference. This does not prove the traits
      * do anything — it pins that they do no HARM: the identity substitution must
      * leave a payload that has no model in it alone.
+     *
+     * Both of them, not one: the sweep skips these two by design, so this is the
+     * only thing that touches them at all.
+     *
+     * @param  class-string  $class
      */
-    public function test_a_dto_only_event_survives_serialization(): void
+    #[DataProvider('dtoOnlyEvents')]
+    public function test_a_dto_only_event_survives_serialization(string $class): void
     {
-        $event = new WebhookReceived(new WebhookPayload(
+        $event = new $class(new WebhookPayload(
             event: WebhookEvent::PaymentSucceeded,
             id: 'evt_1',
             data: ['order_id' => 'ord_1'],
         ));
 
-        /** @var WebhookReceived $restored */
+        /** @var WebhookReceived|WebhookHandled $restored */
         $restored = unserialize(serialize($event));
 
         $this->assertSame(WebhookEvent::PaymentSucceeded, $restored->payload->event);
         $this->assertSame('evt_1', $restored->payload->id);
         $this->assertSame(['order_id' => 'ord_1'], $restored->payload->data);
+    }
+
+    /**
+     * @return array<string, array{class-string}>
+     */
+    public static function dtoOnlyEvents(): array
+    {
+        return [
+            'WebhookReceived' => [WebhookReceived::class],
+            'WebhookHandled' => [WebhookHandled::class],
+        ];
     }
 }

@@ -107,7 +107,7 @@ src/
 │   └── Invoice.php              # Local invoice model (provider-independent)
 ├── Invoice/                     # Invoice generation (shared, not provider-dependent)
 │   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
-│   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf (#33)
+│   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf
 ├── Gateway/                     # Traits a driver mixes in (DB reads/writes — real logic)
 │   ├── ManagesCustomerRecords.php, ManagesLocalInvoices.php
 ├── Billable.php         # Meta-trait, includes all Concerns
@@ -213,9 +213,13 @@ gh issue list --repo isap-ou/laravel-cashier-support   # what is open, right now
 
 **That command is the status; this section is not.** It describes the *shape* of the gaps, which
 outlives any one issue, and it deliberately does not enumerate them: a list of tickets copied
-into a doc is a second source of truth that drifts silently, and always in the reader's favour.
-This file cannot know an issue was closed. It is also the file with no test over it — #38 exists
-because it once described an API that did not exist.
+into a doc is a second source of truth, and this file cannot know an issue was closed. It is the
+file with no test over it — #38 exists because it once described an API that did not exist, and
+the fifteen bullets that stood here had already drifted two issues short of the tracker.
+
+Closing a ticket no longer means editing a list. It may still touch a doc that describes the code
+that ticket changes — #33 turns `InvoiceRenderer` into an interface, and the architecture map above
+says it is a concrete class, so the map moves with it. That is the map doing its job.
 
 Three things are worth knowing before you plan, because they decide what work is even possible:
 
