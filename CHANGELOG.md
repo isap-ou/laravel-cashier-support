@@ -181,6 +181,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Publishing `cashier-support.models.*` now overrides the driver's models — including
+  `customer`, which the array never named.** Two defects, and fixing either alone would
+  have left the feature as decorative as it was:
+
+  The `models` array named `subscription`, `subscription_item` and `invoice`, but
+  `CashierManager::model()` resolves **four** slots. `customer` was one the manager read and
+  the config never offered, so an app had to reach for `Cashier::useModels()` — the driver's
+  mechanism, not the app's. The default is `null`, matching the other three; it may **not**
+  be the abstract `Models\Customer`, because the override is gated on
+  `is_subclass_of($class, $abstract)`, false when the two are the same class, so an abstract
+  default would make a stock install throw on first use.
+
+  More to the point, **the config outranks the driver's registry now; before, it lost to
+  it.** `model()` read the registry first and consulted config only when the registry held
+  nothing for that slot — so for every slot a driver *did* register, the published value was
+  unreachable. cashier-revolut registers all four, so in a cashier-revolut install
+  publishing the config changed nothing whatsoever. The config was reachable only for a slot
+  its driver left empty, which `hasModel()`'s own docblock contemplates ("a driver that
+  stores no customers is a legitimate driver") — so the feature worked precisely where the
+  app was least likely to need it, and not where it was. Adding the missing `customer` key
+  without this would have shipped a fourth line just as unreachable as the other three.
+
+  A config value that is named but unusable now **fails** instead of falling through to the
+  driver, and says which of the two is at fault — an override that loses silently is the
+  same defect as one that is never read, and blaming the driver for the app's typo is how an
+  afternoon gets lost.
+
+  `tests/Feature/ModelConfigOverrideTest.php` covers all four slots, the precedence, and
+  both failure paths. No test had ever supplied a value *through* the config. It asserts the
+  published array against the **file**, not the container: `config()->set()` creates the key
+  whether or not the stub declares it, so a runtime-override test alone would have stayed
+  green through the entire lifetime of this bug. (#26)
+
 - **A queued listener no longer grants access on a stale snapshot.** All 11 events in
   `src/Events/` now `use Dispatchable, SerializesModels;`, as every event in both
   references does (`laravel/cashier`'s `Events\WebhookReceived`, `cashier-paddle`'s

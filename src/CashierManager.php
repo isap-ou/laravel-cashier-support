@@ -197,30 +197,67 @@ class CashierManager extends Manager
     }
 
     /**
-     * Resolve a model slot from the driver registry. The published
-     * cashier-support.models.* config acts as an app-level override for the
-     * DEFAULT driver only — it must never bleed one driver's models into
-     * another.
+     * Resolve a model slot. The published cashier-support.models.* config is
+     * the app's override and OUTRANKS the driver's registry, for the DEFAULT
+     * driver only — it must never bleed one driver's models into another.
+     *
+     * The order is the whole point. A driver registers all of its slots from
+     * its service provider, so consulting the registry first made the config a
+     * fallback that could only ever apply when no driver had registered
+     * anything: publishing the config changed nothing in any real install,
+     * which is what the app publishes it to do.
      *
      * @param  class-string<Model>  $abstract  The abstract model the slot must extend.
      * @return class-string<Model>
      *
-     * @throws InvalidConfigurationException When the driver registered nothing for the slot.
+     * @throws InvalidConfigurationException When neither the config nor the driver names a usable class.
      */
     protected function model(string $slot, string $abstract, ?string $driver = null): string
     {
         $driver ??= $this->getDefaultDriver();
 
-        $class = $this->models[$driver][$slot] ?? null;
+        // The config is the app's override for the driver it named as default,
+        // and only that one — another driver's models are its own business.
+        $readsConfig = $driver === $this->config->get('cashier-support.default');
 
-        if ($class === null && $driver === $this->config->get('cashier-support.default')) {
+        $class = null;
+        $fromConfig = false;
+
+        if ($readsConfig) {
             $configured = $this->config->get("cashier-support.models.{$slot}");
-            $class = is_string($configured) ? $configured : null;
+
+            if (is_string($configured)) {
+                $class = $configured;
+                $fromConfig = true;
+            }
         }
 
+        // Only when the app named nothing. A config value that IS named but
+        // unusable falls through to the guard below rather than to the driver:
+        // an override that loses silently is the same defect as one that is
+        // never read.
+        $class ??= $this->models[$driver][$slot] ?? null;
+
         if (! is_string($class) || ! is_subclass_of($class, $abstract)) {
+            // Two different mistakes reach this line, and blaming the driver
+            // for the app's is how an afternoon gets lost. Which one it was is
+            // remembered rather than re-derived: asking "does $class equal the
+            // config value?" would misattribute a driver that registered the
+            // very class the config happens to name.
+            if ($fromConfig) {
+                throw new InvalidConfigurationException(
+                    "The [cashier-support.models.{$slot}] config names [{$class}], which does not extend [{$abstract}].",
+                );
+            }
+
+            // Only offer the config to a caller the config can actually help.
+            // Advice that cannot work costs the reader the time to try it.
+            $orConfig = $readsConfig
+                ? ", or set [cashier-support.models.{$slot}] in the published config"
+                : '';
+
             throw new InvalidConfigurationException(
-                "The [{$driver}] driver has not registered a [{$slot}] model — call Cashier::useModels('{$driver}', [...]) in its service provider.",
+                "The [{$driver}] driver has not registered a [{$slot}] model — call Cashier::useModels('{$driver}', [...]) in its service provider{$orConfig}.",
             );
         }
 
