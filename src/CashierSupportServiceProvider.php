@@ -6,6 +6,7 @@ namespace Isapp\CashierSupport;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\ServiceProvider;
+use Isapp\CashierSupport\Console\WebhookCommand;
 
 class CashierSupportServiceProvider extends ServiceProvider
 {
@@ -18,10 +19,15 @@ class CashierSupportServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadRoutesFrom(__DIR__.'/../routes/webhook.php');
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'cashier-support');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'cashier-support');
 
         if ($this->app->runningInConsole()) {
+            $this->commands([
+                WebhookCommand::class,
+            ]);
+
             $this->publishesMigrations([
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'cashier-support-migrations');

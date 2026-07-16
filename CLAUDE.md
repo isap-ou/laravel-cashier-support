@@ -10,7 +10,10 @@ abstraction; where they differ, the difference is what a `Capability` is for.
 subscription engine, which the smart-stub rule forbids, so it is not a design authority.
 
 This package contains mostly: interfaces, DTOs, enums, exceptions, abstract models, traits, events.
-**Zero HTTP calls** (enforced by `deptrac.yaml`).
+**Zero *outbound* HTTP** (enforced by `deptrac.yaml`, whose `HttpClient` layer is unreachable) —
+which is not the same as no HTTP: `src/Http/Controllers/WebhookController.php` is the webhook
+entry point for every driver, and `routes/webhook.php` mounts it. The rule is that this package
+never *calls* a gateway; being called by one is different, and it is deliberate (#47).
 
 It is *not* literally zero business logic — `src/Invoice/` (PDF rendering, total summation) and
 `src/Gateway/` (Eloquent reads/writes, HTTP responses) hold real behaviour. Do not repeat the
@@ -72,14 +75,16 @@ src/
 │   ├── CheckoutOperations.php
 │   ├── CheckoutSession.php          # contract, NOT a DTO — drivers return their own
 │   ├── PaymentMethodType.php        # interface over a driver-owned enum
-│   └── WebhookHandler.php
+│   ├── WebhookHandler.php           # one method: webhook() → IncomingWebhook
+│   ├── IncomingWebhook.php          # one delivery: parse() then pipeline(): bool
+│   └── RegistersWebhooks.php        # opt-in: gateways that create endpoints via API
 ├── DTO/                 # Spatie Laravel Data classes
 │   ├── Customer.php, Payment.php, Subscription.php, SubscriptionItem.php
 │   ├── Invoice.php, InvoiceLine.php, PaymentMethod.php
-│   ├── Refund.php, CheckoutRequest.php, WebhookPayload.php
+│   ├── Refund.php, CheckoutRequest.php, WebhookRegistration.php
 ├── Enums/               # String-backed BackedEnum
 │   ├── PaymentStatus.php, SubscriptionStatus.php, Currency.php
-│   ├── RefundReason.php, WebhookEvent.php, BillingReason.php
+│   ├── RefundReason.php, BillingReason.php
 │   ├── Interval.php, CheckoutMode.php, SwapTiming.php
 │   └── Capability.php               # Granular feature flags per provider
 ├── Exceptions/          # Hierarchy from CashierException
@@ -110,6 +115,10 @@ src/
 │   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf
 ├── Gateway/                     # Traits a driver mixes in (DB reads/writes — real logic)
 │   ├── ManagesCustomerRecords.php, ManagesLocalInvoices.php
+├── Http/Controllers/            # The webhook entry point for EVERY driver
+│   └── WebhookController.php    # routes/webhook.php → webhook/cashier/{provider}
+├── Console/
+│   └── WebhookCommand.php       # php artisan cashier:webhook {provider?}
 ├── Billable.php         # Meta-trait, includes all Concerns
 ├── CashierManager.php   # Macroable driver manager + per-driver model registry
 ├── Facades/Cashier.php  # Facade over the manager

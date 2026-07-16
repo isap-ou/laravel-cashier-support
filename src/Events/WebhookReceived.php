@@ -28,15 +28,30 @@ use Illuminate\Queue\SerializesModels;
  * and a real DTO. Typed events for what we understand, one raw event for everything
  * that arrives: that split is the reference's, and it is why no production code ever
  * branched on the old $payload->event.
+ *
+ * $provider is what makes that array readable. Both references answer "whose webhook
+ * is this?" with the class itself — Laravel\Cashier\Events\WebhookReceived and
+ * Laravel\Paddle\Events\WebhookReceived are different types in different namespaces,
+ * and the two packages cannot even be installed side by side. We have ONE shared
+ * event for every driver, so the discriminator they get for free had to be put back
+ * by hand. Without it an app receives a provider-shaped array with no way to tell
+ * whose shape it is — invisible with one driver installed, and a guessing game with
+ * two.
+ *
+ * Dispatched by this package's WebhookController, never by a driver: the ordering
+ * (verified, decoded, and above everything that interprets the body) is exactly what
+ * a driver used to get wrong. See Contracts\IncomingWebhook.
  */
 class WebhookReceived
 {
     use Dispatchable, SerializesModels;
 
     /**
+     * @param  string  $provider  The driver name this delivery arrived for, as registered with Cashier::extend().
      * @param  array<string, mixed>  $payload  The provider's decoded webhook body, as sent.
      */
     public function __construct(
+        public readonly string $provider,
         public readonly array $payload,
     ) {}
 }

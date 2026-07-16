@@ -26,12 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while gating `past_due` and `incomplete` behind `$deactivatePastDue` /
   `$deactivateIncomplete`. Those two, and the toggles, are #25 and are untouched here. (#22)
 
-- `Exceptions\UnexpectedWebhookEventException` — "the gateway sent an event this driver
-  does not handle" is provider-agnostic, and it used to be a driver-private type thrown
-  from a contract method: undeclared, and uncatchable without naming the driver.
-  `Contracts\WebhookHandler` now declares what both its methods throw, and
-  `ExceptionBoundaryTest` sweeps it too — the contract had escaped the sweep, which is
-  precisely why the hole survived.
+- `Exceptions\UnexpectedWebhookEventException` — "the gateway sent a body this driver
+  cannot read as an event" is provider-agnostic, and it used to be a driver-private type
+  thrown from a contract method: undeclared, and uncatchable without naming the driver.
+  `Contracts\IncomingWebhook` declares what each of its methods throws, and
+  `ExceptionBoundaryTest` sweeps it — the webhook contract had escaped that sweep, which
+  is precisely why the hole survived.
 
 - `Capability::SubscriptionMetadata`, gating `SubscriptionBuilder::withMetadata()` — the
   last ungated method on the builder. A gateway with nowhere to put a metadata map used
@@ -108,15 +108,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Events\SubscriptionRenewed`** — a paid billing cycle, carrying the invoice
   that settled it. A plain renewal previously fired *no* subscription event at all
   (`SubscriptionUpdated` is gated on a plan change), so an app had nothing to hang
-  "extend entitlement, send receipt" on. It is a typed event rather than a
-  `WebhookEvent` case because a gateway may not be able to classify a renewal at
-  parse time — Revolut only says "an order completed", and that it paid for a
-  cycle is learned after a refetch.
+  "extend entitlement, send receipt" on. It is a typed event because a gateway may not
+  be able to classify a renewal at parse time — Revolut only says "an order completed",
+  and that it paid for a cycle is learned after a refetch.
 
-- **`Events\SubscriptionPastDue`** and `WebhookEvent::SubscriptionPastDue` — a
-  failed payment is not "something changed". Dunning, grace-period warnings and
-  suspension all need their own signal instead of inferring it from
-  `SubscriptionUpdated`.
+- **`Events\SubscriptionPastDue`** — a failed payment is not "something changed".
+  Dunning, grace-period warnings and suspension all need their own signal instead of
+  inferring it from `SubscriptionUpdated`.
 
 - **Invoices are tied to what they paid for.** New nullable `subscription_id`,
   `period_start`, `period_end` and `billing_reason` (`Enums\BillingReason`) on
@@ -124,6 +122,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously unlinkable to either the subscription or the cycle — and this package
   renders these invoices to PDF, so an invoice that cannot state its service period
   is not a usable invoice.
+
+- **`php artisan cashier:webhook {provider?}`** registers this app's endpoint with a
+  gateway, replacing a per-driver command. It takes the URL from the **named route**
+  (`route('cashier.webhook', ['provider' => ...])`), never from config — a driver's own
+  command built it from its own config key, and a key that drifts from the route
+  registers a webhook the gateway gets a 404 from on every delivery: no error, no log,
+  subscriptions simply stop updating. Stripe already does it this way. (#48)
+
+  A driver opts in by implementing **`Contracts\RegistersWebhooks`**, and the choice of an
+  interface over a `Capability` is the references' own disagreement made structural:
+  Stripe ships `cashier:webhook` because it has an API for creating endpoints; Paddle
+  ships no `Console` directory at all because it does not. Not implementing the interface
+  *is* the declaration, and unlike a flag it cannot disagree with the fact. A driver that
+  cannot register says so and exits non-zero rather than pretending.
+
+  It returns **`DTO\WebhookRegistration`**, whose `$secret` is nullable because the
+  gateways genuinely differ: Revolut returns a signing secret once and never again, while
+  Stripe returns none and sends you to the dashboard. `null` means exactly "this gateway
+  does not hand it back here" — a driver that expected one and did not get it throws, so
+  the operator learns the endpoint exists and needs cleaning up. Not a plain string: a
+  Stripe-shaped driver would return `''`, and an empty string meaning "no such thing" is
+  the sentinel this package removed from its webhook payload in the first place.
+
+- `CashierManager::registeredDrivers()` — the names a provider package registered.
+  `Manager::getDrivers()` cannot answer it: that returns already-resolved instances, so it
+  is empty until something resolves one.
 
 ### Changed
 
@@ -181,58 +205,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`WebhookReceived` / `WebhookHandled` carry the provider's raw decoded body, so an
-  event the package never mapped *can* be dispatched at all.** They took a typed
-  `DTO\WebhookPayload`; they now take `array $payload`, which is what both references do.
+- **An event the package never mapped now reaches a listener, and no driver can get that
+  wrong again.** The webhook entry point moved into this package: one route,
+  `webhook/cashier/{provider}`, one controller, and one contract method per driver.
+  (#42, #46, #47, #48)
 
-  This is the half of the fix that lives here, and on its own it changes nothing an app
-  can see: it removes the blocker. A driver must also dispatch `WebhookReceived` **above**
-  its parse step — that is now the contract's expectation of a driver, and
-  `cashier-revolut`'s #24 is the matching change.
+  **This was an ordering bug, and ordering was the wrong thing to leave to drivers.**
+  `WebhookReceived` exists to fire for every verified webhook *before* any decision about
+  what it means, precisely so an app can react to what we never mapped. In a driver's own
+  controller it sat *below* the parse step — which threw for exactly the events the hatch
+  existed for, so they reached nobody and vanished behind a 200. `cashier-revolut` maps 8
+  of Revolut's 22 documented event types, so 14 disappeared, every `DISPUTE_*` among them:
+  a customer disputing a charge reached no listener at all. Of the five things that
+  driver's controller did, **one** was gateway-specific; the other four were copied
+  generic steps, and each new driver got a fresh chance to interleave them wrong.
+  `-adyen` and `-wise` would have had the same chance. Now the order lives here, once.
 
-  **The DTO was the escape hatch's ceiling, and the ceiling was below the floor.**
-  `WebhookReceived` exists to fire for every verified webhook *before* any dispatch
-  decision, precisely so an app can react to what we never mapped — both references
-  dispatch a **raw array** there for exactly that reason
-  (`laravel/cashier`'s `Http/Controllers/WebhookController.php:45`, `-paddle`'s `:49`).
-  Ours demanded a `WebhookPayload`, whose `$event` was a non-nullable 8-case enum:
+  **`Contracts\WebhookHandler` is one method**: `webhook(string $content, array $headers):
+  IncomingWebhook`. The delivery it returns has two, and the controller calls them around
+  the hatch — `parse()` verifies and reads the body, then `WebhookReceived`, then
+  `pipeline()` applies it. That mirrors the reference step for step
+  (`laravel/cashier`'s `Http/Controllers/WebhookController.php:42-58`).
 
-  ```
-  WebhookEvent::tryFrom('PAYOUT_INITIATED')  => NULL       (8 cases)
-  new WebhookPayload(event: null, id: 'x')   => TypeError
-  ```
+  **`pipeline()` returns `bool`, and the rule it carries replaces the ordering**: an event
+  the driver does not map returns `false` and MUST NOT throw. One sentence on one method,
+  under test, instead of a sequence every driver had to reproduce. The bool is Stripe's
+  `method_exists($this, $method)` check moved behind the contract, and it is what keeps
+  `WebhookHandled` honest — without it that event would fire under identical conditions to
+  `WebhookReceived`, carrying identical data, which is a second name for one event rather
+  than a signal.
 
-  For any event outside those 8 the payload could not be **constructed**, so there was
-  nothing to dispatch and the event was dropped behind a 200. No gateway's catalogue is
-  a subset of 8 agnostic cases, which is what made this the contract's problem rather
-  than any one driver's: `cashier-revolut` maps 8 of Revolut's 22 documented types, so
-  14 vanished — every `DISPUTE_*` among them, i.e. a customer disputing a charge reached
-  no listener at all. `-adyen` and `-wise` would have hit the same wall.
+  **The events carry `$provider`.** Both references answer "whose webhook is this?" with
+  the class — `Laravel\Cashier\Events\WebhookReceived` and `Laravel\Paddle\Events\WebhookReceived`
+  are different types, and the two packages cannot even be installed side by side. One
+  shared event per driver has no such discriminator, so an app would get a
+  provider-shaped array with no way to read it: invisible with one driver, a guess with two.
 
-  **The typing was not paying for itself.** No production code in this package or in any
-  driver ever branched on `$payload->event` — the only readers were two `cashier-revolut`
-  tests asserting the event's own shape, which this change updates. Meaning already
-  travels on the nine **typed** events —
-  `PaymentSucceeded`, `SubscriptionCreated`, `SubscriptionRenewed` and the rest — which
-  carry the billable and a real DTO, and which a driver dispatches from its synchronizer.
-  That is the reference's split exactly: typed events for what we understand, one raw
-  event for everything that arrives. The DTO was decoration on the one channel whose
-  entire job is to not be selective.
+  **The payload is the raw decoded body, and provider-shaped on purpose.** An event nobody
+  mapped has no agnostic meaning to render, and inventing one would be the lie the hatch
+  exists to prevent. Both references dispatch a raw array here for the same reason
+  (`laravel/cashier`'s `:45`, `-paddle`'s `:49`). Agnostic meaning already travels on the
+  nine **typed** events — `PaymentSucceeded`, `SubscriptionCreated`, `SubscriptionRenewed`
+  and the rest — which carry the billable and a real DTO.
 
-  The payload is provider-shaped, and that is the honest part rather than a wart: an event
-  nobody mapped has no agnostic meaning to render, and inventing one would be the lie the
-  hatch exists to prevent. An app that wants agnostic meaning listens to the typed events.
+  **Verification stays mandatory, and now provably runs first.** Both references attach
+  their signature middleware only `if (config(...secret))` and otherwise accept unsigned
+  webhooks with no throw and no log line (`laravel/cashier`'s `WebhookController.php:29`,
+  `-paddle`'s `:32`). We refuse instead. This package fixes *when* verification runs —
+  above anything dispatched or applied — though it cannot prove *that* a driver ran it;
+  that half stays contractual and driver-tested.
 
-  `DTO\WebhookPayload` is unchanged and still `WebhookHandler::parseWebhook()`'s return —
-  it is now purely a driver-side normalization, which is all it ever was in practice. That
-  method may still throw `UnexpectedWebhookEventException` for an event a driver does not
-  map: harmless now, because the hatch has already fired above it.
+  For an app: listen to `WebhookReceived`, read `$event->provider` and `$event->payload`.
+  The route is configured by `cashier-support.webhook.prefix` / `.methods` /
+  `.middleware` (throttled by default — neither reference rate-limits its webhook). The
+  prefix is a prefix, not the whole path: the driver segment is appended by the route, so
+  it cannot be configured away into a route that registers cleanly and then fails every
+  delivery. Stripe splits it the same way.
 
-  **Breaking for every driver, not just for listeners.** A driver *constructs* these events,
-  so `event(new WebhookReceived($payload))` with a `WebhookPayload` is now a `TypeError` on
-  every webhook — this needs a coordinated release with each driver, not a changelog note.
-  For an app: `$event->payload` is an `array`; a listener that read `$payload->event` should
-  listen to the typed events instead.
+  `methods` defaults to `['POST']`, which is what both references hardcode — but each of
+  them serves exactly one gateway, so that is two data points rather than a law about
+  gateways. Until this package owned the route, a driver declared its own and could
+  differ; the key is what gives that back, so a gateway that verifies its endpoint with a
+  GET is configured for rather than unreachable.
 
 - **`cashier_subscription_items` now constrains what it always meant.**
   `unique(subscription_id, price)` — a subscription bills a given price once.

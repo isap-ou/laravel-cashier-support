@@ -48,6 +48,14 @@ deptrac:
       collectors:
         - type: directory
           value: src/Facades/.*
+    - name: Http
+      collectors:
+        - type: directory
+          value: src/Http/.*
+    - name: Console
+      collectors:
+        - type: directory
+          value: src/Console/.*
     - name: Manager
       collectors:
         - type: classLike
@@ -139,8 +147,28 @@ deptrac:
       - Models
       - Invoice
 
+    # The webhook entry point every driver shares; its whole job is to dispatch the Events
+    # in an order a driver no longer chooses. It reaches a driver through the Manager and
+    # NOT through the Facade, which is the one place that departs from the rule Concerns
+    # follow: a facade proxies through docblock method-tags, which cannot carry throws
+    # information, so every catch in the controller would read as dead to static analysis
+    # while being exactly the paths that matter.
+    Http:
+      - Exceptions
+      - Contracts
+      - Events
+      - Manager
+
+    # Registers a webhook endpoint at whichever gateway can do it over its API.
+    Console:
+      - Exceptions
+      - Contracts
+      - DTO
+      - Manager
+
     ServiceProvider:
       - Manager
+      - Console
 
     # HttpClient is intentionally unreachable: no layer may depend on it, which
     # enforces the "zero HTTP calls" rule for this package.

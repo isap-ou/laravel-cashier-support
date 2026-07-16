@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Response;
 use Isapp\CashierSupport\Contracts\CheckoutSession;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
+use Isapp\CashierSupport\Contracts\IncomingWebhook;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\DTO\Customer;
@@ -16,13 +17,12 @@ use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\PaymentMethod;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
-use Isapp\CashierSupport\DTO\WebhookPayload;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
-use Isapp\CashierSupport\Enums\WebhookEvent;
+use Throwable;
 
 /**
  * An in-memory gateway provider for tests with a configurable capability set.
@@ -40,6 +40,49 @@ class FakeGateway implements GatewayProvider
      * legacy arguments normalized into.
      */
     public ?CheckoutRequest $lastCheckoutRequest = null;
+
+    /**
+     * The raw bytes and headers the last webhook() call was given — lets a test see
+     * that the controller passed the body through untouched, which is what a signature
+     * is checked against.
+     */
+    public ?string $lastWebhookContent = null;
+
+    /** @var array<string, string>|null */
+    public ?array $lastWebhookHeaders = null;
+
+    /**
+     * What FakeIncomingWebhook::parse() hands back.
+     *
+     * @var array<string, mixed>
+     */
+    public array $webhookPayload = ['event' => 'fake.event'];
+
+    /**
+     * Thrown from parse() instead of returning, when set. Drives the verification,
+     * misconfiguration and unreadable-body paths.
+     */
+    public ?Throwable $webhookParseFailure = null;
+
+    /**
+     * What pipeline() returns. False is the case that matters: an event this driver
+     * does not map, which must NOT throw.
+     */
+    public bool $webhookHandled = true;
+
+    /**
+     * Thrown from pipeline(), when set — applying failed and the delivery deserves a retry.
+     */
+    public ?Throwable $webhookPipelineFailure = null;
+
+    /**
+     * Every step of a delivery, in the order it happened. A test appends to this from a
+     * listener too, which is the only way to prove the event fires BETWEEN parse and
+     * pipeline rather than merely that all three happened.
+     *
+     * @var array<int, string>
+     */
+    public array $webhookCalls = [];
 
     /**
      * @param  array<int, Capability>  $capabilities
@@ -148,10 +191,11 @@ class FakeGateway implements GatewayProvider
         return new FakeCheckoutSession(id: 'cs_fake');
     }
 
-    public function verifyWebhook(string $payload, array $headers): void {}
-
-    public function parseWebhook(string $payload, array $headers): WebhookPayload
+    public function webhook(string $content, array $headers): IncomingWebhook
     {
-        return new WebhookPayload(event: WebhookEvent::PaymentSucceeded, id: 'evt_fake');
+        $this->lastWebhookContent = $content;
+        $this->lastWebhookHeaders = $headers;
+
+        return new FakeIncomingWebhook($this);
     }
 }

@@ -302,6 +302,16 @@ class EventSerializationTest extends TestCase
             return in_array($class, [WebhookReceived::class, WebhookHandled::class], true);
         }
 
+        // `string` is allowed for ANY event, and the difference from `array` above is not
+        // laziness. That entry is narrow because an array's contents are unknowable from
+        // the type — `array $invoices` could be full of models. A string's are not: PHP
+        // cannot put an object inside one, at any nesting, ever. So SerializesModels can
+        // never be load-bearing for a string parameter, and this exit cannot widen into
+        // the hole the array rule was written to close.
+        if ($type === 'string') {
+            return true;
+        }
+
         return in_array($type, [
             Subscription::class,
             Payment::class,
@@ -358,6 +368,7 @@ class EventSerializationTest extends TestCase
             Refund::class => $this->refundDto(),
             Invoice::class => $this->invoiceDto(),
             'array' => $this->webhookBody(),
+            'string' => 'revolut',
             default => $this->fail(
                 "[{$class}] takes a {$type} \${$parameter}, and this sweep has no fixture for it. "
                 .'Add one — an event must not escape the sweep by carrying an unfamiliar payload.'
@@ -429,12 +440,15 @@ class EventSerializationTest extends TestCase
             'flagged' => true,
         ];
 
-        $event = new $class($body);
+        $event = new $class('revolut', $body);
 
         /** @var WebhookReceived|WebhookHandled $restored */
         $restored = unserialize(serialize($event));
 
         $this->assertSame($body, $restored->payload);
+        // The discriminator has to survive too: with one shared event class per driver,
+        // it is the only thing telling a queued listener whose body this is.
+        $this->assertSame('revolut', $restored->provider);
     }
 
     /**
