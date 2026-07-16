@@ -88,7 +88,7 @@ src/
 │   ├── InvalidConfigurationException.php, WebhookVerificationException.php
 │   ├── SubscriptionUpdateFailure.php
 │   ├── UnsupportedOperationException.php  # Thrown for unsupported capabilities
-│   └── UnexpectedWebhookEventException.php # Gateway sent an event the driver skips
+│   └── UnexpectedWebhookEventException.php # Body unreadable as an event — NOT "unmapped"
 ├── Concerns/            # Traits for Billable model
 │   ├── ManagesCustomer.php, ManagesSubscriptions.php
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php

@@ -152,6 +152,10 @@ class FakeGateway implements GatewayProvider
 
     public function parseWebhook(string $payload, array $headers): WebhookPayload
     {
-        return new WebhookPayload(event: WebhookEvent::PaymentSucceeded, id: 'evt_fake');
+        return new WebhookPayload(
+            event: WebhookEvent::PaymentSucceeded,
+            rawEvent: 'FAKE_PAYMENT_SUCCEEDED',
+            id: 'evt_fake',
+        );
     }
 }

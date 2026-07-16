@@ -390,6 +390,7 @@ class EventSerializationTest extends TestCase
     {
         return new WebhookPayload(
             event: WebhookEvent::PaymentSucceeded,
+            rawEvent: 'ORDER_COMPLETED',
             id: 'evt_1',
             data: ['order_id' => 'ord_1'],
         );
@@ -410,6 +411,7 @@ class EventSerializationTest extends TestCase
     {
         $event = new $class(new WebhookPayload(
             event: WebhookEvent::PaymentSucceeded,
+            rawEvent: 'ORDER_COMPLETED',
             id: 'evt_1',
             data: ['order_id' => 'ord_1'],
         ));
@@ -418,8 +420,34 @@ class EventSerializationTest extends TestCase
         $restored = unserialize(serialize($event));
 
         $this->assertSame(WebhookEvent::PaymentSucceeded, $restored->payload->event);
+        $this->assertSame('ORDER_COMPLETED', $restored->payload->rawEvent);
         $this->assertSame('evt_1', $restored->payload->id);
         $this->assertSame(['order_id' => 'ord_1'], $restored->payload->data);
+    }
+
+    /**
+     * The unmapped shape has to survive the queue too, and nothing else here would
+     * have carried it: every other fixture names a WebhookEvent, so a null $event
+     * was never once serialized. WebhookReceived is a queueable listener's event —
+     * an escape hatch that only works synchronously is not one.
+     *
+     * @param  class-string  $class
+     */
+    #[DataProvider('dtoOnlyEvents')]
+    public function test_an_unmapped_event_survives_serialization(string $class): void
+    {
+        $event = new $class(new WebhookPayload(
+            event: null,
+            rawEvent: 'PAYOUT_INITIATED',
+            id: 'po_1',
+        ));
+
+        /** @var WebhookReceived|WebhookHandled $restored */
+        $restored = unserialize(serialize($event));
+
+        $this->assertNull($restored->payload->event);
+        $this->assertSame('PAYOUT_INITIATED', $restored->payload->rawEvent);
+        $this->assertSame('po_1', $restored->payload->id);
     }
 
     /**
