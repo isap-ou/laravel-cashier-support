@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Events;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\Subscription;
 
@@ -22,6 +24,8 @@ use Isapp\CashierSupport\DTO\Subscription;
  */
 class SubscriptionRenewed
 {
+    use Dispatchable, SerializesModels;
+
     public function __construct(
         public readonly Model $billable,
         public readonly Subscription $subscription,

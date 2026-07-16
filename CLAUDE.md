@@ -206,7 +206,6 @@ but the subscription mutation surface was reinvented without a multi-gateway rea
 **Do not "fix" any of these by inventing a local workaround — each has an open issue.**
 
 Correctness bugs (fix first; each is self-contained):
-- **#23** No `SerializesModels` on any of the 11 events → queued listeners get a stale snapshot.
 - **#24** No unique key on `cashier_subscription_items` → a redelivered webhook duplicates rows.
 - **#25** `active()` is really Cashier's `valid()`. A `past_due` subscription in its grace period
   still gets access; Stripe/Paddle deny it (`$deactivatePastDue = true`). No toggle exists.
