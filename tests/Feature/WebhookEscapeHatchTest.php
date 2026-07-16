@@ -4,81 +4,102 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Feature;
 
-use Illuminate\Support\Facades\Event;
 use Isapp\CashierSupport\Events\WebhookHandled;
 use Isapp\CashierSupport\Events\WebhookReceived;
 use Isapp\CashierSupport\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionParameter;
 
 /**
- * WebhookReceived is the escape hatch, and a hatch that only fits what we already
- * understand is not one.
+ * WebhookReceived is the escape hatch, and this file pins the ONE thing about it
+ * this package can pin: that its payload cannot refuse an event.
  *
- * Both references dispatch it with the RAW decoded body, before any dispatch
- * decision, so an app can react to an event the package never mapped
- * (vendor/laravel/cashier/src/Http/Controllers/WebhookController.php:45,
+ * Be clear about what is NOT tested here. Support ships no webhook controller —
+ * nothing in src/ dispatches these events — so "an unmapped event reaches a
+ * listener" cannot be asserted from this package at all. That acceptance test
+ * lives in the driver (cashier-revolut's WebhookControllerTest), where there is a
+ * request to post and an ordering to get wrong. A test here that constructed the
+ * event by hand and asserted the array came back out would be asserting that PHP
+ * arrays hold values, and would stay green against the exact bug this change is
+ * about.
+ *
+ * So: a type assertion, deliberately, and one that would have caught the bug at
+ * its source.
+ *
+ * The bug was that these events took a typed DTO\WebhookPayload whose $event was a
+ * non-nullable 8-case enum — which made the DTO's type the hatch's ceiling, and put
+ * that ceiling below the floor: for an event outside those 8 no payload could be
+ * CONSTRUCTED, so nothing was dispatched at all. Revolut documents 22 event types
+ * and its driver maps 8, so 14 vanished behind a 200 — every DISPUTE_* among them.
+ * No gateway's catalogue is a subset of 8 agnostic cases.
+ *
+ * Both references dispatch a RAW array here, before any dispatch decision, for
+ * exactly this reason (vendor/laravel/cashier/src/Http/Controllers/WebhookController.php:45,
  * vendor/laravel/cashier-paddle/src/Http/Controllers/WebhookController.php:49).
- * We used to dispatch a typed DTO\WebhookPayload instead — whose $event was a
- * non-nullable 8-case enum, so for any event outside those 8 the payload could not
- * be CONSTRUCTED. There was nothing to dispatch, and no gateway's catalogue is a
- * subset of 8 agnostic cases: Revolut documents 22 event types and its driver maps
- * 8, so 14 vanished behind a 200 — every DISPUTE_* among them.
- *
- * The typing was not paying for itself either. Nothing in this package or in any
- * driver ever read $payload->event: meaning travels on the nine TYPED domain events
+ * Agnostic meaning is not lost by going raw: it travels on the nine TYPED events
  * (PaymentSucceeded, SubscriptionCreated, SubscriptionRenewed, …), which carry the
- * billable and a real DTO. That is exactly the reference's split — typed events for
- * what we understand, one raw event for everything that arrives. The DTO on this
- * event was decoration over a channel whose entire job is to not be selective.
+ * billable and a real DTO. Typed events for what we understand, one raw event for
+ * everything that arrives.
  */
 class WebhookEscapeHatchTest extends TestCase
 {
-    public function test_webhook_received_carries_the_raw_provider_body(): void
+    /**
+     * @return array<string, array{class-string}>
+     */
+    public static function hatchEvents(): array
     {
-        /** @var array<string, mixed>|null $seen */
-        $seen = null;
-
-        // A real listener, not Event::fake(): the claim is that an app RECEIVES it.
-        Event::listen(WebhookReceived::class, function (WebhookReceived $event) use (&$seen): void {
-            $seen = $event->payload;
-        });
-
-        // PAYOUT_INITIATED is a real documented Revolut event that no driver maps —
-        // and under the old shape this line could not be written at all.
-        event(new WebhookReceived(['event' => 'PAYOUT_INITIATED', 'id' => 'po_1']));
-
-        $this->assertSame(['event' => 'PAYOUT_INITIATED', 'id' => 'po_1'], $seen);
+        return [
+            'WebhookReceived' => [WebhookReceived::class],
+            'WebhookHandled' => [WebhookHandled::class],
+        ];
     }
 
-    public function test_any_event_shape_travels_including_ones_no_enum_knows(): void
+    /**
+     * @param  class-string  $class
+     */
+    #[DataProvider('hatchEvents')]
+    public function test_the_payload_is_an_unconstrained_array_not_a_typed_dto(string $class): void
     {
-        $seen = [];
+        $payload = $this->payloadParameter($class);
 
-        Event::listen(WebhookReceived::class, function (WebhookReceived $event) use (&$seen): void {
-            $seen[] = $event->payload['event'] ?? null;
-        });
+        $type = $payload->getType();
 
-        // The point of a raw payload: this list is not a contract, and it does not
-        // have to be. A gateway that invents an event next year needs no release here.
-        foreach (['DISPUTE_ACTION_REQUIRED', 'PAYOUT_FAILED', 'SOMETHING_INVENTED_IN_2027'] as $native) {
-            event(new WebhookReceived(['event' => $native]));
+        $this->assertInstanceOf(ReflectionNamedType::class, $type);
+        $this->assertSame(
+            'array',
+            $type->getName(),
+            "[{$class}]'s payload is typed [{$type->getName()}]. A type is a filter, and this "
+            .'event must not filter: it fires for every verified webhook, including ones no '
+            .'enum in this package knows. A DTO here cannot be constructed for an event the '
+            .'driver did not map, so the event is not dispatched and the app never learns.',
+        );
+    }
+
+    /**
+     * @param  class-string  $class
+     */
+    #[DataProvider('hatchEvents')]
+    public function test_the_payload_is_required_so_a_driver_cannot_dispatch_an_empty_one(string $class): void
+    {
+        // No default: "some webhook happened" is not a signal an app can act on, and
+        // the array is the entire content of these events.
+        $this->assertFalse($this->payloadParameter($class)->isDefaultValueAvailable());
+    }
+
+    private function payloadParameter(string $class): ReflectionParameter
+    {
+        $constructor = (new ReflectionClass($class))->getConstructor();
+
+        $this->assertNotNull($constructor, "[{$class}] has no constructor.");
+
+        foreach ($constructor->getParameters() as $parameter) {
+            if ($parameter->getName() === 'payload') {
+                return $parameter;
+            }
         }
 
-        $this->assertSame(['DISPUTE_ACTION_REQUIRED', 'PAYOUT_FAILED', 'SOMETHING_INVENTED_IN_2027'], $seen);
-    }
-
-    public function test_webhook_handled_carries_the_raw_body_too(): void
-    {
-        /** @var array<string, mixed>|null $seen */
-        $seen = null;
-
-        Event::listen(WebhookHandled::class, function (WebhookHandled $event) use (&$seen): void {
-            $seen = $event->payload;
-        });
-
-        // The pair must match, or an app has to read one event two ways. The
-        // references dispatch the same array to both.
-        event(new WebhookHandled(['event' => 'ORDER_COMPLETED', 'order_id' => 'ord_1']));
-
-        $this->assertSame(['event' => 'ORDER_COMPLETED', 'order_id' => 'ord_1'], $seen);
+        $this->fail("[{$class}] has no \$payload parameter.");
     }
 }

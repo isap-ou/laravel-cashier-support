@@ -271,7 +271,7 @@ class EventSerializationTest extends TestCase
                 continue;
             }
 
-            if (! $this->hasFixtureFor($type->getName())) {
+            if (! $this->hasFixtureFor($type->getName(), $class)) {
                 $this->fail(
                     "[{$class}] parameter \${$parameter->getName()} is a {$type->getName()}, which "
                     .'this sweep does not know. If it can carry an Eloquent model — a Collection, '
@@ -288,19 +288,25 @@ class EventSerializationTest extends TestCase
      * The types this sweep can stand in for. Kept beside fixtureFor() on purpose:
      * the two must agree, or an event skips for a reason nobody chose.
      */
-    private function hasFixtureFor(string $type): bool
+    private function hasFixtureFor(string $type, string $class): bool
     {
+        // `array` is allowed for the two webhook events ONLY, and the narrowness is the
+        // point. Their payload is json_decode output: it holds scalars and arrays and
+        // can never hold an Eloquent model, so SerializesModels is not load-bearing for
+        // it. That reasoning is about those events, not about the type — a bare `array`
+        // is exactly the "I could not tell" this sweep exists to refuse, and an
+        // `array $invoices` full of models would take the exit while the suite stayed
+        // green. Keyed by type alone, this entry would have reopened the hole that
+        // carriesBillable()'s fail-loudly rule was written to close.
+        if ($type === 'array') {
+            return in_array($class, [WebhookReceived::class, WebhookHandled::class], true);
+        }
+
         return in_array($type, [
             Subscription::class,
             Payment::class,
             Refund::class,
             Invoice::class,
-            // The raw webhook body on WebhookReceived / WebhookHandled. Listed as a
-            // decision, which is what this sweep demands: it is json_decode output, so
-            // it holds scalars and arrays and can never hold an Eloquent model —
-            // SerializesModels is not load-bearing for it. The events are still swept
-            // for round-tripping below; they are only skipped for the billable check.
-            'array',
         ], true);
     }
 

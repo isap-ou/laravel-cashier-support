@@ -26,8 +26,8 @@ use Illuminate\Queue\SerializesModels;
  * to prevent. Agnostic meaning travels on the TYPED events — PaymentSucceeded,
  * SubscriptionCreated, SubscriptionRenewed and the rest — which carry the billable
  * and a real DTO. Typed events for what we understand, one raw event for everything
- * that arrives: that split is the reference's, and it is why nothing ever read the
- * old $payload->event.
+ * that arrives: that split is the reference's, and it is why no production code ever
+ * branched on the old $payload->event.
  */
 class WebhookReceived
 {

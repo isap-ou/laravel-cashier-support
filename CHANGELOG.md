@@ -182,8 +182,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **`WebhookReceived` / `WebhookHandled` carry the provider's raw decoded body, so an
-  event the package never mapped can finally reach a listener.** They took a typed
+  event the package never mapped *can* be dispatched at all.** They took a typed
   `DTO\WebhookPayload`; they now take `array $payload`, which is what both references do.
+
+  This is the half of the fix that lives here, and on its own it changes nothing an app
+  can see: it removes the blocker. A driver must also dispatch `WebhookReceived` **above**
+  its parse step — that is now the contract's expectation of a driver, and
+  `cashier-revolut`'s #24 is the matching change.
 
   **The DTO was the escape hatch's ceiling, and the ceiling was below the floor.**
   `WebhookReceived` exists to fire for every verified webhook *before* any dispatch
@@ -204,8 +209,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   14 vanished — every `DISPUTE_*` among them, i.e. a customer disputing a charge reached
   no listener at all. `-adyen` and `-wise` would have hit the same wall.
 
-  **The typing was not paying for itself.** Nothing in this package or in any driver ever
-  read `$payload->event`. Meaning already travels on the nine **typed** events —
+  **The typing was not paying for itself.** No production code in this package or in any
+  driver ever branched on `$payload->event` — the only readers were two `cashier-revolut`
+  tests asserting the event's own shape, which this change updates. Meaning already
+  travels on the nine **typed** events —
   `PaymentSucceeded`, `SubscriptionCreated`, `SubscriptionRenewed` and the rest — which
   carry the billable and a real DTO, and which a driver dispatches from its synchronizer.
   That is the reference's split exactly: typed events for what we understand, one raw
@@ -221,8 +228,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   method may still throw `UnexpectedWebhookEventException` for an event a driver does not
   map: harmless now, because the hatch has already fired above it.
 
-  **Breaking for anyone listening:** `$event->payload` is an `array`, not a `WebhookPayload`.
-  A listener that read `$payload->event` should listen to the typed events instead.
+  **Breaking for every driver, not just for listeners.** A driver *constructs* these events,
+  so `event(new WebhookReceived($payload))` with a `WebhookPayload` is now a `TypeError` on
+  every webhook — this needs a coordinated release with each driver, not a changelog note.
+  For an app: `$event->payload` is an `array`; a listener that read `$payload->event` should
+  listen to the typed events instead.
 
 - **`cashier_subscription_items` now constrains what it always meant.**
   `unique(subscription_id, price)` — a subscription bills a given price once.
