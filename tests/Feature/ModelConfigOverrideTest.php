@@ -128,6 +128,37 @@ class ModelConfigOverrideTest extends TestCase
         Cashier::customerModel();
     }
 
+    public function test_a_misspelled_config_class_is_not_blamed_on_its_parent(): void
+    {
+        // The likeliest mistake in a hand-edited config, and is_subclass_of()
+        // reports it identically to a wrong parent. Saying "does not extend"
+        // here would send the reader to audit an inheritance chain that does
+        // not exist.
+        config(['cashier-support.models.customer' => 'App\Modles\Customer']);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('which does not exist');
+
+        Cashier::customerModel();
+    }
+
+    public function test_has_model_does_not_mask_a_misconfigured_slot(): void
+    {
+        Cashier::useModels('fake', ['customer' => DriverRegisteredCustomer::class]);
+
+        config(['cashier-support.models.customer' => Customer::class]);
+
+        // hasModel() answers "did anyone name a model", not "is it any good".
+        // Answering false here would let a read path report a silent "no
+        // record" for what is really the app's typo — the same silence the
+        // config-first order exists to end.
+        $this->assertTrue(Cashier::hasModel('customer'));
+
+        $this->expectException(InvalidConfigurationException::class);
+
+        Cashier::customerModel();
+    }
+
     public function test_a_slot_nobody_names_blames_nobody_in_particular(): void
     {
         $this->expectException(InvalidConfigurationException::class);

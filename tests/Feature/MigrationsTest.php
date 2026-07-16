@@ -98,9 +98,27 @@ class MigrationsTest extends TestCase
         // on a redelivered webhook would insert a second one. Nothing downstream
         // notices: subscribedToPrice() (ManagesSubscriptions.php:118) just sees
         // the price twice and still returns true, so the duplicate is silent.
-        $this->expectException(QueryException::class);
-
-        $subscription->items()->create(['provider' => 'fake', 'price' => 'price_monthly']);
+        try {
+            $subscription->items()->create(['provider' => 'fake', 'price' => 'price_monthly']);
+            $this->fail('The second insert was accepted — the unique key is gone.');
+        } catch (QueryException $e) {
+            // Naming the constraint, not just the type. QueryException is any
+            // database error, so asserting the type alone would stay green if
+            // the unique key vanished and some unrelated schema fault took its
+            // place — the exact way an assertion can pass while the invariant
+            // it is named for does not hold.
+            //
+            // SQLSTATE 23000 is the portable half (integrity constraint
+            // violation, every driver); the wording below is SQLite's, which is
+            // what this suite runs on — testbench defaults to
+            // env('DB_CONNECTION', 'sqlite') and neither phpunit.xml nor CI
+            // sets it. Pointing DB_CONNECTION at MySQL would need the message
+            // half rewritten ("Duplicate entry ... for key ...").
+            $this->assertSame('23000', $e->getCode());
+            $this->assertStringContainsStringIgnoringCase('unique constraint failed', $e->getMessage());
+            $this->assertStringContainsString('subscription_id', $e->getMessage());
+            $this->assertStringContainsString('price', $e->getMessage());
+        }
     }
 
     public function test_a_subscription_may_still_carry_several_distinct_prices(): void
