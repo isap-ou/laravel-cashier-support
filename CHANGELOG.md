@@ -181,6 +181,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A queued listener no longer grants access on a stale snapshot.** All 11 events in
+  `src/Events/` now `use Dispatchable, SerializesModels;`, as every event in both
+  references does (`laravel/cashier`'s `Events\WebhookReceived`, `cashier-paddle`'s
+  `Events\SubscriptionCreated`). Nine of them carry a `Model $billable`, and without
+  `SerializesModels` PHP serialized that model **by value**: the whole row — every
+  attribute, plus Eloquent's `original` copy of it — went into the queue payload, and
+  the listener worked from the row as it looked at dispatch time, however long the job
+  had been waiting.
+
+  That is worst exactly where it costs most. `SubscriptionCreated` and
+  `PaymentSucceeded` listeners are what grant access, and they are the ones most likely
+  to be queued. A webhook landing between dispatch and run, a cancellation, a status
+  change — none of it reached the job, which then provisioned against a subscription
+  that had already moved on. The payload bloat (a full User/Team attribute set per job)
+  was the lesser half of it.
+
+  `SerializesModels` replaces the model with a `ModelIdentifier` and re-fetches it in
+  the worker, so the listener sees the row as it **is**. `tests/Feature/EventSerializationTest.php`
+  pins the behaviour rather than the trait: it pushes a real queued listener onto the
+  database queue, asserts the raw `jobs.payload` contains no attribute values, then
+  mutates the row before running the worker and asserts the listener observed the new
+  value. A reflection check over `class_uses()` would only have restated the diff.
+
+  That proves the mechanism on one event; a third test proves the reach. It sweeps
+  `src/Events/` — found, not enumerated, the way `ExceptionBoundaryTest` sweeps the
+  contracts — and asserts the payload of every event carrying a billable. Removing
+  `SerializesModels` from any one of the nine now fails by name. An event added later is
+  covered the day it exists, and one carrying a payload the sweep cannot build fails
+  loudly rather than quietly opting out.
+
+  The two DTO-only events (`WebhookReceived`, `WebhookHandled`) have no model to
+  reference. They take both traits regardless — for the uniformity the references keep,
+  and because `Dispatchable` is wanted on every event either way. `SerializesModels` is
+  inert there, and a round-trip test pins that it stays inert.
+
 - Declared tax rates are never silently
   discarded. Of the 16 capabilities, `Taxes` and `SubscriptionTrials` were the
   only two the package never gated — so an app that overrode `taxRates()` on a

@@ -107,7 +107,7 @@ src/
 │   └── Invoice.php              # Local invoice model (provider-independent)
 ├── Invoice/                     # Invoice generation (shared, not provider-dependent)
 │   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
-│   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf (#33)
+│   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf
 ├── Gateway/                     # Traits a driver mixes in (DB reads/writes — real logic)
 │   ├── ManagesCustomerRecords.php, ManagesLocalInvoices.php
 ├── Billable.php         # Meta-trait, includes all Concerns
@@ -203,41 +203,45 @@ A five-way audit compared this package against `vendor/laravel/cashier` and
 ~60-65% of the gateway-neutral subset**. Conformance was scored 6/10 — the abstraction is real,
 but the subscription mutation surface was reinvented without a multi-gateway reason.
 
-**Do not "fix" any of these by inventing a local workaround — each has an open issue.**
+**If a Cashier method seems missing here, it is missing on purpose and it has an issue.** Read
+the tracker before building anything around the gap — a local workaround is the one response
+that is always wrong (`.claude/rules/smart-stubs.md`):
 
-Correctness bugs (fix first; each is self-contained):
-- **#23** No `SerializesModels` on any of the 11 events → queued listeners get a stale snapshot.
-- **#24** No unique key on `cashier_subscription_items` → a redelivered webhook duplicates rows.
-- **#25** `active()` is really Cashier's `valid()`. A `past_due` subscription in its grace period
-  still gets access; Stripe/Paddle deny it (`$deactivatePastDue = true`). No toggle exists.
-  Scope note: `unpaid` / `incomplete_expired` are already denied unconditionally via
-  `SubscriptionStatus::deniesAccess()` (#22) — Stripe has no toggle for those two. What is
-  left to #25 is the rename plus `$deactivatePastDue` / `$deactivateIncomplete`.
-- **#26** `config('cashier-support.models.customer')` is read by `CashierManager` but absent
-  from the published config — dead branch.
-- **#27** `GuardedSubscriptionBuilder` is in no deptrac layer, so the "zero HTTP" rule misses it.
+```bash
+gh issue list --repo isap-ou/laravel-cashier-support   # what is open, right now
+```
 
-Structural:
-- **#28** `GatewayProvider` is not segregated → **any** new operations method is an instant
-  BC-break for every driver. This is the root blocker: #30/#35/#36/#37 all queue behind it.
-- **#29** `Models\Subscription` has zero query scopes (the references have 17).
-- **#39** *(breaking, undecided)* Mutations live on `Billable`, not the model. **The open
-  question is whether we hold API compatibility with Cashier at all.** Until that is answered,
-  do not "restore" Cashier-style methods on the model on your own initiative.
+**That command is the status; this section is not.** It describes the *shape* of the gaps, which
+outlives any one issue, and it deliberately does not enumerate them: a list of tickets copied
+into a doc is a second source of truth, and this file cannot know an issue was closed. It is the
+file with no test over it — #38 exists because it once described an API that did not exist, and
+the fifteen bullets that stood here had already drifted two issues short of the tracker.
 
-Abstraction cannot express (not "the driver lacks it" — the contract lacks it):
-- **#31** tax / discount / subtotal are absent from `DTO\Invoice` and `DTO\InvoiceLine`.
-  A VAT invoice is not representable. Coupons/promotions have no `Capability` case at all.
-- **#32** no money formatting API (`formatAmount`, `currency_locale`), and `Currency` is a
-  closed 15-value whitelist. `moneyphp/money` is an acceptable fix — the old "no money library"
-  note was habit, not a constraint.
-- **#33** `InvoiceRenderer` is a concrete class hard-bound to `spatie/laravel-pdf`, whose engine
-  (Node + headless Chrome) is only a `suggest` — PDF does not work out of the box.
-- **#34** `FakeGateway` lives in `tests/` and is not shipped → apps cannot `Cashier::fake()`.
-- **#35** `DTO\Payment` has no `clientSecret` → a 3DS/SCA payment cannot be completed.
-- **#30** `Paused` has no `paused_at` column and no pause timing → "pause at period end" is
-  not representable.
-- **#36** a customer can be created but never updated/synced.
+Closing a ticket no longer means editing a list. It may still touch a doc that describes the code
+that ticket changes — #33 turns `InvoiceRenderer` into an interface, and the architecture map above
+says it is a concrete class, so the map moves with it. That is the map doing its job.
+
+Three things are worth knowing before you plan, because they decide what work is even possible:
+
+**`GatewayProvider` is not segregated (#28) — the root blocker.** It extends all seven operations
+interfaces and none ships default implementations, so **any** new contract method is an instant
+fatal in every driver: not a deprecation, a driver that does not implement it stops loading. So
+every feature needing a new method either queues behind #28 or costs a coordinated release across
+support and every driver.
+
+**The subscription mutation surface is ours, not Cashier's, and that is undecided (#39).**
+Mutations live on `Billable` (`$user->cancelSubscription('default')`); `Models\Subscription` has
+no mutators. Whether we hold API compatibility with Cashier at all is **the user's call, not an
+agent's** — until it is answered, do not "restore" Cashier-style methods on the model on your own
+initiative.
+
+**Some gaps are inexpressible, not unimplemented — this is the trap.** It is not "the driver
+lacks it", it is "the contract has nowhere to put it", so no `Capability` flag routes around it
+and no driver can supply it. `DTO\Invoice`/`InvoiceLine` carry no tax, discount or subtotal, so a
+VAT invoice is not representable (#31); there is no money formatting and `Currency` is a closed
+whitelist (#32); `DTO\Payment` has no `clientSecret`, so an SCA payment cannot be completed (#35).
+Recognising this class matters more than the individual issues: the instinct it triggers — "the
+gateway must not support it, I will work around it" — is exactly backwards.
 
 Where we are deliberately **better** than the references (keep it this way):
 signature verification is mandatory (both references skip it when the secret is unset),
