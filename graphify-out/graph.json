@@ -990,7 +990,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_billable",
-      "community": 13,
+      "community": 8,
       "norm_label": "billable.php"
     },
     {
@@ -1000,7 +1000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder",
-      "community": 13,
+      "community": 19,
       "norm_label": "guardedsubscriptionbuilder.php"
     },
     {
@@ -1010,7 +1010,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder",
-      "community": 2,
+      "community": 19,
       "norm_label": "guardedsubscriptionbuilder"
     },
     {
@@ -1030,7 +1030,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_construct",
-      "community": 2,
+      "community": 19,
       "norm_label": ".__construct()"
     },
     {
@@ -1040,7 +1040,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_trialdays",
-      "community": 2,
+      "community": 19,
       "norm_label": ".trialdays()"
     },
     {
@@ -1050,7 +1050,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_php_static",
-      "community": 2,
+      "community": 19,
       "norm_label": "static"
     },
     {
@@ -1060,7 +1060,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_trialuntil",
-      "community": 2,
+      "community": 19,
       "norm_label": ".trialuntil()"
     },
     {
@@ -1070,7 +1070,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_php_datetimeinterface",
-      "community": 13,
+      "community": 19,
       "norm_label": "datetimeinterface"
     },
     {
@@ -1080,7 +1080,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_quantity",
-      "community": 2,
+      "community": 19,
       "norm_label": ".quantity()"
     },
     {
@@ -1090,7 +1090,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_withmetadata",
-      "community": 2,
+      "community": 19,
       "norm_label": ".withmetadata()"
     },
     {
@@ -1100,7 +1100,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_create",
-      "community": 2,
+      "community": 19,
       "norm_label": ".create()"
     },
     {
@@ -1110,7 +1110,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_php_subscription",
-      "community": 2,
+      "community": 19,
       "norm_label": "subscription"
     },
     {
@@ -1120,7 +1120,7 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "src_builders_guardedsubscriptionbuilder_guardedsubscriptionbuilder_add",
-      "community": 2,
+      "community": 19,
       "norm_label": ".add()"
     },
     {
@@ -1400,7 +1400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_concerns_handlestaxes",
-      "community": 13,
+      "community": 8,
       "norm_label": "handlestaxes.php"
     },
     {
@@ -1410,7 +1410,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_concerns_handlestaxes_taxrates",
-      "community": 13,
+      "community": 8,
       "norm_label": "taxrates()"
     },
     {
@@ -1420,7 +1420,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_concerns_handlestaxes_pricetaxrates",
-      "community": 13,
+      "community": 8,
       "norm_label": "pricetaxrates()"
     },
     {
@@ -1430,7 +1430,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_concerns_handlestaxes_ensuretaxratessupported",
-      "community": 13,
+      "community": 8,
       "norm_label": "ensuretaxratessupported()"
     },
     {
@@ -1500,7 +1500,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_concerns_managescustomer",
-      "community": 13,
+      "community": 2,
       "norm_label": "managescustomer.php"
     },
     {
@@ -1510,7 +1510,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_createascustomer",
-      "community": 13,
+      "community": 2,
       "norm_label": "createascustomer()"
     },
     {
@@ -1520,7 +1520,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_php_customer",
-      "community": 13,
+      "community": 2,
       "norm_label": "customer"
     },
     {
@@ -1530,7 +1530,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_ascustomer",
-      "community": 13,
+      "community": 2,
       "norm_label": "ascustomer()"
     },
     {
@@ -1540,7 +1540,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_hascustomerid",
-      "community": 13,
+      "community": 2,
       "norm_label": "hascustomerid()"
     },
     {
@@ -1550,7 +1550,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_cashiercustomer",
-      "community": 13,
+      "community": 2,
       "norm_label": "cashiercustomer()"
     },
     {
@@ -1560,7 +1560,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "morphone",
-      "community": 13,
+      "community": 2,
       "norm_label": "morphone"
     },
     {
@@ -1570,7 +1570,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_customerid",
-      "community": 13,
+      "community": 2,
       "norm_label": "customerid()"
     },
     {
@@ -1580,7 +1580,7 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "src_concerns_managescustomer_createorgetcustomer",
-      "community": 13,
+      "community": 2,
       "norm_label": "createorgetcustomer()"
     },
     {
@@ -1590,7 +1590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_concerns_managesinvoices",
-      "community": 13,
+      "community": 8,
       "norm_label": "managesinvoices.php"
     },
     {
@@ -1600,7 +1600,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_concerns_managesinvoices_invoices",
-      "community": 13,
+      "community": 8,
       "norm_label": "invoices()"
     },
     {
@@ -1610,7 +1610,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_concerns_managesinvoices_findinvoice",
-      "community": 13,
+      "community": 8,
       "norm_label": "findinvoice()"
     },
     {
@@ -1620,7 +1620,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_concerns_managesinvoices_php_invoice",
-      "community": 13,
+      "community": 8,
       "norm_label": "invoice"
     },
     {
@@ -1630,7 +1630,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_concerns_managesinvoices_downloadinvoice",
-      "community": 13,
+      "community": 8,
       "norm_label": "downloadinvoice()"
     },
     {
@@ -1640,7 +1640,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_concerns_managesinvoices_php_response",
-      "community": 13,
+      "community": 8,
       "norm_label": "response"
     },
     {
@@ -1650,7 +1650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_concerns_managespaymentmethods",
-      "community": 27,
+      "community": 7,
       "norm_label": "managespaymentmethods.php"
     },
     {
@@ -1660,7 +1660,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_concerns_managespaymentmethods_paymentmethods",
-      "community": 27,
+      "community": 7,
       "norm_label": "paymentmethods()"
     },
     {
@@ -1670,7 +1670,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_concerns_managespaymentmethods_defaultpaymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "defaultpaymentmethod()"
     },
     {
@@ -1680,7 +1680,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_concerns_managespaymentmethods_addpaymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "addpaymentmethod()"
     },
     {
@@ -1690,7 +1690,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "src_concerns_managespaymentmethods_deletepaymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "deletepaymentmethod()"
     },
     {
@@ -1870,7 +1870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_concerns_performscharges",
-      "community": 13,
+      "community": 8,
       "norm_label": "performscharges.php"
     },
     {
@@ -1880,7 +1880,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_concerns_performscharges_charge",
-      "community": 13,
+      "community": 8,
       "norm_label": "charge()"
     },
     {
@@ -1890,7 +1890,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_concerns_performscharges_refund",
-      "community": 13,
+      "community": 8,
       "norm_label": "refund()"
     },
     {
@@ -2220,7 +2220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_contracts_paymentmethodoperations",
-      "community": 27,
+      "community": 7,
       "norm_label": "paymentmethodoperations.php"
     },
     {
@@ -2230,7 +2230,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_contracts_paymentmethodoperations_paymentmethods",
-      "community": 27,
+      "community": 7,
       "norm_label": "paymentmethods()"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_contracts_paymentmethodoperations_php_model",
-      "community": 27,
+      "community": 7,
       "norm_label": "model"
     },
     {
@@ -2250,7 +2250,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_contracts_paymentmethodoperations_defaultpaymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "defaultpaymentmethod()"
     },
     {
@@ -2260,7 +2260,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_contracts_paymentmethodoperations_addpaymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "addpaymentmethod()"
     },
     {
@@ -2270,7 +2270,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_contracts_paymentmethodoperations_deletepaymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "deletepaymentmethod()"
     },
     {
@@ -2850,7 +2850,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dto_paymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "paymentmethod.php"
     },
     {
@@ -2860,7 +2860,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_dto_paymentmethod_paymentmethod",
-      "community": 27,
+      "community": 7,
       "norm_label": "paymentmethod"
     },
     {
@@ -2870,7 +2870,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_dto_paymentmethod_paymentmethod_construct",
-      "community": 27,
+      "community": 7,
       "norm_label": ".__construct()"
     },
     {
@@ -2880,7 +2880,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "paymentmethodtype",
-      "community": 27,
+      "community": 7,
       "norm_label": "paymentmethodtype"
     },
     {
@@ -2890,7 +2890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_dto_refund",
-      "community": 5,
+      "community": 14,
       "norm_label": "refund.php"
     },
     {
@@ -2900,7 +2900,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_dto_refund_refund",
-      "community": 5,
+      "community": 14,
       "norm_label": "refund"
     },
     {
@@ -2910,7 +2910,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_dto_refund_refund_construct",
-      "community": 5,
+      "community": 14,
       "norm_label": ".__construct()"
     },
     {
@@ -2920,7 +2920,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_dto_refund_php_currency",
-      "community": 5,
+      "community": 14,
       "norm_label": "currency"
     },
     {
@@ -2930,7 +2930,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "refundreason",
-      "community": 5,
+      "community": 14,
       "norm_label": "refundreason"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_dto_refund_php_carbonimmutable",
-      "community": 5,
+      "community": 14,
       "norm_label": "carbonimmutable"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_enums_capability",
-      "community": 13,
+      "community": 2,
       "norm_label": "capability.php"
     },
     {
@@ -3217,11 +3217,21 @@
       "label": "isActive()",
       "file_type": "code",
       "source_file": "src/Enums/SubscriptionStatus.php",
-      "source_location": "L31",
+      "source_location": "L37",
       "_origin": "ast",
       "id": "src_enums_subscriptionstatus_isactive",
       "community": 12,
       "norm_label": "isactive()"
+    },
+    {
+      "label": "deniesAccess()",
+      "file_type": "code",
+      "source_file": "src/Enums/SubscriptionStatus.php",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "src_enums_subscriptionstatus_deniesaccess",
+      "community": 12,
+      "norm_label": "deniesaccess()"
     },
     {
       "label": "SwapTiming.php",
@@ -3340,7 +3350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_events_refundprocessed",
-      "community": 5,
+      "community": 14,
       "norm_label": "refundprocessed.php"
     },
     {
@@ -3350,7 +3360,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_events_refundprocessed_refundprocessed",
-      "community": 5,
+      "community": 14,
       "norm_label": "refundprocessed"
     },
     {
@@ -3360,7 +3370,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_events_refundprocessed_refundprocessed_construct",
-      "community": 5,
+      "community": 14,
       "norm_label": ".__construct()"
     },
     {
@@ -3370,7 +3380,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_events_refundprocessed_php_model",
-      "community": 5,
+      "community": 14,
       "norm_label": "model"
     },
     {
@@ -3880,7 +3890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_exceptions_invalidconfigurationexception",
-      "community": 10,
+      "community": 11,
       "norm_label": "invalidconfigurationexception.php"
     },
     {
@@ -4140,7 +4150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_facades_cashier",
-      "community": 12,
+      "community": 2,
       "norm_label": "cashier.php"
     },
     {
@@ -4160,7 +4170,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "facade",
-      "community": 12,
+      "community": 2,
       "norm_label": "facade"
     },
     {
@@ -4610,7 +4620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_customer",
-      "community": 4,
+      "community": 6,
       "norm_label": "customer.php"
     },
     {
@@ -4620,7 +4630,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_models_customer_customer",
-      "community": 4,
+      "community": 6,
       "norm_label": "customer"
     },
     {
@@ -4640,7 +4650,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "hasuuids",
-      "community": 4,
+      "community": 6,
       "norm_label": "hasuuids"
     },
     {
@@ -4650,7 +4660,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_models_customer_customer_owner",
-      "community": 4,
+      "community": 6,
       "norm_label": ".owner()"
     },
     {
@@ -4660,7 +4670,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_models_customer_php_morphto",
-      "community": 4,
+      "community": 6,
       "norm_label": "morphto"
     },
     {
@@ -4670,7 +4680,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_invoice",
-      "community": 4,
+      "community": 6,
       "norm_label": "invoice.php"
     },
     {
@@ -4680,7 +4690,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_models_invoice_invoice",
-      "community": 4,
+      "community": 6,
       "norm_label": "invoice"
     },
     {
@@ -4690,7 +4700,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_models_invoice_invoice_casts",
-      "community": 4,
+      "community": 6,
       "norm_label": ".casts()"
     },
     {
@@ -4700,7 +4710,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "src_models_invoice_invoice_subscription",
-      "community": 4,
+      "community": 6,
       "norm_label": ".subscription()"
     },
     {
@@ -4710,7 +4720,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_models_invoice_php_belongsto",
-      "community": 4,
+      "community": 6,
       "norm_label": "belongsto"
     },
     {
@@ -4720,7 +4730,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_models_invoice_invoice_owner",
-      "community": 4,
+      "community": 6,
       "norm_label": ".owner()"
     },
     {
@@ -4730,7 +4740,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_models_invoice_php_morphto",
-      "community": 4,
+      "community": 6,
       "norm_label": "morphto"
     },
     {
@@ -4740,7 +4750,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_models_invoice_invoice_paid",
-      "community": 4,
+      "community": 6,
       "norm_label": ".paid()"
     },
     {
@@ -4877,7 +4887,7 @@
       "label": ".active()",
       "file_type": "code",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L143",
+      "source_location": "L146",
       "_origin": "ast",
       "id": "src_models_subscription_subscription_active",
       "community": 6,
@@ -4887,7 +4897,7 @@
       "label": ".canceled()",
       "file_type": "code",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L155",
+      "source_location": "L158",
       "_origin": "ast",
       "id": "src_models_subscription_subscription_canceled",
       "community": 6,
@@ -4897,7 +4907,7 @@
       "label": ".onTrial()",
       "file_type": "code",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L164",
+      "source_location": "L167",
       "_origin": "ast",
       "id": "src_models_subscription_subscription_ontrial",
       "community": 6,
@@ -4907,7 +4917,7 @@
       "label": ".onGracePeriod()",
       "file_type": "code",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L176",
+      "source_location": "L179",
       "_origin": "ast",
       "id": "src_models_subscription_subscription_ongraceperiod",
       "community": 6,
@@ -4917,7 +4927,7 @@
       "label": ".hasEnded()",
       "file_type": "code",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L184",
+      "source_location": "L187",
       "_origin": "ast",
       "id": "src_models_subscription_subscription_hasended",
       "community": 6,
@@ -4930,7 +4940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_models_subscriptionitem",
-      "community": 4,
+      "community": 6,
       "norm_label": "subscriptionitem.php"
     },
     {
@@ -4940,7 +4950,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_models_subscriptionitem_subscriptionitem",
-      "community": 4,
+      "community": 6,
       "norm_label": "subscriptionitem"
     },
     {
@@ -4950,7 +4960,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_models_subscriptionitem_subscriptionitem_casts",
-      "community": 4,
+      "community": 6,
       "norm_label": ".casts()"
     },
     {
@@ -4960,7 +4970,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_models_subscriptionitem_subscriptionitem_subscription",
-      "community": 4,
+      "community": 6,
       "norm_label": ".subscription()"
     },
     {
@@ -4970,7 +4980,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_models_subscriptionitem_php_belongsto",
-      "community": 4,
+      "community": 6,
       "norm_label": "belongsto"
     },
     {
@@ -4980,7 +4990,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_billabletest",
-      "community": 12,
+      "community": 2,
       "norm_label": "billabletest.php"
     },
     {
@@ -5210,7 +5220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_cashiermanagertest",
-      "community": 10,
+      "community": 2,
       "norm_label": "cashiermanagertest.php"
     },
     {
@@ -5470,7 +5480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest",
-      "community": 3,
+      "community": 2,
       "norm_label": "exceptionboundarytest.php"
     },
     {
@@ -5480,7 +5490,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest",
-      "community": 3,
+      "community": 2,
       "norm_label": "exceptionboundarytest"
     },
     {
@@ -5490,7 +5500,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_defineenvironment",
-      "community": 3,
+      "community": 2,
       "norm_label": ".defineenvironment()"
     },
     {
@@ -5500,7 +5510,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_test_the_hierarchy_covers_every_failure_an_app_is_meant_to_catch",
-      "community": 3,
+      "community": 2,
       "norm_label": ".test_the_hierarchy_covers_every_failure_an_app_is_meant_to_catch()"
     },
     {
@@ -5510,7 +5520,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_test_a_malformed_argument_is_not_a_cashier_exception",
-      "community": 3,
+      "community": 2,
       "norm_label": ".test_a_malformed_argument_is_not_a_cashier_exception()"
     },
     {
@@ -5520,7 +5530,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_test_a_non_positive_charge_amount_is_refused_before_the_gateway",
-      "community": 3,
+      "community": 2,
       "norm_label": ".test_a_non_positive_charge_amount_is_refused_before_the_gateway()"
     },
     {
@@ -5530,7 +5540,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_test_an_unsupported_operation_is_a_cashier_exception",
-      "community": 3,
+      "community": 2,
       "norm_label": ".test_an_unsupported_operation_is_a_cashier_exception()"
     },
     {
@@ -5540,7 +5550,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_test_every_gateway_operation_declares_what_it_throws",
-      "community": 3,
+      "community": 2,
       "norm_label": ".test_every_gateway_operation_declares_what_it_throws()"
     },
     {
@@ -5550,7 +5560,7 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_gatewaycontracts",
-      "community": 3,
+      "community": 2,
       "norm_label": ".gatewaycontracts()"
     },
     {
@@ -5560,7 +5570,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "tests_feature_exceptionboundarytest_exceptionboundarytest_resolve",
-      "community": 3,
+      "community": 2,
       "norm_label": ".resolve()"
     },
     {
@@ -5780,7 +5790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest",
-      "community": 37,
+      "community": 12,
       "norm_label": "localinvoicesgatewaytest.php"
     },
     {
@@ -5790,7 +5800,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest",
-      "community": 37,
+      "community": 4,
       "norm_label": "localinvoicesgatewaytest"
     },
     {
@@ -5800,7 +5810,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_definedatabasemigrations",
-      "community": 37,
+      "community": 4,
       "norm_label": ".definedatabasemigrations()"
     },
     {
@@ -5810,7 +5820,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_setup",
-      "community": 37,
+      "community": 12,
       "norm_label": ".setup()"
     },
     {
@@ -5820,7 +5830,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_gatewayinvoices",
-      "community": 37,
+      "community": 4,
       "norm_label": ".gatewayinvoices()"
     },
     {
@@ -5830,7 +5840,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_invoicefor",
-      "community": 37,
+      "community": 4,
       "norm_label": ".invoicefor()"
     },
     {
@@ -5840,7 +5850,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_php_model",
-      "community": 37,
+      "community": 12,
       "norm_label": "model"
     },
     {
@@ -5850,7 +5860,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_test_invoices_are_scoped_to_the_owner_and_driver",
-      "community": 37,
+      "community": 4,
       "norm_label": ".test_invoices_are_scoped_to_the_owner_and_driver()"
     },
     {
@@ -5860,7 +5870,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_test_invoices_honors_the_limit_parameter",
-      "community": 37,
+      "community": 4,
       "norm_label": ".test_invoices_honors_the_limit_parameter()"
     },
     {
@@ -5870,7 +5880,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_test_find_invoice_matches_provider_id_and_uuid_key",
-      "community": 37,
+      "community": 4,
       "norm_label": ".test_find_invoice_matches_provider_id_and_uuid_key()"
     },
     {
@@ -5880,7 +5890,7 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "tests_feature_localinvoicesgatewaytest_localinvoicesgatewaytest_test_a_user_cannot_access_another_users_invoice",
-      "community": 37,
+      "community": 4,
       "norm_label": ".test_a_user_cannot_access_another_users_invoice()"
     },
     {
@@ -5900,7 +5910,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_feature_migrationstest_migrationstest",
-      "community": 26,
+      "community": 12,
       "norm_label": "migrationstest"
     },
     {
@@ -5910,7 +5920,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tests_feature_migrationstest_migrationstest_defineenvironment",
-      "community": 26,
+      "community": 12,
       "norm_label": ".defineenvironment()"
     },
     {
@@ -5920,7 +5930,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "tests_feature_migrationstest_migrationstest_definedatabasemigrations",
-      "community": 26,
+      "community": 12,
       "norm_label": ".definedatabasemigrations()"
     },
     {
@@ -5930,7 +5940,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_feature_migrationstest_migrationstest_setup",
-      "community": 26,
+      "community": 12,
       "norm_label": ".setup()"
     },
     {
@@ -5940,7 +5950,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "tests_feature_migrationstest_migrationstest_test_subscription_schema_matches_the_model",
-      "community": 26,
+      "community": 12,
       "norm_label": ".test_subscription_schema_matches_the_model()"
     },
     {
@@ -5950,7 +5960,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "tests_feature_migrationstest_migrationstest_test_invoice_schema_matches_the_model",
-      "community": 26,
+      "community": 12,
       "norm_label": ".test_invoice_schema_matches_the_model()"
     },
     {
@@ -5960,7 +5970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_morphkeytypetest",
-      "community": 67,
+      "community": 9,
       "norm_label": "morphkeytypetest.php"
     },
     {
@@ -5970,7 +5980,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tests_feature_morphkeytypetest_morphkeytypetest",
-      "community": 67,
+      "community": 9,
       "norm_label": "morphkeytypetest"
     },
     {
@@ -5980,7 +5990,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "tests_feature_morphkeytypetest_morphkeytypetest_teardown",
-      "community": 67,
+      "community": 9,
       "norm_label": ".teardown()"
     },
     {
@@ -5990,7 +6000,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "tests_feature_morphkeytypetest_morphkeytypetest_ownerkeytype",
-      "community": 67,
+      "community": 9,
       "norm_label": ".ownerkeytype()"
     },
     {
@@ -6000,7 +6010,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_feature_morphkeytypetest_morphkeytypetest_test_the_owner_key_follows_the_apps_morph_key_type",
-      "community": 67,
+      "community": 9,
       "norm_label": ".test_the_owner_key_follows_the_apps_morph_key_type()"
     },
     {
@@ -6010,7 +6020,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tests_feature_morphkeytypetest_morphkeytypetest_test_a_uuid_keyed_app_gets_uuid_owner_keys",
-      "community": 67,
+      "community": 9,
       "norm_label": ".test_a_uuid_keyed_app_gets_uuid_owner_keys()"
     },
     {
@@ -6020,7 +6030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest",
-      "community": 30,
+      "community": 12,
       "norm_label": "pendingpricechangetest.php"
     },
     {
@@ -6030,7 +6040,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest",
-      "community": 30,
+      "community": 12,
       "norm_label": "pendingpricechangetest"
     },
     {
@@ -6040,7 +6050,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_defineenvironment",
-      "community": 30,
+      "community": 12,
       "norm_label": ".defineenvironment()"
     },
     {
@@ -6050,7 +6060,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_definedatabasemigrations",
-      "community": 30,
+      "community": 12,
       "norm_label": ".definedatabasemigrations()"
     },
     {
@@ -6060,7 +6070,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_subscription",
-      "community": 30,
+      "community": 12,
       "norm_label": ".subscription()"
     },
     {
@@ -6070,7 +6080,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_test_a_subscription_with_no_scheduled_change_says_so",
-      "community": 30,
+      "community": 12,
       "norm_label": ".test_a_subscription_with_no_scheduled_change_says_so()"
     },
     {
@@ -6080,7 +6090,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_test_a_scheduled_change_names_the_price_and_the_date_it_lands",
-      "community": 30,
+      "community": 12,
       "norm_label": ".test_a_scheduled_change_names_the_price_and_the_date_it_lands()"
     },
     {
@@ -6090,7 +6100,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_test_a_pending_price_with_no_date_is_still_a_pending_price",
-      "community": 30,
+      "community": 12,
       "norm_label": ".test_a_pending_price_with_no_date_is_still_a_pending_price()"
     },
     {
@@ -6100,7 +6110,7 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "tests_feature_pendingpricechangetest_pendingpricechangetest_test_the_scheduling_event_carries_the_subscription_it_describes",
-      "community": 30,
+      "community": 12,
       "norm_label": ".test_the_scheduling_event_carries_the_subscription_it_describes()"
     },
     {
@@ -6110,57 +6120,57 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest",
-      "community": 17,
+      "community": 11,
       "norm_label": "querysidebillabletest.php"
     },
     {
       "label": "QuerySideBillableTest",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L19",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest",
-      "community": 17,
+      "community": 11,
       "norm_label": "querysidebillabletest"
     },
     {
       "label": ".defineEnvironment()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L21",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_defineenvironment",
-      "community": 17,
+      "community": 11,
       "norm_label": ".defineenvironment()"
     },
     {
       "label": ".defineDatabaseMigrations()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L26",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_definedatabasemigrations",
-      "community": 17,
+      "community": 11,
       "norm_label": ".definedatabasemigrations()"
     },
     {
       "label": ".setUp()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L37",
+      "source_location": "L38",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_setup",
-      "community": 17,
+      "community": 2,
       "norm_label": ".setup()"
     },
     {
       "label": ".userWithSubscription()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L48",
+      "source_location": "L49",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
-      "community": 17,
+      "community": 11,
       "norm_label": ".userwithsubscription()"
     },
     {
@@ -6170,77 +6180,97 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_php_subscriptionstatus",
-      "community": 17,
+      "community": 11,
       "norm_label": "subscriptionstatus"
     },
     {
       "label": ".test_subscription_and_subscribed_read_the_local_record()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L64",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscription_and_subscribed_read_the_local_record",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_subscription_and_subscribed_read_the_local_record()"
     },
     {
       "label": ".test_on_trial_and_grace_period()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L74",
+      "source_location": "L75",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_on_trial_and_grace_period",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_on_trial_and_grace_period()"
+    },
+    {
+      "label": ".test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at()",
+      "file_type": "code",
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L101",
+      "_origin": "ast",
+      "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at",
+      "community": 11,
+      "norm_label": ".test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at()"
+    },
+    {
+      "label": ".unrecoverableStatuses()",
+      "file_type": "code",
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L117",
+      "_origin": "ast",
+      "id": "tests_feature_querysidebillabletest_querysidebillabletest_unrecoverablestatuses",
+      "community": 11,
+      "norm_label": ".unrecoverablestatuses()"
     },
     {
       "label": ".test_a_fully_ended_subscription_is_not_subscribed()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L94",
+      "source_location": "L125",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_fully_ended_subscription_is_not_subscribed",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_a_fully_ended_subscription_is_not_subscribed()"
     },
     {
       "label": ".test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L104",
+      "source_location": "L135",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial()"
     },
     {
       "label": ".test_subscriptions_are_scoped_to_the_model_driver()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L113",
+      "source_location": "L144",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscriptions_are_scoped_to_the_model_driver",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_subscriptions_are_scoped_to_the_model_driver()"
     },
     {
       "label": ".test_subscribed_to_price_checks_the_items()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L131",
+      "source_location": "L162",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscribed_to_price_checks_the_items",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_subscribed_to_price_checks_the_items()"
     },
     {
       "label": ".test_an_unregistered_driver_slot_is_a_configuration_error()",
       "file_type": "code",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L148",
+      "source_location": "L179",
       "_origin": "ast",
       "id": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unregistered_driver_slot_is_a_configuration_error",
-      "community": 17,
+      "community": 11,
       "norm_label": ".test_an_unregistered_driver_slot_is_a_configuration_error()"
     },
     {
@@ -6260,7 +6290,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest",
-      "community": 21,
+      "community": 12,
       "norm_label": "subscriptionperiodtest"
     },
     {
@@ -6270,7 +6300,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_defineenvironment",
-      "community": 21,
+      "community": 12,
       "norm_label": ".defineenvironment()"
     },
     {
@@ -6280,7 +6310,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_definedatabasemigrations",
-      "community": 21,
+      "community": 12,
       "norm_label": ".definedatabasemigrations()"
     },
     {
@@ -6290,7 +6320,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_setup",
-      "community": 21,
+      "community": 12,
       "norm_label": ".setup()"
     },
     {
@@ -6300,7 +6330,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_subscription",
-      "community": 21,
+      "community": 12,
       "norm_label": ".subscription()"
     },
     {
@@ -6310,7 +6340,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_test_a_live_subscription_knows_when_it_is_next_billed",
-      "community": 21,
+      "community": 12,
       "norm_label": ".test_a_live_subscription_knows_when_it_is_next_billed()"
     },
     {
@@ -6320,7 +6350,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_test_a_gateway_without_a_billing_cycle_leaves_the_period_unknown",
-      "community": 21,
+      "community": 12,
       "norm_label": ".test_a_gateway_without_a_billing_cycle_leaves_the_period_unknown()"
     },
     {
@@ -6330,7 +6360,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_test_an_invoice_records_the_subscription_and_cycle_it_paid_for",
-      "community": 21,
+      "community": 12,
       "norm_label": ".test_an_invoice_records_the_subscription_and_cycle_it_paid_for()"
     },
     {
@@ -6340,7 +6370,7 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "tests_feature_subscriptionperiodtest_subscriptionperiodtest_test_an_invoice_that_pays_for_no_subscription_stays_unlinked",
-      "community": 21,
+      "community": 12,
       "norm_label": ".test_an_invoice_that_pays_for_no_subscription_stays_unlinked()"
     },
     {
@@ -6464,6 +6494,66 @@
       "norm_label": ".test_the_dto_defaults_quantity_to_null()"
     },
     {
+      "label": "SubscriptionStatusTest.php",
+      "file_type": "code",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_feature_subscriptionstatustest",
+      "community": 12,
+      "norm_label": "subscriptionstatustest.php"
+    },
+    {
+      "label": "SubscriptionStatusTest",
+      "file_type": "code",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "community": 12,
+      "norm_label": "subscriptionstatustest"
+    },
+    {
+      "label": ".defineDatabaseMigrations()",
+      "file_type": "code",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "tests_feature_subscriptionstatustest_subscriptionstatustest_definedatabasemigrations",
+      "community": 12,
+      "norm_label": ".definedatabasemigrations()"
+    },
+    {
+      "label": ".seedStatus()",
+      "file_type": "code",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "tests_feature_subscriptionstatustest_subscriptionstatustest_seedstatus",
+      "community": 12,
+      "norm_label": ".seedstatus()"
+    },
+    {
+      "label": ".test_a_dunning_status_row_reads_back_as_its_enum()",
+      "file_type": "code",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "tests_feature_subscriptionstatustest_subscriptionstatustest_test_a_dunning_status_row_reads_back_as_its_enum",
+      "community": 12,
+      "norm_label": ".test_a_dunning_status_row_reads_back_as_its_enum()"
+    },
+    {
+      "label": ".dunningStatuses()",
+      "file_type": "code",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "tests_feature_subscriptionstatustest_subscriptionstatustest_dunningstatuses",
+      "community": 12,
+      "norm_label": ".dunningstatuses()"
+    },
+    {
       "label": "ConcreteCustomer.php",
       "file_type": "code",
       "source_file": "tests/Fixtures/ConcreteCustomer.php",
@@ -6500,7 +6590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_fixtures_concreteinvoice",
-      "community": 37,
+      "community": 12,
       "norm_label": "concreteinvoice.php"
     },
     {
@@ -6510,7 +6600,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "tests_fixtures_concreteinvoice_concreteinvoice",
-      "community": 37,
+      "community": 12,
       "norm_label": "concreteinvoice"
     },
     {
@@ -6520,7 +6610,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "invoice",
-      "community": 37,
+      "community": 12,
       "norm_label": "invoice"
     },
     {
@@ -6540,7 +6630,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "tests_fixtures_concretesubscription_concretesubscription",
-      "community": 21,
+      "community": 12,
       "norm_label": "concretesubscription"
     },
     {
@@ -6550,7 +6640,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "subscription",
-      "community": 30,
+      "community": 12,
       "norm_label": "subscription"
     },
     {
@@ -6820,7 +6910,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "tests_fixtures_fakegateway_fakegateway_refund",
-      "community": 7,
+      "community": 14,
       "norm_label": ".refund()"
     },
     {
@@ -7050,7 +7140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_fixtures_fakepaymentmethodtype",
-      "community": 27,
+      "community": 12,
       "norm_label": "fakepaymentmethodtype.php"
     },
     {
@@ -7330,7 +7420,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "tests_testcase_testcase",
-      "community": 14,
+      "community": 12,
       "norm_label": "testcase"
     },
     {
@@ -7340,7 +7430,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "orchestra",
-      "community": 14,
+      "community": 12,
       "norm_label": "orchestra"
     },
     {
@@ -7350,7 +7440,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_testcase_testcase_getpackageproviders",
-      "community": 14,
+      "community": 12,
       "norm_label": ".getpackageproviders()"
     },
     {
@@ -7360,7 +7450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_unit_dtotest",
-      "community": 27,
+      "community": 12,
       "norm_label": "dtotest.php"
     },
     {
@@ -7370,7 +7460,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_unit_dtotest_dtotest",
-      "community": 27,
+      "community": 12,
       "norm_label": "dtotest"
     },
     {
@@ -7380,7 +7470,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tests_unit_dtotest_dtotest_test_payment_round_trips_through_array",
-      "community": 27,
+      "community": 12,
       "norm_label": ".test_payment_round_trips_through_array()"
     },
     {
@@ -7390,7 +7480,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "tests_unit_dtotest_dtotest_test_customer_round_trips",
-      "community": 27,
+      "community": 4,
       "norm_label": ".test_customer_round_trips()"
     },
     {
@@ -7400,7 +7490,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "tests_unit_dtotest_dtotest_test_subscription_nests_items",
-      "community": 27,
+      "community": 12,
       "norm_label": ".test_subscription_nests_items()"
     },
     {
@@ -7410,7 +7500,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_unit_dtotest_dtotest_test_payment_method_holds_provider_type_contract",
-      "community": 27,
+      "community": 12,
       "norm_label": ".test_payment_method_holds_provider_type_contract()"
     },
     {
@@ -7420,7 +7510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_unit_enumtest",
-      "community": 12,
+      "community": 14,
       "norm_label": "enumtest.php"
     },
     {
@@ -7447,7 +7537,7 @@
       "label": ".test_get_labels_returns_all_cases_keyed_by_name()",
       "file_type": "code",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L23",
+      "source_location": "L25",
       "_origin": "ast",
       "id": "tests_unit_enumtest_enumtest_test_get_labels_returns_all_cases_keyed_by_name",
       "community": 14,
@@ -7457,7 +7547,7 @@
       "label": ".test_interact_with_collection_values()",
       "file_type": "code",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L31",
+      "source_location": "L33",
       "_origin": "ast",
       "id": "tests_unit_enumtest_enumtest_test_interact_with_collection_values",
       "community": 14,
@@ -7467,7 +7557,7 @@
       "label": ".test_currency_minor_units()",
       "file_type": "code",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L39",
+      "source_location": "L41",
       "_origin": "ast",
       "id": "tests_unit_enumtest_enumtest_test_currency_minor_units",
       "community": 14,
@@ -7477,11 +7567,21 @@
       "label": ".test_backed_values()",
       "file_type": "code",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L45",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "tests_unit_enumtest_enumtest_test_backed_values",
       "community": 14,
       "norm_label": ".test_backed_values()"
+    },
+    {
+      "label": ".test_only_the_unrecoverable_statuses_deny_access()",
+      "file_type": "code",
+      "source_file": "tests/Unit/EnumTest.php",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "tests_unit_enumtest_enumtest_test_only_the_unrecoverable_statuses_deny_access",
+      "community": 14,
+      "norm_label": ".test_only_the_unrecoverable_statuses_deny_access()"
     },
     {
       "label": "InvoiceBuilderTest.php",
@@ -7490,7 +7590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_unit_invoicebuildertest",
-      "community": 14,
+      "community": 12,
       "norm_label": "invoicebuildertest.php"
     },
     {
@@ -7500,7 +7600,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "tests_unit_invoicebuildertest_invoicebuildertest",
-      "community": 14,
+      "community": 12,
       "norm_label": "invoicebuildertest"
     },
     {
@@ -7510,7 +7610,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tests_unit_invoicebuildertest_invoicebuildertest_test_it_totals_line_amounts",
-      "community": 14,
+      "community": 12,
       "norm_label": ".test_it_totals_line_amounts()"
     },
     {
@@ -8157,7 +8257,7 @@
       "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L115",
+      "source_location": "L128",
       "_origin": "ast",
       "id": "changelog_changed",
       "community": 20,
@@ -8167,7 +8267,7 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L169",
+      "source_location": "L182",
       "_origin": "ast",
       "id": "changelog_fixed",
       "community": 20,
@@ -8267,7 +8367,7 @@
       "label": "Navigating this package \u2014 use the graph, not grep",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L243",
+      "source_location": "L244",
       "_origin": "ast",
       "id": "claude_navigating_this_package_use_the_graph_not_grep",
       "community": 64,
@@ -8552,6 +8652,106 @@
       "id": "releasing_diffing_versions",
       "community": 20,
       "norm_label": "diffing versions"
+    },
+    {
+      "label": "dunning-subscription-statuses.md",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses",
+      "community": 17,
+      "norm_label": "dunning-subscription-statuses.md"
+    },
+    {
+      "label": "Spec: Complete SubscriptionStatus with Stripe's two unconditional dunning states",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "community": 17,
+      "norm_label": "spec: complete subscriptionstatus with stripe's two unconditional dunning states"
+    },
+    {
+      "label": "Context & Goal",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_context_goal",
+      "community": 17,
+      "norm_label": "context & goal"
+    },
+    {
+      "label": "Why the fix does not stop at adding two cases",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_why_the_fix_does_not_stop_at_adding_two_cases",
+      "community": 17,
+      "norm_label": "why the fix does not stop at adding two cases"
+    },
+    {
+      "label": "Why this does not collide with #25",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_why_this_does_not_collide_with_25",
+      "community": 17,
+      "norm_label": "why this does not collide with #25"
+    },
+    {
+      "label": "Functional requirements",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_functional_requirements",
+      "community": 17,
+      "norm_label": "functional requirements"
+    },
+    {
+      "label": "Acceptance criteria",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L66",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_acceptance_criteria",
+      "community": 17,
+      "norm_label": "acceptance criteria"
+    },
+    {
+      "label": "Non-goals",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L78",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_non_goals",
+      "community": 17,
+      "norm_label": "non-goals"
+    },
+    {
+      "label": "Edge cases",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_edge_cases",
+      "community": 17,
+      "norm_label": "edge cases"
+    },
+    {
+      "label": "Open questions",
+      "file_type": "document",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L113",
+      "_origin": "ast",
+      "id": "docs_specs_dunning_subscription_statuses_open_questions",
+      "community": 17,
+      "norm_label": "open questions"
     },
     {
       "label": "UnexpectedWebhookEventException (changelog entry)",
@@ -15933,7 +16133,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/Enums/SubscriptionStatus.php",
-      "source_location": "L31",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "src_enums_subscriptionstatus",
+      "target": "src_enums_subscriptionstatus_deniesaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/Enums/SubscriptionStatus.php",
+      "source_location": "L37",
       "weight": 1.0,
       "source": "src_enums_subscriptionstatus",
       "target": "src_enums_subscriptionstatus_isactive",
@@ -15991,6 +16201,17 @@
       "source_location": "L9",
       "weight": 1.0,
       "source": "tests_feature_subscriptionquantitytest",
+      "target": "src_enums_subscriptionstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest",
       "target": "src_enums_subscriptionstatus",
       "confidence_score": 1.0
     },
@@ -17946,7 +18167,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L41",
+      "source_location": "L42",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_setup",
       "target": "src_facades_cashier_cashier"
@@ -17957,7 +18178,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L152",
+      "source_location": "L183",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unregistered_driver_slot_is_a_configuration_error",
       "target": "src_facades_cashier_cashier"
@@ -19448,7 +19669,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L143",
+      "source_location": "L146",
       "weight": 1.0,
       "source": "src_models_subscription_subscription",
       "target": "src_models_subscription_subscription_active",
@@ -19458,7 +19679,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L155",
+      "source_location": "L158",
       "weight": 1.0,
       "source": "src_models_subscription_subscription",
       "target": "src_models_subscription_subscription_canceled",
@@ -19498,7 +19719,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L184",
+      "source_location": "L187",
       "weight": 1.0,
       "source": "src_models_subscription_subscription",
       "target": "src_models_subscription_subscription_hasended",
@@ -19528,7 +19749,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L176",
+      "source_location": "L179",
       "weight": 1.0,
       "source": "src_models_subscription_subscription",
       "target": "src_models_subscription_subscription_ongraceperiod",
@@ -19538,7 +19759,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L164",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "src_models_subscription_subscription",
       "target": "src_models_subscription_subscription_ontrial",
@@ -19634,7 +19855,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L145",
+      "source_location": "L148",
       "weight": 1.0,
       "source": "src_models_subscription_subscription_active",
       "target": "src_models_subscription_subscription_hasended",
@@ -19645,7 +19866,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/Models/Subscription.php",
-      "source_location": "L149",
+      "source_location": "L152",
       "weight": 1.0,
       "source": "src_models_subscription_subscription_active",
       "target": "src_models_subscription_subscription_ongraceperiod",
@@ -21959,7 +22180,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L19",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest",
@@ -22002,7 +22223,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L26",
+      "source_location": "L27",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_definedatabasemigrations",
@@ -22012,7 +22233,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L21",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_defineenvironment",
@@ -22022,7 +22243,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L37",
+      "source_location": "L38",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_setup",
@@ -22032,7 +22253,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L94",
+      "source_location": "L125",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_fully_ended_subscription_is_not_subscribed",
@@ -22042,7 +22263,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L104",
+      "source_location": "L135",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial",
@@ -22052,7 +22273,17 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L148",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "tests_feature_querysidebillabletest_querysidebillabletest",
+      "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L179",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unregistered_driver_slot_is_a_configuration_error",
@@ -22062,7 +22293,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L74",
+      "source_location": "L75",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_on_trial_and_grace_period",
@@ -22072,7 +22303,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L131",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscribed_to_price_checks_the_items",
@@ -22082,7 +22313,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L64",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscription_and_subscribed_read_the_local_record",
@@ -22092,7 +22323,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L113",
+      "source_location": "L144",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscriptions_are_scoped_to_the_model_driver",
@@ -22102,7 +22333,17 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L48",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "tests_feature_querysidebillabletest_querysidebillabletest",
+      "target": "tests_feature_querysidebillabletest_querysidebillabletest_unrecoverablestatuses",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L49",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22112,7 +22353,7 @@
       "relation": "inherits",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L19",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest",
       "target": "tests_testcase_testcase",
@@ -22123,7 +22364,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L96",
+      "source_location": "L127",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_fully_ended_subscription_is_not_subscribed",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22134,7 +22375,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L106",
+      "source_location": "L137",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22145,7 +22386,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L76",
+      "source_location": "L105",
+      "weight": 1.0,
+      "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at",
+      "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_on_trial_and_grace_period",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22156,7 +22408,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L133",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscribed_to_price_checks_the_items",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22167,7 +22419,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L66",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscription_and_subscribed_read_the_local_record",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22178,7 +22430,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L115",
+      "source_location": "L146",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscriptions_are_scoped_to_the_model_driver",
       "target": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22188,7 +22440,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L48",
+      "source_location": "L49",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
@@ -22201,7 +22453,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L52",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
       "target": "tests_fixtures_concretesubscription_concretesubscription"
@@ -22211,7 +22463,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L48",
+      "source_location": "L49",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_userwithsubscription",
       "target": "tests_fixtures_user_user",
@@ -22222,7 +22474,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L96",
+      "source_location": "L127",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_fully_ended_subscription_is_not_subscribed",
       "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
@@ -22232,17 +22484,28 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L106",
+      "source_location": "L137",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_a_stale_trialing_status_with_a_past_trial_end_is_not_on_trial",
       "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L101",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at",
+      "target": "tests_feature_querysidebillabletest_php_subscriptionstatus",
+      "confidence_score": 1.0
     },
     {
       "relation": "references_constant",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L76",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_on_trial_and_grace_period",
       "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
@@ -22252,7 +22515,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L133",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscribed_to_price_checks_the_items",
       "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
@@ -22262,7 +22525,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L66",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscription_and_subscribed_read_the_local_record",
       "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
@@ -22272,9 +22535,19 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L115",
+      "source_location": "L146",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscriptions_are_scoped_to_the_model_driver",
+      "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
+    },
+    {
+      "relation": "references_constant",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/Feature/QuerySideBillableTest.php",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "tests_feature_querysidebillabletest_querysidebillabletest_unrecoverablestatuses",
       "target": "tests_feature_querysidebillabletest_php_subscriptionstatus"
     },
     {
@@ -22283,7 +22556,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/Feature/QuerySideBillableTest.php",
-      "source_location": "L118",
+      "source_location": "L149",
       "weight": 1.0,
       "source": "tests_feature_querysidebillabletest_querysidebillabletest_test_subscriptions_are_scoped_to_the_model_driver",
       "target": "tests_fixtures_concretesubscription_concretesubscription"
@@ -22779,6 +23052,121 @@
       "source_location": "L101",
       "weight": 1.0,
       "source": "tests_feature_subscriptionquantitytest_subscriptionquantitytest_test_an_item_row_persists_an_unknown_quantity_as_null",
+      "target": "tests_fixtures_concretesubscription_concretesubscription"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest",
+      "target": "tests_fixtures_concretesubscription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest",
+      "target": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest",
+      "target": "tests_fixtures_user_user",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest",
+      "target": "tests_testcase_testcase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "target": "tests_feature_subscriptionstatustest_subscriptionstatustest_definedatabasemigrations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "target": "tests_feature_subscriptionstatustest_subscriptionstatustest_dunningstatuses",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "target": "tests_feature_subscriptionstatustest_subscriptionstatustest_seedstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "target": "tests_feature_subscriptionstatustest_subscriptionstatustest_test_a_dunning_status_row_reads_back_as_its_enum",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest",
+      "target": "tests_testcase_testcase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest_test_a_dunning_status_row_reads_back_as_its_enum",
+      "target": "tests_feature_subscriptionstatustest_subscriptionstatustest_seedstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "tests/Feature/SubscriptionStatusTest.php",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "tests_feature_subscriptionstatustest_subscriptionstatustest_test_a_dunning_status_row_reads_back_as_its_enum",
       "target": "tests_fixtures_concretesubscription_concretesubscription"
     },
     {
@@ -24373,7 +24761,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L45",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "tests_unit_enumtest_enumtest",
       "target": "tests_unit_enumtest_enumtest_test_backed_values",
@@ -24383,7 +24771,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L39",
+      "source_location": "L41",
       "weight": 1.0,
       "source": "tests_unit_enumtest_enumtest",
       "target": "tests_unit_enumtest_enumtest_test_currency_minor_units",
@@ -24393,7 +24781,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L23",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "tests_unit_enumtest_enumtest",
       "target": "tests_unit_enumtest_enumtest_test_get_labels_returns_all_cases_keyed_by_name",
@@ -24403,10 +24791,20 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/Unit/EnumTest.php",
-      "source_location": "L31",
+      "source_location": "L33",
       "weight": 1.0,
       "source": "tests_unit_enumtest_enumtest",
       "target": "tests_unit_enumtest_enumtest_test_interact_with_collection_values",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/Unit/EnumTest.php",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "tests_unit_enumtest_enumtest",
+      "target": "tests_unit_enumtest_enumtest_test_only_the_unrecoverable_statuses_deny_access",
       "confidence_score": 1.0
     },
     {
@@ -24903,7 +25301,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L115",
+      "source_location": "L128",
       "weight": 1.0,
       "source": "changelog_unreleased",
       "target": "changelog_changed",
@@ -24913,7 +25311,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L169",
+      "source_location": "L182",
       "weight": 1.0,
       "source": "changelog_unreleased",
       "target": "changelog_fixed",
@@ -24973,7 +25371,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L243",
+      "source_location": "L244",
       "weight": 1.0,
       "source": "claude_isapp_laravel_cashier_support",
       "target": "claude_navigating_this_package_use_the_graph_not_grep",
@@ -25277,6 +25675,96 @@
       "weight": 1.0,
       "source": "releasing_releasing",
       "target": "releasing_diffing_versions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses",
+      "target": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "target": "docs_specs_dunning_subscription_statuses_acceptance_criteria",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "target": "docs_specs_dunning_subscription_statuses_context_goal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "target": "docs_specs_dunning_subscription_statuses_edge_cases",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "target": "docs_specs_dunning_subscription_statuses_functional_requirements",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "target": "docs_specs_dunning_subscription_statuses_non_goals",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_spec_complete_subscriptionstatus_with_stripe_s_two_unconditional_dunning_states",
+      "target": "docs_specs_dunning_subscription_statuses_open_questions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_context_goal",
+      "target": "docs_specs_dunning_subscription_statuses_why_the_fix_does_not_stop_at_adding_two_cases",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/specs/dunning-subscription-statuses.md",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "docs_specs_dunning_subscription_statuses_context_goal",
+      "target": "docs_specs_dunning_subscription_statuses_why_this_does_not_collide_with_25",
       "confidence_score": 1.0
     },
     {
@@ -25829,5 +26317,5 @@
       "source_file": ".claude/rules/smart-stubs.md"
     }
   ],
-  "built_at_commit": "cdde5c06df045e944eced5dc616c3dac2a86e3f8"
+  "built_at_commit": "cd9a0345f52419f4e73858b5a7d92c151d9983ee"
 }

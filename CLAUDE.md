@@ -124,7 +124,10 @@ src/
 - Money — `int` (minor units) + `Currency` enum, never `float`. A money library
   (`moneyphp/money`, as both references use) is **allowed** if a task needs one — it was left
   out only because we had never used it, not as a ban. See #32.
-- Method names strictly from Stripe Cashier
+- Method names strictly from Stripe Cashier — on the surface an app calls. Where Cashier
+  encodes a concept without naming it (inline comparisons, a static flag, no such type),
+  an internal predicate may be coined; cite the reference lines it encodes in its docblock.
+  See `.claude/rules/constraints.md`
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
 - Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`
 - Concerns call `Cashier::ensureSupports(Capability)` before delegating
@@ -203,12 +206,13 @@ but the subscription mutation surface was reinvented without a multi-gateway rea
 **Do not "fix" any of these by inventing a local workaround — each has an open issue.**
 
 Correctness bugs (fix first; each is self-contained):
-- **#22** `SubscriptionStatus` lacks `unpaid` / `incomplete_expired`. The cast uses
-  `BackedEnum::from()`, so such a row throws `ValueError` on read. Real Stripe states.
 - **#23** No `SerializesModels` on any of the 11 events → queued listeners get a stale snapshot.
 - **#24** No unique key on `cashier_subscription_items` → a redelivered webhook duplicates rows.
 - **#25** `active()` is really Cashier's `valid()`. A `past_due` subscription in its grace period
   still gets access; Stripe/Paddle deny it (`$deactivatePastDue = true`). No toggle exists.
+  Scope note: `unpaid` / `incomplete_expired` are already denied unconditionally via
+  `SubscriptionStatus::deniesAccess()` (#22) — Stripe has no toggle for those two. What is
+  left to #25 is the rename plus `$deactivatePastDue` / `$deactivateIncomplete`.
 - **#26** `config('cashier-support.models.customer')` is read by `CashierManager` but absent
   from the published config — dead branch.
 - **#27** `GuardedSubscriptionBuilder` is in no deptrac layer, so the "zero HTTP" rule misses it.

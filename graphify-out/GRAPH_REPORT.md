@@ -1,16 +1,16 @@
-# Graph Report - laravel-cashier-support  (2026-07-14)
+# Graph Report - laravel-cashier-support  (2026-07-16)
 
 ## Corpus Check
-- 138 files · ~29,166 words
+- 140 files · ~30,762 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 922 nodes · 1530 edges · 134 communities (58 shown, 76 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 70 edges (avg confidence: 0.8)
+- 942 nodes · 1558 edges · 129 communities (57 shown, 72 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 71 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cdde5c06`
+- Built from commit: `cd9a0345`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -36,13 +36,10 @@
 - Customer Record Persistence
 - Fake Subscription Builder
 - Capability Gating Tests
-- Subscription Billing Period Tests
 - Fake Checkout Session
 - Composer Package Metadata
 - Runtime Dependencies
 - Composer Scripts
-- Migration Schema Tests
-- DTO & Test Base Cases
 - Package Keywords
 - Checkout Session DTO
 - Pending Price Change Tests
@@ -52,7 +49,6 @@
 - Subscription Canceled Event
 - Subscription Created Event
 - Subscription Past Due Event
-- Price Change Scheduled Event
 - Subscription Updated Event
 - CI Quality & Test Jobs
 - Scaffolding Skills
@@ -68,7 +64,6 @@
 - isapp/laravel-cashier-support
 - Track Cashier — Upstream Drift Detector
 - Capabilities — gate the intent, not the operation
-- MorphKeyTypeTest
 - AGENT.md
 - Exceptions — which failures an app is expected to catch
 - Smart Stubs — No Custom Workarounds
@@ -138,10 +133,10 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `Cashier` - 43 edges
-2. `FakeGateway` - 36 edges
-3. `TestCase` - 35 edges
-4. `CheckoutRequest` - 30 edges
-5. `User` - 30 edges
+2. `TestCase` - 37 edges
+3. `FakeGateway` - 36 edges
+4. `User` - 31 edges
+5. `CheckoutRequest` - 30 edges
 6. `GranularCapabilitiesTest` - 21 edges
 7. `Payment` - 19 edges
 8. `CashierException` - 18 edges
@@ -157,8 +152,8 @@
   .github/workflows/tests.yml → .claude/skills/check/SKILL.md
 - `tests job (Laravel 11/12/13 × PHP 8.2–8.5 matrix)` --shares_data_with--> `Skill: Quality Check`  [INFERRED]
   .github/workflows/tests.yml → .claude/skills/check/SKILL.md
-- `cashierCustomer()` --calls--> `Cashier`  [INFERRED]
-  src/Concerns/ManagesCustomer.php → src/Facades/Cashier.php
+- `subscriptions()` --calls--> `Cashier`  [INFERRED]
+  src/Concerns/ManagesSubscriptions.php → src/Facades/Cashier.php
 
 ## Import Cycles
 - None detected.
@@ -170,7 +165,7 @@
 - **Upstream parity flow — sources of truth, drift detection, baseline manifest** — _claude_rules_sources_of_truth_sources_of_truth, _claude_skills_track_cashier_skill_track_cashier, _claude_skills_track_cashier_baseline_baseline, _claude_skills_track_cashier_skill_mapping_table, _claude_rules_sources_of_truth_cashier_stripe [EXTRACTED 0.90]
 - **Unsupported-feature policy — capability gate, throw, no workaround** — _claude_rules_smart_stubs_smart_stubs, _claude_rules_smart_stubs_capability_gating, _claude_rules_smart_stubs_unsupportedoperationexception, _claude_skills_create_contract_skill_create_contract [EXTRACTED 0.85]
 
-## Communities (134 total, 76 thin omitted)
+## Communities (129 total, 72 thin omitted)
 
 ### Community 0 - "Customer & Invoice Contracts"
 Cohesion: 0.06
@@ -181,68 +176,72 @@ Cohesion: 0.40
 Nodes (15): Zero business logic, zero HTTP calls, deptrac.yaml — layer boundary rules, Deptrac layer: Concerns, Deptrac layer: Contracts, Deptrac layer: DTO, Deptrac layer: Enums, Deptrac layer: Events, Deptrac layer: Exceptions (+7 more)
 
 ### Community 2 - "Guarded Subscription Builder"
-Cohesion: 0.07
-Nodes (12): GuardedSubscriptionBuilder, static, Subscription, cashierDriver(), cashierProvider(), ensureCashierSupports(), Capability, GatewayProvider (+4 more)
+Cohesion: 0.05
+Nodes (19): Facade, MorphOne, cashierDriver(), cashierProvider(), ensureCashierSupports(), Capability, GatewayProvider, asCustomer() (+11 more)
 
 ### Community 3 - "Checkout Requests & Sessions"
-Cohesion: 0.07
-Nodes (10): checkout(), checkoutRequestFromLegacyArguments(), CheckoutSession, CheckoutRequest, Capability, CheckoutMode, Currency, self (+2 more)
+Cohesion: 0.10
+Nodes (9): checkout(), checkoutRequestFromLegacyArguments(), CheckoutSession, CheckoutRequest, Capability, CheckoutMode, Currency, self (+1 more)
 
 ### Community 4 - "Billable Model Tests"
-Cohesion: 0.08
-Nodes (18): Billable, Customer, HasUuids, Model, Customer, MorphTo, Invoice, BelongsTo (+10 more)
+Cohesion: 0.10
+Nodes (11): Billable, Customer, Model, CustomerRecordsTest, LocalInvoicesGatewayTest, ConcreteCustomer, PriceTaxedUser, SecondaryDriverUser (+3 more)
 
 ### Community 5 - "Payment Method Management"
-Cohesion: 0.12
-Nodes (19): BillingReason, Data, Interval, RefundReason, Customer, Invoice, CarbonImmutable, Currency (+11 more)
+Cohesion: 0.16
+Nodes (13): BillingReason, Data, Interval, Customer, Invoice, CarbonImmutable, Currency, PaymentStatus (+5 more)
 
 ### Community 6 - "Customer/Invoice Eloquent Relations"
-Cohesion: 0.16
-Nodes (4): HasMany, CarbonImmutable, MorphTo, Subscription
+Cohesion: 0.08
+Nodes (12): HasMany, HasUuids, Customer, MorphTo, Invoice, BelongsTo, MorphTo, CarbonImmutable (+4 more)
 
 ### Community 7 - "Fake Gateway Test Double"
-Cohesion: 0.12
-Nodes (11): GatewayProvider, FakeGateway, Capability, CheckoutSession, Customer, Invoice, Model, Response (+3 more)
+Cohesion: 0.08
+Nodes (20): GatewayProvider, PaymentMethodType, addPaymentMethod(), defaultPaymentMethod(), addPaymentMethod(), defaultPaymentMethod(), deletePaymentMethod(), paymentMethods() (+12 more)
 
 ### Community 8 - "Tax Rates & Invoice Concerns"
-Cohesion: 0.22
-Nodes (11): charge(), Model, refund(), Payment, CarbonImmutable, Currency, PaymentStatus, PaymentFailed (+3 more)
+Cohesion: 0.11
+Nodes (19): ensureTaxRatesSupported(), priceTaxRates(), taxRates(), downloadInvoice(), findInvoice(), Invoice, Response, charge() (+11 more)
 
 ### Community 9 - "Local Invoice Records & PDF"
-Cohesion: 0.22
-Nodes (17): Builder, InvoiceRecord, PdfBuilder, downloadInvoice(), driverName(), findInvoice(), findInvoiceRecord(), invoiceQuery() (+9 more)
+Cohesion: 0.15
+Nodes (18): Builder, InvoiceRecord, PdfBuilder, downloadInvoice(), driverName(), findInvoice(), findInvoiceRecord(), invoiceQuery() (+10 more)
 
 ### Community 10 - "Cashier Driver Manager"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (7): Macroable, Manager, CashierManager, Capability, GatewayProvider, InvalidConfigurationException, self
 
 ### Community 11 - "Webhook Handling & Events"
-Cohesion: 0.12
-Nodes (10): parseWebhook(), CarbonImmutable, WebhookPayload, WebhookHandled, WebhookReceived, self, UnexpectedWebhookEventException, self (+2 more)
+Cohesion: 0.09
+Nodes (12): parseWebhook(), CarbonImmutable, WebhookPayload, WebhookHandled, WebhookReceived, self, UnexpectedWebhookEventException, self (+4 more)
 
 ### Community 12 - "Config, Enums & Labels"
-Cohesion: 0.15
-Nodes (3): Facade, SubscriptionItem, ConcreteSubscriptionItem
+Cohesion: 0.05
+Nodes (15): Invoice, Orchestra, Subscription, SubscriptionItem, Model, MigrationsTest, PendingPriceChangeTest, SubscriptionPeriodTest (+7 more)
 
 ### Community 13 - "Subscription Management Trait"
-Cohesion: 0.08
-Nodes (33): MorphMany, MorphOne, DateTimeInterface, ensureTaxRatesSupported(), priceTaxRates(), taxRates(), asCustomer(), cashierCustomer() (+25 more)
+Cohesion: 0.22
+Nodes (16): MorphMany, cancelSubscription(), cancelSubscriptionNow(), newSubscription(), onGracePeriod(), onTrial(), pauseSubscription(), SubscriptionBuilder (+8 more)
 
 ### Community 14 - "Refunds"
-Cohesion: 0.18
-Nodes (4): Orchestra, TestCase, EnumTest, InvoiceBuilderTest
+Cohesion: 0.16
+Nodes (7): RefundReason, CarbonImmutable, Currency, Refund, Model, RefundProcessed, EnumTest
 
 ### Community 16 - "Invoice Builder"
 Cohesion: 0.26
 Nodes (6): InvoiceBuilder, CarbonImmutable, Currency, Invoice, PaymentStatus, self
+
+### Community 17 - "Subscription Query Tests"
+Cohesion: 0.20
+Nodes (9): Acceptance criteria, Context & Goal, Edge cases, Functional requirements, Non-goals, Open questions, Spec: Complete SubscriptionStatus with Stripe's two unconditional dunning states, Why the fix does not stop at adding two cases (+1 more)
 
 ### Community 18 - "Customer Record Persistence"
 Cohesion: 0.32
 Nodes (9): CustomerNotFoundException, self, customerIdFor(), customerIdOrNull(), customerRecord(), driverName(), persistCustomerId(), Model (+1 more)
 
 ### Community 19 - "Fake Subscription Builder"
-Cohesion: 0.27
-Nodes (5): SubscriptionBuilder, FakeSubscriptionBuilder, DateTimeInterface, static, Subscription
+Cohesion: 0.14
+Nodes (9): GuardedSubscriptionBuilder, DateTimeInterface, static, Subscription, SubscriptionBuilder, FakeSubscriptionBuilder, DateTimeInterface, static (+1 more)
 
 ### Community 20 - "Capability Gating Tests"
 Cohesion: 0.06
@@ -264,10 +263,6 @@ Nodes (11): require, illuminate/contracts, illuminate/database, illuminate/suppo
 Cohesion: 0.18
 Nodes (11): scripts, analyse, ci, deptrac, format, lint, test, @analyse (+3 more)
 
-### Community 27 - "DTO & Test Base Cases"
-Cohesion: 0.14
-Nodes (10): PaymentMethodType, addPaymentMethod(), defaultPaymentMethod(), addPaymentMethod(), defaultPaymentMethod(), deletePaymentMethod(), paymentMethods(), Model (+2 more)
-
 ### Community 28 - "Package Keywords"
 Cohesion: 0.20
 Nodes (10): keywords, adyen, billing, cashier, contracts, laravel, payments, revolut (+2 more)
@@ -277,8 +272,8 @@ Cohesion: 0.32
 Nodes (4): expiresAt(), mode(), CarbonImmutable, CheckoutMode
 
 ### Community 30 - "Pending Price Change Tests"
-Cohesion: 0.20
-Nodes (5): Model, Subscription, SubscriptionPriceChangeScheduled, Subscription, PendingPriceChangeTest
+Cohesion: 0.80
+Nodes (3): Model, Subscription, SubscriptionPriceChangeScheduled
 
 ### Community 31 - "Dev Dependencies"
 Cohesion: 0.29
@@ -299,10 +294,6 @@ Nodes (3): Model, Subscription, SubscriptionCreated
 ### Community 36 - "Subscription Past Due Event"
 Cohesion: 0.80
 Nodes (3): Model, Subscription, SubscriptionPastDue
-
-### Community 37 - "Price Change Scheduled Event"
-Cohesion: 0.27
-Nodes (4): Invoice, LocalInvoicesGatewayTest, Model, ConcreteInvoice
 
 ### Community 38 - "Subscription Updated Event"
 Cohesion: 0.80
@@ -349,24 +340,24 @@ Cohesion: 0.50
 Nodes (3): Output format, Sources for this project, When invoked
 
 ## Knowledge Gaps
-- **164 isolated node(s):** `name`, `description`, `type`, `license`, `laravel` (+159 more)
+- **171 isolated node(s):** `name`, `description`, `type`, `license`, `laravel` (+166 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **76 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **72 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `TestCase` connect `Refunds` to `Service Provider Registration`, `Guarded Subscription Builder`, `Checkout Requests & Sessions`, `Billable Model Tests`, `Price Change Scheduled Event`, `MorphKeyTypeTest`, `Cashier Driver Manager`, `Config, Enums & Labels`, `Subscription Query Tests`, `Subscription Billing Period Tests`, `Migration Schema Tests`, `DTO & Test Base Cases`, `Pending Price Change Tests`, `SubscriptionQuantityTest`?**
-  _High betweenness centrality (0.088) - this node is a cross-community bridge._
-- **Why does `FakeGateway` connect `Fake Gateway Test Double` to `Checkout Requests & Sessions`, `Billable Model Tests`, `Cashier Driver Manager`, `Webhook Handling & Events`, `Config, Enums & Labels`, `Subscription Query Tests`, `Fake Subscription Builder`, `SubscriptionQuantityTest`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
-- **Why does `CashierException` connect `Customer & Invoice Contracts` to `Checkout Requests & Sessions`, `Tax Rates & Invoice Concerns`, `Cashier Driver Manager`, `Webhook Handling & Events`, `Customer Record Persistence`, `DTO & Test Base Cases`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Why does `TestCase` connect `Config, Enums & Labels` to `Service Provider Registration`, `Guarded Subscription Builder`, `Checkout Requests & Sessions`, `Billable Model Tests`, `Local Invoice Records & PDF`, `Webhook Handling & Events`, `Refunds`, `SubscriptionQuantityTest`?**
+  _High betweenness centrality (0.093) - this node is a cross-community bridge._
+- **Why does `FakeGateway` connect `Fake Gateway Test Double` to `Guarded Subscription Builder`, `Checkout Requests & Sessions`, `Billable Model Tests`, `Webhook Handling & Events`, `Config, Enums & Labels`, `Refunds`, `Fake Subscription Builder`, `SubscriptionQuantityTest`?**
+  _High betweenness centrality (0.057) - this node is a cross-community bridge._
+- **Why does `CashierException` connect `Customer & Invoice Contracts` to `Guarded Subscription Builder`, `Fake Gateway Test Double`, `Tax Rates & Invoice Concerns`, `Cashier Driver Manager`, `Webhook Handling & Events`, `Customer Record Persistence`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
 - **Are the 40 inferred relationships involving `Cashier` (e.g. with `.quantity()` and `.trialDays()`) actually correct?**
   _`Cashier` has 40 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 12 inferred relationships involving `CheckoutRequest` (e.g. with `.test_a_malformed_argument_is_not_a_cashier_exception()` and `.test_a_non_positive_amount_never_reaches_a_driver()`) actually correct?**
   _`CheckoutRequest` has 12 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `description`, `type` to the rest of the system?**
-  _164 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _171 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Customer & Invoice Contracts` be split into smaller, more focused modules?**
   _Cohesion score 0.05807622504537205 - nodes in this community are weakly interconnected._

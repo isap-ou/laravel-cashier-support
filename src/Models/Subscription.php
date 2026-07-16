@@ -139,10 +139,13 @@ abstract class Subscription extends Model
      * Whether the subscription grants access: active, trialing, or canceled
      * but still within its paid-through grace period (Stripe Cashier
      * semantics — the customer paid until ends_at).
+     *
+     * A status that withholds access on its own outranks the grace period: an
+     * unpaid subscription never earned the paid-through date it may carry.
      */
     public function active(): bool
     {
-        if ($this->hasEnded()) {
+        if ($this->hasEnded() || $this->status->deniesAccess()) {
             return false;
         }
 
