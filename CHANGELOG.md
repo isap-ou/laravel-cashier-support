@@ -204,6 +204,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mutates the row before running the worker and asserts the listener observed the new
   value. A reflection check over `class_uses()` would only have restated the diff.
 
+  That proves the mechanism on one event; a third test proves the reach. It sweeps
+  `src/Events/` — found, not enumerated, the way `ExceptionBoundaryTest` sweeps the
+  contracts — and asserts the payload of every event carrying a billable. Removing
+  `SerializesModels` from any one of the nine now fails by name. An event added later is
+  covered the day it exists, and one carrying a payload the sweep cannot build fails
+  loudly rather than quietly opting out.
+
   The two DTO-only events (`WebhookReceived`, `WebhookHandled`) have no model to
   reference. They take both traits regardless — for the uniformity the references keep,
   and because `Dispatchable` is wanted on every event either way. `SerializesModels` is
