@@ -205,6 +205,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Every `illuminate/*` package `src/` imports from is now declared, and a test keeps it
+  that way.** `composer.json` did not require `illuminate/queue`, and nothing it did require
+  reached it — yet all 11 classes in `src/Events/` imported `Illuminate\Queue\SerializesModels`.
+  A `use` on a class from an undeclared package is a fatal at class load, so under a
+  subsplits-only install every event class in this package was unloadable. (#43)
+
+  **`SerializesModels` stays and is now declared honestly.** It is load-bearing: 9 of the 11
+  events carry a `Model $billable`, and the trait replaces the model with a `ModelIdentifier`
+  and re-fetches it across the queue, so a listener sees the row as it *is* rather than as it
+  looked at dispatch. `illuminate/queue` ships as a subsplit, so declaring it costs nothing —
+  `laravel/framework` already `replace`s it, and adding the requirement installs no new package
+  in a real Laravel app.
+
+  **`Illuminate\Foundation\Events\Dispatchable` is gone, because it could not be declared at
+  all.** Foundation has no subsplit for modern Laravel — `illuminate/foundation` on packagist is
+  abandoned at v1.1.2 (2012) and cannot satisfy `^11|^12|^13`, and it is absent from
+  `laravel/framework`'s `replace` list where `illuminate/queue` is present. The only honest way
+  to keep the import was to require `laravel/framework` from a library. It bought nothing: the
+  whole trait is four static methods, three of them one-liners over `event(new static(...))` and
+  the fourth over `broadcast()`; it was used **zero** times in `src/` — events are dispatched with
+  `event(new ...)` — and it is sugar for whoever *sends* an event, while an app is our events'
+  listener. Events are still dispatched and still serialize
+  identically; only `SubscriptionCreated::dispatch(...)` is gone, in favour of
+  `event(new SubscriptionCreated(...))`.
+
+  **The reasoning is recorded here because the position it replaces was reached by an argument
+  that was wrong.** #41 defended the undeclared traits with "both references are in exactly the
+  same position". Verified on disk, that is half true and the wrong half was load-bearing:
+  `laravel/cashier` requires `illuminate/notifications`, which requires `illuminate/queue`, so
+  Stripe *is* covered — incidentally, since it pulls notifications to mail about failed payments,
+  not to obtain a trait. `laravel/cashier-paddle` requires no such thing and none of its six
+  `illuminate/*` deps reach queue, so Paddle was in exactly our position. The references disagree
+  here, which is why neither settled it.
+
+  `tests/Feature/DeclaredDependenciesTest.php` now asserts that every `Illuminate\` root imported
+  by `src/` maps to a declared package. Composer cannot catch this — it reads `composer.json` and
+  never our imports — and #43 was filed precisely because the same gap had already been found
+  once and written into a PR body, where it went untracked the moment that PR merged.
+
 - **An event the package never mapped now reaches a listener, and no driver can get that
   wrong again.** The webhook entry point moved into this package: one route,
   `webhook/cashier/{provider}`, one controller, and one contract method per driver.

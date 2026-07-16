@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
@@ -29,7 +28,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class WebhookHandled
 {
-    use Dispatchable, SerializesModels;
+    use SerializesModels;
 
     /**
      * @param  string  $provider  The driver name this delivery arrived for, as registered with Cashier::extend().
