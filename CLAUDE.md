@@ -263,8 +263,8 @@ graphify affected "SubscriptionStatus"                          # what breaks if
 with a backend key set (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, …), or without one graphify
 leaves `Community N` placeholders. Everything works without it; the queries are just blunter.
 
-The last semantically-built graph is still in git history if you want it back rather than
-rebuilt: `git show cd9a034:graphify-out/graph.json > graphify-out/graph.json`. It reflects the
+The last graph carrying that layer is still in git history if you want it back rather than
+rebuilt: `git show cb795a5:graphify-out/graph.json > graphify-out/graph.json`. It reflects the
 code as of that commit — run `graphify update .` after to bring the AST layer forward.
 
 Do not commit `graphify-out/`. It used to be tracked so a clone could inherit the semantic
