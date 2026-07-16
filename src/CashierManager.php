@@ -68,6 +68,21 @@ class CashierManager extends Manager
     }
 
     /**
+     * The names of every driver a provider package has registered.
+     *
+     * Manager::getDrivers() cannot answer this: it returns $this->drivers, the cache of
+     * already-RESOLVED instances, which is empty until something resolves one. The names
+     * passed to extend() live in Manager::$customCreators, and this is the only way to
+     * read them without resolving every driver as a side effect of listing them.
+     *
+     * @return array<int, string>
+     */
+    public function registeredDrivers(): array
+    {
+        return array_keys($this->customCreators);
+    }
+
+    /**
      * Resolve a gateway provider driver.
      *
      * @throws InvalidConfigurationException When the driver is unknown or not a gateway provider.

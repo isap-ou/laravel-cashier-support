@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Tests\Feature;
 
 use InvalidArgumentException;
+use Isapp\CashierSupport\Contracts\WebhookHandler;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\CashierException;
@@ -109,6 +110,16 @@ class ExceptionBoundaryTest extends TestCase
                 preg_match_all('/@throws\s+([^\s]+)/', $doc, $matches);
                 $thrown = $matches[1];
 
+                if ($this->isFactory($contract, $method->getName())) {
+                    $this->assertEmpty(
+                        $thrown,
+                        "{$where} is exempt as a factory that performs nothing, yet it declares a throw. "
+                        .'One of the two is wrong: either it does work, and the exemption must go, or the tag must.',
+                    );
+
+                    continue;
+                }
+
                 $this->assertNotEmpty($thrown, "{$where} does not say what it can throw.");
 
                 foreach ($thrown as $name) {
@@ -124,6 +135,48 @@ class ExceptionBoundaryTest extends TestCase
                 }
             }
         }
+    }
+
+    /**
+     * Methods that hand back another contract without performing anything, so they have
+     * nothing to declare.
+     *
+     * Keyed by METHOD, never by contract. Excluding a whole interface is exactly how
+     * WebhookHandler escaped this sweep the first time and took its real operations with
+     * it — so `webhook()` is exempt while anything else added to WebhookHandler is not.
+     *
+     * "Returns a contract" cannot be the rule on its own, tempting as it looks:
+     * SubscriptionOperations::newSubscription() returns a SubscriptionBuilder and still
+     * throws for an unsupported provider and for empty prices. A blanket rule would have
+     * quietly dropped it.
+     *
+     * The exemption pays for itself only because the throws did not vanish — they moved
+     * to IncomingWebhook::parse()/pipeline(), which this same sweep covers.
+     *
+     * @var array<class-string, array<int, string>>
+     */
+    private const FACTORY_METHODS = [
+        WebhookHandler::class => ['webhook'],
+    ];
+
+    /**
+     * @param  class-string  $contract
+     */
+    private function isFactory(string $contract, string $method): bool
+    {
+        if (! in_array($method, self::FACTORY_METHODS[$contract] ?? [], true)) {
+            return false;
+        }
+
+        // A renamed or deleted method must not go on being "exempt" — a stale entry here
+        // exempts nothing and hides that fact, which is the failure mode this whole test
+        // was written against.
+        $this->assertTrue(
+            method_exists($contract, $method),
+            "[{$contract}::{$method}()] is exempted from the sweep but does not exist.",
+        );
+
+        return true;
     }
 
     /**
