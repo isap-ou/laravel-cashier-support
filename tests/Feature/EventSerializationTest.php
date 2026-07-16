@@ -13,11 +13,9 @@ use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
-use Isapp\CashierSupport\DTO\WebhookPayload;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
-use Isapp\CashierSupport\Enums\WebhookEvent;
 use Isapp\CashierSupport\Events\SubscriptionCreated;
 use Isapp\CashierSupport\Events\WebhookHandled;
 use Isapp\CashierSupport\Events\WebhookReceived;
@@ -273,7 +271,7 @@ class EventSerializationTest extends TestCase
                 continue;
             }
 
-            if (! $this->hasFixtureFor($type->getName())) {
+            if (! $this->hasFixtureFor($type->getName(), $class)) {
                 $this->fail(
                     "[{$class}] parameter \${$parameter->getName()} is a {$type->getName()}, which "
                     .'this sweep does not know. If it can carry an Eloquent model — a Collection, '
@@ -290,14 +288,25 @@ class EventSerializationTest extends TestCase
      * The types this sweep can stand in for. Kept beside fixtureFor() on purpose:
      * the two must agree, or an event skips for a reason nobody chose.
      */
-    private function hasFixtureFor(string $type): bool
+    private function hasFixtureFor(string $type, string $class): bool
     {
+        // `array` is allowed for the two webhook events ONLY, and the narrowness is the
+        // point. Their payload is json_decode output: it holds scalars and arrays and
+        // can never hold an Eloquent model, so SerializesModels is not load-bearing for
+        // it. That reasoning is about those events, not about the type — a bare `array`
+        // is exactly the "I could not tell" this sweep exists to refuse, and an
+        // `array $invoices` full of models would take the exit while the suite stayed
+        // green. Keyed by type alone, this entry would have reopened the hole that
+        // carriesBillable()'s fail-loudly rule was written to close.
+        if ($type === 'array') {
+            return in_array($class, [WebhookReceived::class, WebhookHandled::class], true);
+        }
+
         return in_array($type, [
             Subscription::class,
             Payment::class,
             Refund::class,
             Invoice::class,
-            WebhookPayload::class,
         ], true);
     }
 
@@ -348,7 +357,7 @@ class EventSerializationTest extends TestCase
             Payment::class => $this->paymentDto(),
             Refund::class => $this->refundDto(),
             Invoice::class => $this->invoiceDto(),
-            WebhookPayload::class => $this->webhookPayload(),
+            'array' => $this->webhookBody(),
             default => $this->fail(
                 "[{$class}] takes a {$type} \${$parameter}, and this sweep has no fixture for it. "
                 .'Add one — an event must not escape the sweep by carrying an unfamiliar payload.'
@@ -386,46 +395,52 @@ class EventSerializationTest extends TestCase
         );
     }
 
-    private function webhookPayload(): WebhookPayload
+    /**
+     * A provider's decoded webhook body, of the shape json_decode actually returns.
+     *
+     * @return array<string, mixed>
+     */
+    private function webhookBody(): array
     {
-        return new WebhookPayload(
-            event: WebhookEvent::PaymentSucceeded,
-            id: 'evt_1',
-            data: ['order_id' => 'ord_1'],
-        );
+        return ['event' => 'ORDER_COMPLETED', 'order_id' => 'ord_1', 'amount' => 1000];
     }
 
     /**
-     * A DTO-only event has no model to reference. This does not prove the traits
+     * A body-only event has no model to reference. This does not prove the traits
      * do anything — it pins that they do no HARM: the identity substitution must
      * leave a payload that has no model in it alone.
      *
      * Both of them, not one: the sweep skips these two by design, so this is the
      * only thing that touches them at all.
      *
+     * The body is nested and mixed-type on purpose. It is the provider's, not ours,
+     * so nothing constrains its shape — and a queued listener is exactly where an
+     * over-clever serializer would flatten it.
+     *
      * @param  class-string  $class
      */
-    #[DataProvider('dtoOnlyEvents')]
-    public function test_a_dto_only_event_survives_serialization(string $class): void
+    #[DataProvider('rawBodyEvents')]
+    public function test_a_raw_body_event_survives_serialization(string $class): void
     {
-        $event = new $class(new WebhookPayload(
-            event: WebhookEvent::PaymentSucceeded,
-            id: 'evt_1',
-            data: ['order_id' => 'ord_1'],
-        ));
+        $body = [
+            'event' => 'DISPUTE_ACTION_REQUIRED',
+            'id' => 'dis_1',
+            'nested' => ['reason' => 'fraud', 'amount' => 1000, 'evidence_due' => null],
+            'flagged' => true,
+        ];
+
+        $event = new $class($body);
 
         /** @var WebhookReceived|WebhookHandled $restored */
         $restored = unserialize(serialize($event));
 
-        $this->assertSame(WebhookEvent::PaymentSucceeded, $restored->payload->event);
-        $this->assertSame('evt_1', $restored->payload->id);
-        $this->assertSame(['order_id' => 'ord_1'], $restored->payload->data);
+        $this->assertSame($body, $restored->payload);
     }
 
     /**
      * @return array<string, array{class-string}>
      */
-    public static function dtoOnlyEvents(): array
+    public static function rawBodyEvents(): array
     {
         return [
             'WebhookReceived' => [WebhookReceived::class],

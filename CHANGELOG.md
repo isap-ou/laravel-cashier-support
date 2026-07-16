@@ -181,6 +181,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`WebhookReceived` / `WebhookHandled` carry the provider's raw decoded body, so an
+  event the package never mapped *can* be dispatched at all.** They took a typed
+  `DTO\WebhookPayload`; they now take `array $payload`, which is what both references do.
+
+  This is the half of the fix that lives here, and on its own it changes nothing an app
+  can see: it removes the blocker. A driver must also dispatch `WebhookReceived` **above**
+  its parse step — that is now the contract's expectation of a driver, and
+  `cashier-revolut`'s #24 is the matching change.
+
+  **The DTO was the escape hatch's ceiling, and the ceiling was below the floor.**
+  `WebhookReceived` exists to fire for every verified webhook *before* any dispatch
+  decision, precisely so an app can react to what we never mapped — both references
+  dispatch a **raw array** there for exactly that reason
+  (`laravel/cashier`'s `Http/Controllers/WebhookController.php:45`, `-paddle`'s `:49`).
+  Ours demanded a `WebhookPayload`, whose `$event` was a non-nullable 8-case enum:
+
+  ```
+  WebhookEvent::tryFrom('PAYOUT_INITIATED')  => NULL       (8 cases)
+  new WebhookPayload(event: null, id: 'x')   => TypeError
+  ```
+
+  For any event outside those 8 the payload could not be **constructed**, so there was
+  nothing to dispatch and the event was dropped behind a 200. No gateway's catalogue is
+  a subset of 8 agnostic cases, which is what made this the contract's problem rather
+  than any one driver's: `cashier-revolut` maps 8 of Revolut's 22 documented types, so
+  14 vanished — every `DISPUTE_*` among them, i.e. a customer disputing a charge reached
+  no listener at all. `-adyen` and `-wise` would have hit the same wall.
+
+  **The typing was not paying for itself.** No production code in this package or in any
+  driver ever branched on `$payload->event` — the only readers were two `cashier-revolut`
+  tests asserting the event's own shape, which this change updates. Meaning already
+  travels on the nine **typed** events —
+  `PaymentSucceeded`, `SubscriptionCreated`, `SubscriptionRenewed` and the rest — which
+  carry the billable and a real DTO, and which a driver dispatches from its synchronizer.
+  That is the reference's split exactly: typed events for what we understand, one raw
+  event for everything that arrives. The DTO was decoration on the one channel whose
+  entire job is to not be selective.
+
+  The payload is provider-shaped, and that is the honest part rather than a wart: an event
+  nobody mapped has no agnostic meaning to render, and inventing one would be the lie the
+  hatch exists to prevent. An app that wants agnostic meaning listens to the typed events.
+
+  `DTO\WebhookPayload` is unchanged and still `WebhookHandler::parseWebhook()`'s return —
+  it is now purely a driver-side normalization, which is all it ever was in practice. That
+  method may still throw `UnexpectedWebhookEventException` for an event a driver does not
+  map: harmless now, because the hatch has already fired above it.
+
+  **Breaking for every driver, not just for listeners.** A driver *constructs* these events,
+  so `event(new WebhookReceived($payload))` with a `WebhookPayload` is now a `TypeError` on
+  every webhook — this needs a coordinated release with each driver, not a changelog note.
+  For an app: `$event->payload` is an `array`; a listener that read `$payload->event` should
+  listen to the typed events instead.
+
 - **`cashier_subscription_items` now constrains what it always meant.**
   `unique(subscription_id, price)` — a subscription bills a given price once.
 
