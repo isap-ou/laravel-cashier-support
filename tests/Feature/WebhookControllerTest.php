@@ -186,6 +186,22 @@ class WebhookControllerTest extends TestCase
         $this->assertSame(['fake', 'other'], $providers);
     }
 
+    public function test_a_misconfiguration_that_only_surfaces_while_applying_is_refused_too(): void
+    {
+        // The sibling of the verification path, and the driver whose controller this
+        // replaced left a comment warning about exactly it: applying calls back into the
+        // gateway's API, so a driver with a valid signing secret but no API key verifies
+        // fine and only then dies. Catching InvalidConfigurationException around parse()
+        // alone answers 500 to a one-line config fix — no critical line for the operator,
+        // and a retry the gateway does not document.
+        Event::fake([WebhookHandled::class]);
+        $this->gateway->webhookPipelineFailure = InvalidConfigurationException::missingKey('cashier-fake.secret_key');
+
+        $this->postWebhook()->assertStatus(400)->assertSee('The gateway driver is not configured.');
+
+        Event::assertNotDispatched(WebhookHandled::class);
+    }
+
     public function test_a_failure_while_applying_is_not_swallowed(): void
     {
         // A synchronizer failure has to stay a 5xx: the gateway retries, and the driver's

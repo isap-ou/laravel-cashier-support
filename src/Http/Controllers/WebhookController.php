@@ -80,15 +80,7 @@ class WebhookController
 
             return new Response('Invalid signature.', 400);
         } catch (InvalidConfigurationException $exception) {
-            // Critical because the alternative symptom is silence: every webhook refused,
-            // the retries exhausted, and the subscriptions quietly stale. A 4XX rather
-            // than a 5XX so the gateway retries the delivery and the event survives the fix.
-            $this->logger->critical('A gateway driver is not configured; the webhook was refused', [
-                'provider' => $provider,
-                'exception' => $exception->getMessage(),
-            ]);
-
-            return new Response('The gateway driver is not configured.', 400);
+            return $this->refuseMisconfigured($provider, $exception);
         } catch (UnexpectedWebhookEventException $exception) {
             // Not an event at all. Acknowledged rather than refused: a body that cannot be
             // read will not become readable on retry. Logged, because a silent drop has to
@@ -106,10 +98,22 @@ class WebhookController
         // mapped here, and only here.
         event(new WebhookReceived($provider, $payload));
 
-        // Anything the driver throws from here propagates on purpose: applying failed,
-        // so the delivery deserves the 5xx that makes the gateway retry it into writes
-        // that are idempotent by design.
-        if (! $webhook->pipeline()) {
+        try {
+            $handled = $webhook->pipeline();
+        } catch (InvalidConfigurationException $exception) {
+            // The same defect one path over, and it is not hypothetical: applying calls
+            // back into the gateway's API, so a driver with a signing secret but no API
+            // key verifies fine and then dies here. Catching it only around parse() would
+            // answer 500 to a plainly fixable misconfiguration — no critical line, and a
+            // retry the gateway does not document. The driver's own controller learned
+            // this and left a comment about it; this is that comment, kept.
+            return $this->refuseMisconfigured($provider, $exception);
+        }
+
+        // Every OTHER failure propagates on purpose: applying failed for a reason nobody
+        // can fix from a config file, so the delivery deserves the 5xx that makes the
+        // gateway retry it into writes that are idempotent by design.
+        if (! $handled) {
             // An event this driver does not map. Acknowledged, so the gateway stops
             // retrying something no handler will ever accept — and harmless in a way it
             // was not before, because the hatch above already fired. No WebhookHandled:
@@ -120,6 +124,26 @@ class WebhookController
         event(new WebhookHandled($provider, $payload));
 
         return new Response('Webhook handled.', 200);
+    }
+
+    /**
+     * Refuse a webhook this driver is not configured to handle.
+     *
+     * A 4XX is a delivery failure gateways retry — the only answer that gives the event a
+     * chance of surviving the fix, where an unhandled exception renders whatever the app's
+     * error handler decides and buys a retry nobody documents.
+     *
+     * Critical because the alternative symptom is silence: every webhook refused, the
+     * retries exhausted, and the subscriptions quietly stale.
+     */
+    private function refuseMisconfigured(string $provider, InvalidConfigurationException $exception): Response
+    {
+        $this->logger->critical('A gateway driver is not configured; the webhook was refused', [
+            'provider' => $provider,
+            'exception' => $exception->getMessage(),
+        ]);
+
+        return new Response('The gateway driver is not configured.', 400);
     }
 
     /**
