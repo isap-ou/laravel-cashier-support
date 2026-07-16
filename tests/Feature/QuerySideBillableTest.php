@@ -15,6 +15,7 @@ use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscriptionItem;
 use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class QuerySideBillableTest extends TestCase
 {
@@ -89,6 +90,36 @@ class QuerySideBillableTest extends TestCase
         // A canceled subscription within its paid-through grace period still
         // grants access — the customer paid until ends_at.
         $this->assertTrue($graced->subscribed('default'));
+    }
+
+    /**
+     * The mirror image of the grace period above: there, the customer had paid
+     * through ends_at, so access survived cancellation. Here the money never
+     * arrived at all, and a paid-through date it never earned must not hand it
+     * back — Stripe denies both of these unconditionally.
+     */
+    #[DataProvider('unrecoverableStatuses')]
+    public function test_an_unrecoverable_status_is_denied_access_despite_a_future_ends_at(
+        SubscriptionStatus $status,
+    ): void {
+        $user = $this->userWithSubscription($status, [
+            'ends_at' => now()->addDays(3),
+        ]);
+
+        $this->assertTrue($user->onGracePeriod('default'));
+        $this->assertFalse($user->subscription('default')?->active());
+        $this->assertFalse($user->subscribed('default'));
+    }
+
+    /**
+     * @return array<string, array{SubscriptionStatus}>
+     */
+    public static function unrecoverableStatuses(): array
+    {
+        return [
+            'dunning exhausted' => [SubscriptionStatus::Unpaid],
+            'initial payment never completed' => [SubscriptionStatus::IncompleteExpired],
+        ];
     }
 
     public function test_a_fully_ended_subscription_is_not_subscribed(): void

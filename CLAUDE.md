@@ -124,7 +124,10 @@ src/
 - Money — `int` (minor units) + `Currency` enum, never `float`. A money library
   (`moneyphp/money`, as both references use) is **allowed** if a task needs one — it was left
   out only because we had never used it, not as a ban. See #32.
-- Method names strictly from Stripe Cashier
+- Method names strictly from Stripe Cashier — on the surface an app calls. Where Cashier
+  encodes a concept without naming it (inline comparisons, a static flag, no such type),
+  an internal predicate may be coined; cite the reference lines it encodes in its docblock.
+  See `.claude/rules/constraints.md`
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
 - Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`
 - Concerns call `Cashier::ensureSupports(Capability)` before delegating
@@ -203,12 +206,13 @@ but the subscription mutation surface was reinvented without a multi-gateway rea
 **Do not "fix" any of these by inventing a local workaround — each has an open issue.**
 
 Correctness bugs (fix first; each is self-contained):
-- **#22** `SubscriptionStatus` lacks `unpaid` / `incomplete_expired`. The cast uses
-  `BackedEnum::from()`, so such a row throws `ValueError` on read. Real Stripe states.
 - **#23** No `SerializesModels` on any of the 11 events → queued listeners get a stale snapshot.
 - **#24** No unique key on `cashier_subscription_items` → a redelivered webhook duplicates rows.
 - **#25** `active()` is really Cashier's `valid()`. A `past_due` subscription in its grace period
   still gets access; Stripe/Paddle deny it (`$deactivatePastDue = true`). No toggle exists.
+  Scope note: `unpaid` / `incomplete_expired` are already denied unconditionally via
+  `SubscriptionStatus::deniesAccess()` (#22) — Stripe has no toggle for those two. What is
+  left to #25 is the rename plus `$deactivatePastDue` / `$deactivateIncomplete`.
 - **#26** `config('cashier-support.models.customer')` is read by `CashierManager` but absent
   from the published config — dead branch.
 - **#27** `GuardedSubscriptionBuilder` is in no deptrac layer, so the "zero HTTP" rule misses it.
@@ -242,15 +246,29 @@ webhook throttling, transient-only retry with backoff, idempotency on a unique i
 
 ## Navigating this package — use the graph, not grep
 
-`graphify-out/graph.json` exists (831 nodes / 1560 edges / 62 communities, AST + semantic).
-Start here instead of reading `src/` file by file:
+`graphify-out/` is a **local build artifact and is not in git** — a fresh clone has no graph
+until you build one. Once `graphify-out/graph.json` exists, start there instead of reading
+`src/` file by file:
 
 ```bash
+graphify update .                                               # build/refresh it (AST, seconds)
 graphify query "how does a Concern reach the gateway driver"   # scoped subgraph
 graphify explain "Capability"                                   # one concept + neighbours
 graphify path "Billable" "GatewayProvider"                      # how two things connect
 graphify affected "SubscriptionStatus"                          # what breaks if I change X
 ```
 
-After changing code: `graphify update .` (AST-only, no LLM cost).
+`graphify update` builds the AST layer only — no API key, no cost. The semantic layer
+(INFERRED edges, hyperedges, community names) needs an LLM: `graphify extract . --mode deep`
+with a backend key set (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, …), or without one graphify
+leaves `Community N` placeholders. Everything works without it; the queries are just blunter.
+
+The last graph carrying that layer is still in git history if you want it back rather than
+rebuilt: `git show cb795a5:graphify-out/graph.json > graphify-out/graph.json`. It reflects the
+code as of that commit — run `graphify update .` after to bring the AST layer forward.
+
+Do not commit `graphify-out/`. It used to be tracked so a clone could inherit the semantic
+layer; the post-commit hook rebuilds without a key and the rebuild is lossy, so tracking
+eroded that layer commit by commit while adding ~27k lines of diff to unrelated PRs.
+
 `GRAPH_REPORT.md` is for broad architecture review only — prefer the scoped commands.

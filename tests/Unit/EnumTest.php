@@ -17,6 +17,8 @@ class EnumTest extends TestCase
         $this->assertSame('Pending', PaymentStatus::Pending->getLabel());
         $this->assertSame('Succeeded', PaymentStatus::Succeeded->getLabel());
         $this->assertSame('Past due', SubscriptionStatus::PastDue->getLabel());
+        $this->assertSame('Unpaid', SubscriptionStatus::Unpaid->getLabel());
+        $this->assertSame('Incomplete expired', SubscriptionStatus::IncompleteExpired->getLabel());
         $this->assertSame('Requested by customer', RefundReason::RequestedByCustomer->getLabel());
     }
 
@@ -45,8 +47,30 @@ class EnumTest extends TestCase
     public function test_backed_values(): void
     {
         $this->assertSame('past_due', SubscriptionStatus::PastDue->value);
+        $this->assertSame('unpaid', SubscriptionStatus::Unpaid->value);
+        $this->assertSame('incomplete_expired', SubscriptionStatus::IncompleteExpired->value);
         $this->assertTrue(SubscriptionStatus::Active->isActive());
         $this->assertTrue(SubscriptionStatus::Trialing->isActive());
         $this->assertFalse(SubscriptionStatus::Canceled->isActive());
+        $this->assertFalse(SubscriptionStatus::Unpaid->isActive());
+        $this->assertFalse(SubscriptionStatus::IncompleteExpired->isActive());
+    }
+
+    /**
+     * Swept over cases() rather than listed, so a status added later has to
+     * state which side of the access line it falls on instead of defaulting
+     * quietly to "grants access".
+     */
+    public function test_only_the_unrecoverable_statuses_deny_access(): void
+    {
+        $denying = array_filter(
+            SubscriptionStatus::cases(),
+            fn (SubscriptionStatus $status): bool => $status->deniesAccess(),
+        );
+
+        $this->assertEqualsCanonicalizing(
+            [SubscriptionStatus::Unpaid, SubscriptionStatus::IncompleteExpired],
+            array_values($denying),
+        );
     }
 }

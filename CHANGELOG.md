@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A subscription whose payment never arrived can now be read at all.**
+  `SubscriptionStatus` mirrored six of Stripe's eight statuses, and the model casts the
+  column through `BackedEnum::from()` — so a row a driver wrote as `unpaid` or
+  `incomplete_expired` did not report a lost customer, it threw a `ValueError` on read.
+  Both cases now exist, and `SubscriptionStatus::deniesAccess()` gives them the semantics
+  Stripe gives them: `Models\Subscription::active()` returns `false` for either one
+  regardless of `ends_at`. That guard is the point. Adding the cases alone would have
+  traded a loud failure for a quiet one: `active()` grants access on `onGracePeriod()`
+  alone, so an unpaid subscription would have kept serving on the strength of a
+  paid-through date it never earned. Stripe excludes exactly these two unconditionally,
+  while gating `past_due` and `incomplete` behind `$deactivatePastDue` /
+  `$deactivateIncomplete`. Those two, and the toggles, are #25 and are untouched here. (#22)
+
 - `Exceptions\UnexpectedWebhookEventException` — "the gateway sent an event this driver
   does not handle" is provider-agnostic, and it used to be a driver-private type thrown
   from a contract method: undeclared, and uncatchable without naming the driver.

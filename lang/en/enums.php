@@ -15,8 +15,10 @@ return [
     'SubscriptionStatus' => [
         'Active' => 'Active',
         'PastDue' => 'Past due',
+        'Unpaid' => 'Unpaid',
         'Canceled' => 'Canceled',
         'Incomplete' => 'Incomplete',
+        'IncompleteExpired' => 'Incomplete expired',
         'Trialing' => 'Trialing',
         'Paused' => 'Paused',
     ],
