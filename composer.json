@@ -55,7 +55,10 @@
     "scripts": {
         "test": "vendor/bin/phpunit",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
-        "deptrac": "vendor/bin/deptrac analyse",
+        "deptrac": [
+            "vendor/bin/deptrac analyse",
+            "vendor/bin/deptrac debug:unassigned"
+        ],
         "format": "vendor/bin/pint",
         "lint": "vendor/bin/pint --test",
         "ci": [

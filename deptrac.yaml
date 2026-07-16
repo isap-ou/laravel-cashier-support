@@ -24,6 +24,10 @@ deptrac:
           value: src/Concerns/.*
         - type: classLike
           value: .*\\Billable$
+    - name: Builders
+      collectors:
+        - type: directory
+          value: src/Builders/.*
     - name: Events
       collectors:
         - type: directory
@@ -106,6 +110,16 @@ deptrac:
       - Enums
       - Models
 
+    # The capability gate a Concern hands back to the caller. Exceptions is not
+    # from an import: the builder inherits the @throws surface its contract
+    # declares, and deptrac resolves that too.
+    Builders:
+      - Enums
+      - Exceptions
+      - Contracts
+      - DTO
+      - Facades
+
     Concerns:
       - Enums
       - Exceptions
@@ -113,6 +127,7 @@ deptrac:
       - Contracts
       - Facades
       - Models
+      - Builders
 
     # Driver-side defaults (local invoice operations) composed into gateways.
     Gateway:

@@ -181,6 +181,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`cashier_subscription_items` now constrains what it always meant.**
+  `unique(subscription_id, price)` — a subscription bills a given price once.
+
+  **The references disagree here, and this follows Paddle.** Paddle states the invariant in
+  exactly this shape (`unique(['subscription_id','price_id'])`). Stripe declines it: it puts
+  a deliberately **non**-unique `index(['subscription_id','stripe_price'])` on the same pair
+  and constrains `unique(stripe_id)` instead — the provider's item id, a different
+  invariant. Stripe can afford that because every item it writes carries a `stripe_id`; the
+  schema guards the identity and the API guards the rest.
+
+  We cannot follow Stripe, and the reason is our own table rather than a judgement about
+  theirs: our `provider_id` is **nullable** and a driver may legitimately never write it —
+  cashier-revolut does not — so the analogous `unique(provider, provider_id)` would guard
+  rows that hold `(revolut, NULL)`, and NULLs do not collide in a unique index. It would
+  constrain nothing for the one driver we have. Paddle's shape needs no provider id, which
+  is why it is the one that ports.
+
+  This is defense in depth, not a live bug, and the distinction is worth keeping straight:
+  the only writer that exists — `cashier-revolut`'s `persistPlanVariation()` — already
+  serializes a `lockForUpdate()` read-modify-write inside a transaction, so a redelivered
+  webhook does **not** duplicate a row today. But that lock is one driver's discipline and
+  the table is shared, so nothing except the schema stops the next driver from inserting a
+  second row for a price the subscription is already billed on. Nothing downstream would
+  notice if it did: `subscribedToPrice()` sees the price twice and still returns `true`.
+
+  The constraint is on the **pair**. `subscription_id` alone stays unconstrained, because a
+  Stripe-shaped subscription legitimately carries several distinct prices — covered by a
+  test, so the unique key cannot quietly become the thing that forbids multi-item drivers.
+
+  Added in place rather than as a follow-up migration, and with no dedupe step: the package
+  has never been published, so there are no installs holding duplicates to clean up. (#24)
+
+- **Publishing `cashier-support.models.*` now overrides the driver's models — including
+  `customer`, which the array never named.** Two defects, and fixing either alone would
+  have left the feature as decorative as it was:
+
+  The `models` array named `subscription`, `subscription_item` and `invoice`, but
+  `CashierManager::model()` resolves **four** slots. `customer` was one the manager read and
+  the config never offered, so an app had to reach for `Cashier::useModels()` — the driver's
+  mechanism, not the app's. The default is `null`, matching the other three; it may **not**
+  be the abstract `Models\Customer`, because the override is gated on
+  `is_subclass_of($class, $abstract)`, false when the two are the same class, so an abstract
+  default would make a stock install throw on first use.
+
+  More to the point, **the config outranks the driver's registry now; before, it lost to
+  it.** `model()` read the registry first and consulted config only when the registry held
+  nothing for that slot — so for every slot a driver *did* register, the published value was
+  unreachable. cashier-revolut registers all four, so in a cashier-revolut install
+  publishing the config changed nothing whatsoever. The config was reachable only for a slot
+  its driver left empty, which `hasModel()`'s own docblock contemplates ("a driver that
+  stores no customers is a legitimate driver") — so the feature worked precisely where the
+  app was least likely to need it, and not where it was. Adding the missing `customer` key
+  without this would have shipped a fourth line just as unreachable as the other three.
+
+  A config value that is named but unusable now **fails** instead of falling through to the
+  driver, and says which of the two is at fault — an override that loses silently is the
+  same defect as one that is never read, and blaming the driver for the app's typo is how an
+  afternoon gets lost.
+
+  `tests/Feature/ModelConfigOverrideTest.php` covers all four slots, the precedence, and
+  both failure paths. No test had ever supplied a value *through* the config. It asserts the
+  published array against the **file**, not the container: `config()->set()` creates the key
+  whether or not the stub declares it, so a runtime-override test alone would have stayed
+  green through the entire lifetime of this bug. (#26)
+
 - **A queued listener no longer grants access on a stale snapshot.** All 11 events in
   `src/Events/` now `use Dispatchable, SerializesModels;`, as every event in both
   references does (`laravel/cashier`'s `Events\WebhookReceived`, `cashier-paddle`'s

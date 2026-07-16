@@ -38,6 +38,7 @@ return [
     |
     */
     'models' => [
+        'customer' => null,
         'subscription' => null,
         'subscription_item' => null,
         'invoice' => null,
