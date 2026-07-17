@@ -30,6 +30,17 @@ driver may not have somewhere to put it" (also not the question — one referenc
 the other not is). Both times the correct argument existed and was available; the driver was
 simply the nearer thing to reach for.
 
+**And the direction of work is one-way: support first, drivers after — NON-NEGOTIABLE.** This
+package is the source of truth. A change here is designed, reviewed, tested and merged against
+**this package alone** — its correctness is what this package's CI and contract tests say, never
+what a driver does with it, and never whether a driver currently compiles. When a change breaks a
+driver, that is **expected and correct**: it is a coordinated release the *driver* owns, done
+**after** support is right — never a reason to hold back, water down, or reshape the fix to keep a
+driver green. While working here, do **NOT** open a driver package to "check impact", grep it for
+consumers, or let its fallout steer a decision: a BC-break is whatever this package's own tooling
+reports on its public surface, and the driver fallout is the driver's issue, tracked separately.
+We fix Revolut once support is done, not the other way around.
+
 This package contains mostly: interfaces, DTOs, enums, exceptions, abstract models, traits, events.
 **Zero *outbound* HTTP** (enforced by `deptrac.yaml`, whose `HttpClient` layer is unreachable) —
 which is not the same as no HTTP: `src/Http/Controllers/WebhookController.php` is the webhook
