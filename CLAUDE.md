@@ -47,7 +47,7 @@ which is not the same as no HTTP: `src/Http/Controllers/WebhookController.php` i
 entry point for every driver, and `routes/webhook.php` mounts it. The rule is that this package
 never *calls* a gateway; being called by one is different, and it is deliberate (#47).
 
-It is *not* literally zero business logic — `src/Invoice/` (PDF rendering, total summation) and
+It is *not* literally zero business logic — `src/Invoice/` (invoice total summation) and
 `src/Gateway/` (Eloquent reads/writes, HTTP responses) hold real behaviour. Do not repeat the
 "zero business logic" claim; it was false and it misled agents into the wrong file. See #38.
 
@@ -153,7 +153,9 @@ src/
 │   ├── PaymentMethodType.php        # interface over a driver-owned enum
 │   ├── WebhookHandler.php           # one method: webhook() → IncomingWebhook
 │   ├── IncomingWebhook.php          # one delivery: parse() then pipeline(): bool
-│   └── RegistersWebhooks.php        # opt-in: gateways that create endpoints via API
+│   ├── RegistersWebhooks.php        # opt-in: gateways that create endpoints via API
+│   ├── InvoiceRenderer.php          # render an Invoice DTO to bytes — driver-supplied, no engine here
+│   └── RendersInvoices.php          # opt-in: gateways that render their own local invoices
 ├── DTO/                 # Spatie Laravel Data classes
 │   ├── Customer.php, CustomerDetails.php, Payment.php, Subscription.php, SubscriptionItem.php
 │   ├── Invoice.php, InvoiceLine.php, PaymentMethod.php
@@ -196,9 +198,8 @@ src/
 │   │   ├── TracksCancellation.php   # canceled()/onGracePeriod()/hasEnded() + scopes
 │   │   └── TracksTrialPeriod.php    # onTrial() + scopes
 │   └── Invoice.php              # Local invoice model (provider-independent)
-├── Invoice/                     # Invoice generation (shared, not provider-dependent)
-│   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
-│   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf
+├── Invoice/                     # Invoice DATA assembly (shared); rendering is the driver's (Contracts\InvoiceRenderer)
+│   └── InvoiceBuilder.php       # Build invoice from local payment/subscription data
 ├── Gateway/                     # What a driver inherits or mixes in
 │   ├── BaseGateway.php          # abstract; composes the Defaults/ traits, adds
 │   │                            # capabilities()/supports() derived from what was overridden.
@@ -338,8 +339,8 @@ file with no test over it — #38 exists because it once described an API that d
 the fifteen bullets that stood here had already drifted two issues short of the tracker.
 
 Closing a ticket no longer means editing a list. It may still touch a doc that describes the code
-that ticket changes — #33 turns `InvoiceRenderer` into an interface, and the architecture map above
-says it is a concrete class, so the map moves with it. That is the map doing its job.
+that ticket changes — #33 turned `InvoiceRenderer` into an interface, and the architecture map above
+said it was a concrete class, so the map moved with it. That is the map doing its job.
 
 Three things are worth knowing before you plan, because they decide what work is even possible:
 

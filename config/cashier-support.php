@@ -87,23 +87,4 @@ return [
         'methods' => ['POST'],
         'middleware' => ['throttle:60,1'],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invoice Rendering
-    |--------------------------------------------------------------------------
-    |
-    | Settings for the provider-independent local invoice generation
-    | (Isapp\CashierSupport\Invoice\InvoiceBuilder + InvoiceRenderer).
-    |
-    */
-    'invoices' => [
-        'view' => 'cashier-support::invoice',
-        'paper' => 'a4',
-        'seller' => [
-            'name' => env('CASHIER_SELLER_NAME'),
-            'address' => env('CASHIER_SELLER_ADDRESS'),
-            'vat' => env('CASHIER_SELLER_VAT'),
-        ],
-    ],
 ];

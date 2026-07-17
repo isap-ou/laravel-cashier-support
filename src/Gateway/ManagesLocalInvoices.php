@@ -6,27 +6,32 @@ namespace Isapp\CashierSupport\Gateway;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Isapp\CashierSupport\Contracts\InvoiceRenderer;
+use Isapp\CashierSupport\Contracts\RendersInvoices;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\InvoiceLine;
+use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Invoice\InvoiceRenderer;
 use Isapp\CashierSupport\Models\Invoice as InvoiceRecord;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Default InvoiceOperations implementation for drivers whose provider has no
  * invoice API: invoices are local records (written by the driver, typically
- * from payment webhooks) rendered to PDF by cashier-support.
+ * from payment webhooks) rendered by the driver's own InvoiceRenderer.
  *
- * The composing gateway supplies its driver name; the renderer may be
- * constructor-injected or is lazily resolved from the container.
+ * The composing gateway supplies its driver name and, because it must also render,
+ * implements Contracts\RendersInvoices — this package ships no renderer and pins no
+ * PDF engine. A gateway that mixes this trait in without implementing RendersInvoices
+ * refuses download/store: rendering is the driver's, delivery is ours.
  */
 trait ManagesLocalInvoices
 {
-    protected ?InvoiceRenderer $invoiceRenderer = null;
-
     /**
      * The driver name whose invoice records this gateway owns.
      */
@@ -65,10 +70,48 @@ trait ManagesLocalInvoices
      * {@inheritDoc}
      *
      * The invoice must belong to the billable entity; optional $data may carry
-     * display lines and seller details for the rendered PDF.
+     * display lines and seller details for the rendered document.
      */
     public function downloadInvoice(Model $billable, string $invoiceId, array $data = []): Response
     {
+        [$bytes, $filename] = $this->renderInvoiceRecord($billable, $invoiceId, $data);
+
+        return new Response($bytes, Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename),
+        ]);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Renders the invoice and writes it to a disk, returning the stored path. Defaults to
+     * the application's default disk and an `invoices/<filename>` path.
+     */
+    public function storeInvoice(Model $billable, string $invoiceId, array $data = [], ?string $disk = null, ?string $path = null): string
+    {
+        [$bytes, $filename] = $this->renderInvoiceRecord($billable, $invoiceId, $data);
+
+        $target = $path ?? 'invoices/'.$filename;
+
+        Storage::disk($disk)->put($target, $bytes);
+
+        return $target;
+    }
+
+    /**
+     * Look the record up (404 when it is not this billable's), then render it to bytes.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{0: string, 1: string} [rendered bytes, filename]
+     */
+    private function renderInvoiceRecord(Model $billable, string $invoiceId, array $data): array
+    {
+        // Resolve the renderer FIRST: a gateway that cannot render refuses unconditionally,
+        // before — and regardless of — whether the requested record happens to exist. Looking
+        // the record up first would mask the missing-renderer misconfiguration behind a 404.
+        $renderer = $this->renderer();
+
         $record = $this->findInvoiceRecord($billable, $invoiceId);
 
         if ($record === null) {
@@ -82,18 +125,23 @@ trait ManagesLocalInvoices
         // whatever the record stored (see toInvoiceDto).
         $override = isset($data['lines']) && is_array($data['lines']) ? $this->linesFrom($data) : null;
 
-        return $this->renderer()
-            ->render($this->toInvoiceDto($record, $override), $data)
-            ->download($filename)
-            ->toResponse(request());
+        $bytes = $renderer->render($this->toInvoiceDto($record, $override), $data);
+
+        return [$bytes, $filename];
     }
 
     /**
-     * The renderer: constructor-injected by the gateway, or lazily resolved.
+     * The renderer is the gateway's own — this package ships none. A gateway that renders
+     * local invoices implements Contracts\RendersInvoices; one that does not cannot download
+     * or store, and says so rather than resolving a renderer that was never provided.
      */
     protected function renderer(): InvoiceRenderer
     {
-        return $this->invoiceRenderer ??= app(InvoiceRenderer::class);
+        if (! $this instanceof RendersInvoices) {
+            throw UnsupportedOperationException::forCapability(Capability::Invoices);
+        }
+
+        return $this->invoiceRenderer();
     }
 
     /**

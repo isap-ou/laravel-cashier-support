@@ -297,6 +297,11 @@ class FakeGateway implements GatewayProvider
         return new Response('%PDF-fake');
     }
 
+    public function storeInvoice(Model $billable, string $invoiceId, array $data = [], ?string $disk = null, ?string $path = null): string
+    {
+        return $path ?? 'invoices/invoice-'.$invoiceId.'.pdf';
+    }
+
     /**
      * The stored payment methods this gateway reports.
      *

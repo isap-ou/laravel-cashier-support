@@ -52,4 +52,16 @@ trait ManagesInvoices
 
         return $this->cashierProvider()->downloadInvoice($this, $invoiceId, $data);
     }
+
+    /**
+     * Render an invoice, store it on a disk, and return the stored path.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function storeInvoice(string $invoiceId, array $data = [], ?string $disk = null, ?string $path = null): string
+    {
+        $this->ensureCashierSupports(Capability::Invoices);
+
+        return $this->cashierProvider()->storeInvoice($this, $invoiceId, $data, $disk, $path);
+    }
 }
