@@ -12,6 +12,8 @@ use Isapp\CashierSupport\Contracts\InvoiceRenderer;
 use Isapp\CashierSupport\Contracts\RendersInvoices;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\Enums\PaymentStatus;
+use Isapp\CashierSupport\Exceptions\CashierException;
+use Isapp\CashierSupport\Exceptions\InvoiceNotFoundException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Gateway\ManagesLocalInvoices;
@@ -19,7 +21,6 @@ use Isapp\CashierSupport\Tests\Fixtures\ConcreteInvoice;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
 use Money\Currency;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class LocalInvoicesGatewayTest extends TestCase
 {
@@ -181,14 +182,32 @@ class LocalInvoicesGatewayTest extends TestCase
         $bob = User::query()->create(['name' => 'Bob']);
         $this->invoiceFor($bob, 'ord_bob');
 
-        // A gateway that CAN render still 404s on a foreign invoice — ownership is checked
-        // after the render gate passes.
+        // A gateway that CAN render still refuses a foreign invoice — ownership is checked
+        // after the render gate passes, and a foreign invoice reads as not-found.
         $gateway = $this->renderingGateway();
 
         $this->assertNull($gateway->findInvoice($ada, 'ord_bob'));
 
-        $this->expectException(NotFoundHttpException::class);
+        $this->expectException(InvoiceNotFoundException::class);
         $gateway->downloadInvoice($ada, 'ord_bob');
+    }
+
+    public function test_a_missing_invoice_is_catchable_as_a_cashier_exception(): void
+    {
+        // The whole point: a missing/foreign invoice is a billing fact an app can catch,
+        // not a framework 404 it cannot. (Deliberate divergence from the reference — see #68.)
+        $ada = User::query()->create(['name' => 'Ada']);
+
+        $caught = null;
+
+        try {
+            $this->renderingGateway()->downloadInvoice($ada, 'ord_missing');
+        } catch (CashierException $exception) {
+            $caught = $exception;
+        }
+
+        $this->assertInstanceOf(InvoiceNotFoundException::class, $caught);
+        $this->assertStringContainsString('ord_missing', $caught->getMessage());
     }
 
     public function test_the_filename_falls_back_to_the_record_key_without_a_number(): void

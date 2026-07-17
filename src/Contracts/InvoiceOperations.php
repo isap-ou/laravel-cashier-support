@@ -7,6 +7,7 @@ namespace Isapp\CashierSupport\Contracts;
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\Exceptions\CashierException;
+use Isapp\CashierSupport\Exceptions\InvoiceNotFoundException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -40,7 +41,8 @@ interface InvoiceOperations
      * @param  array<string, mixed>  $data  Additional data for rendering (seller, notes, ...).
      *
      * @throws UnsupportedOperationException When the provider does not support invoices.
-     * @throws CashierException When the invoice does not exist or cannot be rendered.
+     * @throws InvoiceNotFoundException When the invoice does not exist or is not the billable's.
+     * @throws CashierException When the invoice cannot be rendered.
      */
     public function downloadInvoice(Model $billable, string $invoiceId, array $data = []): Response;
 
@@ -52,7 +54,8 @@ interface InvoiceOperations
      * @param  string|null  $path  Target path; null uses `invoices/<filename>`.
      *
      * @throws UnsupportedOperationException When the provider does not support invoices.
-     * @throws CashierException When the invoice does not exist or cannot be rendered.
+     * @throws InvoiceNotFoundException When the invoice does not exist or is not the billable's.
+     * @throws CashierException When the invoice cannot be rendered.
      */
     public function storeInvoice(Model $billable, string $invoiceId, array $data = [], ?string $disk = null, ?string $path = null): string;
 }

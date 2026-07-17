@@ -13,12 +13,12 @@ use Isapp\CashierSupport\Contracts\RendersInvoices;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\InvoiceLine;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Exceptions\InvoiceNotFoundException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Models\Invoice as InvoiceRecord;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Default InvoiceOperations implementation for drivers whose provider has no
@@ -115,7 +115,7 @@ trait ManagesLocalInvoices
         $record = $this->findInvoiceRecord($billable, $invoiceId);
 
         if ($record === null) {
-            throw new NotFoundHttpException('Invoice not found.');
+            throw InvoiceNotFoundException::withId($invoiceId);
         }
 
         $number = $record->getAttribute('number');
