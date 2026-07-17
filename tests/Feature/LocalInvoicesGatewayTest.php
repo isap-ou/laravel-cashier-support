@@ -100,6 +100,48 @@ class LocalInvoicesGatewayTest extends TestCase
         $this->assertNull($gateway->findInvoice($ada, 'ord_unknown'));
     }
 
+    public function test_it_hydrates_persisted_lines_and_the_tax_breakdown(): void
+    {
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_vat', [
+            'amount' => 1700,
+            'subtotal' => 1500,
+            'tax' => 300,
+            'discount' => 100,
+            'lines' => [
+                ['description' => 'Pro plan', 'amount' => 1000, 'quantity' => 1, 'unitAmount' => 1000, 'taxAmount' => 200, 'taxRate' => 2000],
+                ['description' => 'Add-on', 'amount' => 500, 'quantity' => 2, 'unitAmount' => 250, 'taxAmount' => 100, 'taxRate' => 2000],
+            ],
+        ]);
+
+        $invoice = $this->gatewayInvoices()->findInvoice($ada, 'ord_vat');
+
+        $this->assertNotNull($invoice);
+        $this->assertSame(1500, $invoice->subtotal);
+        $this->assertSame(300, $invoice->tax);
+        $this->assertSame(100, $invoice->discount);
+
+        $this->assertCount(2, $invoice->lines);
+        $this->assertSame('Pro plan', $invoice->lines[0]->description);
+        $this->assertSame(1000, $invoice->lines[0]->unitAmount);
+        $this->assertSame(200, $invoice->lines[0]->taxAmount);
+        $this->assertSame(2000, $invoice->lines[0]->taxRate);
+    }
+
+    public function test_legacy_rows_without_lines_hydrate_to_an_empty_breakdown(): void
+    {
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_legacy');
+
+        $invoice = $this->gatewayInvoices()->findInvoice($ada, 'ord_legacy');
+
+        $this->assertNotNull($invoice);
+        $this->assertSame([], $invoice->lines);
+        $this->assertNull($invoice->subtotal);
+        $this->assertNull($invoice->tax);
+        $this->assertNull($invoice->discount);
+    }
+
     public function test_a_user_cannot_access_another_users_invoice(): void
     {
         $ada = User::query()->create(['name' => 'Ada']);

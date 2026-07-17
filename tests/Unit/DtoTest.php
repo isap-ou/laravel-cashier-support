@@ -7,6 +7,8 @@ namespace Isapp\CashierSupport\Tests\Unit;
 use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Customer;
 use Isapp\CashierSupport\DTO\CustomerDetails;
+use Isapp\CashierSupport\DTO\Invoice;
+use Isapp\CashierSupport\DTO\InvoiceLine;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\PaymentMethod;
 use Isapp\CashierSupport\DTO\Subscription;
@@ -119,6 +121,67 @@ class DtoTest extends TestCase
         $this->assertCount(1, $array['items']);
         $this->assertSame('price_monthly', $array['items'][0]['price']);
         $this->assertSame(2, $array['items'][0]['quantity']);
+    }
+
+    public function test_invoice_line_carries_optional_tax_fields(): void
+    {
+        // The old three-argument positional call still works — the tax fields are appended
+        // and default to null, so existing callers are unaffected.
+        $bare = new InvoiceLine('Pro plan', 1000, 2);
+
+        $this->assertNull($bare->unitAmount);
+        $this->assertNull($bare->taxAmount);
+        $this->assertNull($bare->taxRate);
+
+        $taxed = new InvoiceLine(
+            description: 'Pro plan',
+            amount: 1000,
+            quantity: 2,
+            unitAmount: 500,
+            taxAmount: 200,
+            taxRate: 2000,
+        );
+
+        $this->assertSame([
+            'description' => 'Pro plan',
+            'amount' => 1000,
+            'quantity' => 2,
+            'unitAmount' => 500,
+            'taxAmount' => 200,
+            'taxRate' => 2000,
+        ], $taxed->toArray());
+    }
+
+    public function test_invoice_carries_the_optional_money_breakdown(): void
+    {
+        // Amount stays the canonical total; the breakdown is optional and defaults to null.
+        $plain = new Invoice(
+            id: 'in_1',
+            amount: 1200,
+            currency: Currency::EUR,
+            status: PaymentStatus::Succeeded,
+        );
+
+        $this->assertNull($plain->subtotal);
+        $this->assertNull($plain->tax);
+        $this->assertNull($plain->discount);
+
+        $withBreakdown = new Invoice(
+            id: 'in_2',
+            amount: 1200,
+            currency: Currency::EUR,
+            status: PaymentStatus::Succeeded,
+            subtotal: 1000,
+            tax: 300,
+            discount: 100,
+        );
+
+        $array = $withBreakdown->toArray();
+
+        $this->assertSame(1200, $array['amount']);
+        $this->assertSame(1000, $array['subtotal']);
+        $this->assertSame(300, $array['tax']);
+        $this->assertSame(100, $array['discount']);
     }
 
     public function test_payment_method_holds_provider_type_contract(): void

@@ -205,6 +205,7 @@ class GatewayDefaultsTest extends TestCase
             Capability::CheckoutPrices, Capability::CheckoutAmount,
             Capability::SubscriptionTrials, Capability::SubscriptionQuantity,
             Capability::SubscriptionMetadata, Capability::Taxes,
+            Capability::Discounts,
         ];
 
         foreach (Capability::cases() as $capability) {
@@ -226,7 +227,7 @@ class GatewayDefaultsTest extends TestCase
             }
         }
 
-        $this->assertCount(23, Capability::cases());
+        $this->assertCount(24, Capability::cases());
     }
 
     public function test_a_default_returns_nothing_it_only_refuses(): void

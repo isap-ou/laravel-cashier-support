@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A VAT invoice can now be expressed.** `DTO\Invoice` and `DTO\InvoiceLine` carried only a
+  single total, so tax, discount and subtotal had nowhere to live — a VAT invoice was not
+  representable, whatever the driver could supply. `DTO\Invoice` gains optional `subtotal`,
+  `tax` and `discount` (minor units; `amount` stays the canonical total, and
+  `subtotal + tax - discount` reconciles to it); `DTO\InvoiceLine` gains optional `unitAmount`,
+  `taxAmount` and `taxRate` (basis points). The fields are appended and default to `null`, so
+  existing callers are unchanged. `cashier_invoices` gains matching `subtotal` / `tax` /
+  `discount` columns and a `lines` JSON column, so line items and their tax finally persist:
+  `Gateway\ManagesLocalInvoices` now hydrates lines and the breakdown from the record
+  (caller-supplied `$data['lines']` still overrides at download), `Invoice\InvoiceBuilder` gains
+  `tax()` / `discount()` and per-line tax on `addLine()`, and the invoice view renders a Unit and
+  Tax column per line and Subtotal / Tax / Discount footer rows. `Capability::Discounts` lets an
+  app ask whether a gateway's invoices carry a discount at all — it backs no operation, only the
+  shape of the data, so it joins the driver-declared capabilities. (#31)
+
 - **A subscription whose payment never arrived can now be read at all.**
   `SubscriptionStatus` mirrored six of Stripe's eight statuses, and the model casts the
   column through `BackedEnum::from()` — so a row a driver wrote as `unpaid` or

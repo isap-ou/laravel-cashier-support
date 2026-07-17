@@ -256,6 +256,7 @@ enum Capability: string {
     case CheckoutAmount = 'checkout.amount';
     case Invoices = 'invoices';
     case Taxes = 'taxes';
+    case Discounts = 'discounts';                              // an invoice may carry a discount
     case Webhooks = 'webhooks';
     case SubscriptionCancelNow = 'subscription.cancel_now';
 }
@@ -347,10 +348,11 @@ resolves it by language rule (own > trait > parent), so a driver's trait beats t
 
 Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
 today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
-13 of the 23 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
-the code; the other 10 cannot be read off anything (`swapSubscription()` is one method behind two
+13 of the 24 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+the code; the other 11 cannot be read off anything (`swapSubscription()` is one method behind two
 timings, `pauseSubscription()` one method behind two timings since #30, `checkout()` one method
-behind two shapes, and four are `SubscriptionBuilder` setters) and stay declared via
+behind two shapes, four are `SubscriptionBuilder` setters, and `Discounts` backs no operation at
+all — an invoice-shape flag, #31) and stay declared via
 `declaredCapabilities()`. That split is why interfaces could never have replaced the enum.
 **Count those two numbers against the enum before repeating them** — they were wrong here
 until #37 (the file said 12 of 20 when the code said 13 of 21), which is #38's whole shape.
@@ -363,11 +365,12 @@ initiative.
 
 **Some gaps are inexpressible, not unimplemented — this is the trap.** It is not "the driver
 lacks it", it is "the contract has nowhere to put it", so no `Capability` flag routes around it
-and no driver can supply it. `DTO\Invoice`/`InvoiceLine` carry no tax, discount or subtotal, so a
-VAT invoice is not representable (#31); there is no money formatting and `Currency` is a closed
-whitelist (#32); `DTO\Payment` has no `clientSecret`, so an SCA payment cannot be completed (#35).
+and no driver can supply it. There is no money formatting and `Currency` is a closed whitelist
+(#32); `DTO\Payment` has no `clientSecret`, so an SCA payment cannot be completed (#35).
 Recognising this class matters more than the individual issues: the instinct it triggers — "the
-gateway must not support it, I will work around it" — is exactly backwards.
+gateway must not support it, I will work around it" — is exactly backwards. `DTO\Invoice` was the
+canonical case — no tax, discount or subtotal, so a VAT invoice was not representable — and #31
+resolved it by adding the fields to the shape, not by working around the missing ones.
 
 Where we are deliberately **better** than the references (keep it this way):
 signature verification is mandatory (both references skip it when the secret is unset),
