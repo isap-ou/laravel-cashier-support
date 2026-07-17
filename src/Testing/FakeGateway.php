@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Isapp\CashierSupport\Tests\Fixtures;
+namespace Isapp\CashierSupport\Testing;
 
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +25,7 @@ use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Money\Currency;
+use PHPUnit\Framework\Assert;
 use Throwable;
 
 /**
@@ -115,6 +116,56 @@ class FakeGateway implements GatewayProvider
     public array $webhookCalls = [];
 
     /**
+     * Every charge this gateway was asked to make, in order — what assertCharged() reads.
+     *
+     * @var array<int, Payment>
+     */
+    public array $charges = [];
+
+    /**
+     * Every refund this gateway processed — what assertRefunded() reads.
+     *
+     * @var array<int, Refund>
+     */
+    public array $refunds = [];
+
+    /**
+     * Every subscription actually created — appended by FakeSubscriptionBuilder::create(),
+     * not by newSubscription(), because creation is the builder's act. assertSubscriptionCreated() reads it.
+     *
+     * @var array<int, Subscription>
+     */
+    public array $createdSubscriptions = [];
+
+    /**
+     * Every subscription canceled (immediately or at period end) — what assertSubscriptionCanceled() reads.
+     *
+     * @var array<int, Subscription>
+     */
+    public array $canceledSubscriptions = [];
+
+    /**
+     * Every customer created — what assertCustomerCreated() reads.
+     *
+     * @var array<int, Customer>
+     */
+    public array $createdCustomers = [];
+
+    /**
+     * Every customer updated — what assertCustomerUpdated() reads.
+     *
+     * @var array<int, Customer>
+     */
+    public array $updatedCustomers = [];
+
+    /**
+     * Every checkout request this gateway was handed — what assertCheckoutCreated() reads.
+     *
+     * @var array<int, CheckoutRequest>
+     */
+    public array $checkouts = [];
+
+    /**
      * @param  array<int, Capability>  $capabilities
      */
     public function __construct(private array $capabilities = []) {}
@@ -136,14 +187,22 @@ class FakeGateway implements GatewayProvider
     {
         $this->lastCustomerDetails = $details;
 
-        return new Customer(id: 'cus_fake', name: $details->name, email: $details->email);
+        $customer = new Customer(id: 'cus_fake', name: $details->name, email: $details->email);
+
+        $this->createdCustomers[] = $customer;
+
+        return $customer;
     }
 
     public function updateCustomer(Model $billable, CustomerDetails $details): Customer
     {
         $this->lastCustomerDetails = $details;
 
-        return new Customer(id: 'cus_fake', name: $details->name, email: $details->email);
+        $customer = new Customer(id: 'cus_fake', name: $details->name, email: $details->email);
+
+        $this->updatedCustomers[] = $customer;
+
+        return $customer;
     }
 
     public function asCustomer(Model $billable): Customer
@@ -153,27 +212,43 @@ class FakeGateway implements GatewayProvider
 
     public function charge(Model $billable, int $amount, string $paymentMethod, array $options = []): Payment
     {
-        return new Payment(id: 'pay_fake', amount: $amount, currency: new Currency('EUR'), status: PaymentStatus::Succeeded);
+        $payment = new Payment(id: 'pay_fake', amount: $amount, currency: new Currency('EUR'), status: PaymentStatus::Succeeded);
+
+        $this->charges[] = $payment;
+
+        return $payment;
     }
 
     public function refund(Model $billable, string $paymentId, array $options = []): Refund
     {
-        return new Refund(id: 're_fake', paymentId: $paymentId, amount: 0, currency: new Currency('EUR'));
+        $refund = new Refund(id: 're_fake', paymentId: $paymentId, amount: 0, currency: new Currency('EUR'));
+
+        $this->refunds[] = $refund;
+
+        return $refund;
     }
 
     public function newSubscription(Model $billable, string $type, string|array $prices): SubscriptionBuilder
     {
-        return $this->lastBuilder = new FakeSubscriptionBuilder($type);
+        return $this->lastBuilder = new FakeSubscriptionBuilder($this, $type);
     }
 
     public function cancelSubscription(Model $billable, string $type = 'default'): Subscription
     {
-        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Canceled);
+        $subscription = new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Canceled);
+
+        $this->canceledSubscriptions[] = $subscription;
+
+        return $subscription;
     }
 
     public function cancelSubscriptionNow(Model $billable, string $type = 'default'): Subscription
     {
-        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Canceled);
+        $subscription = new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Canceled);
+
+        $this->canceledSubscriptions[] = $subscription;
+
+        return $subscription;
     }
 
     public function resumeSubscription(Model $billable, string $type = 'default'): Subscription
@@ -265,6 +340,7 @@ class FakeGateway implements GatewayProvider
     public function checkout(Model $billable, CheckoutRequest $request): CheckoutSession
     {
         $this->lastCheckoutRequest = $request;
+        $this->checkouts[] = $request;
 
         return new FakeCheckoutSession(id: 'cs_fake');
     }
@@ -275,5 +351,120 @@ class FakeGateway implements GatewayProvider
         $this->lastWebhookHeaders = $headers;
 
         return new FakeIncomingWebhook($this);
+    }
+
+    /**
+     * Assert a charge was recorded — optionally one the callback accepts.
+     *
+     * @param  (callable(Payment): bool)|null  $callback
+     */
+    public function assertCharged(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->charges, $callback, 'Expected a charge to have been recorded on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert no charge was recorded — optionally none the callback accepts.
+     *
+     * @param  (callable(Payment): bool)|null  $callback
+     */
+    public function assertNotCharged(?callable $callback = null): void
+    {
+        $this->assertNotRecorded($this->charges, $callback, 'Expected no charge to have been recorded on the fake gateway, but one matched.');
+    }
+
+    /**
+     * Assert a refund was recorded — optionally one the callback accepts.
+     *
+     * @param  (callable(Refund): bool)|null  $callback
+     */
+    public function assertRefunded(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->refunds, $callback, 'Expected a refund to have been recorded on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert a subscription was created — optionally one the callback accepts. Creation is the
+     * builder's create()/add() call, not newSubscription(), so this fires only once a build completes.
+     *
+     * @param  (callable(Subscription): bool)|null  $callback
+     */
+    public function assertSubscriptionCreated(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->createdSubscriptions, $callback, 'Expected a subscription to have been created on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert no subscription was created — optionally none the callback accepts.
+     *
+     * @param  (callable(Subscription): bool)|null  $callback
+     */
+    public function assertSubscriptionNotCreated(?callable $callback = null): void
+    {
+        $this->assertNotRecorded($this->createdSubscriptions, $callback, 'Expected no subscription to have been created on the fake gateway, but one matched.');
+    }
+
+    /**
+     * Assert a subscription was canceled — optionally one the callback accepts.
+     *
+     * @param  (callable(Subscription): bool)|null  $callback
+     */
+    public function assertSubscriptionCanceled(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->canceledSubscriptions, $callback, 'Expected a subscription to have been canceled on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert a customer was created — optionally one the callback accepts.
+     *
+     * @param  (callable(Customer): bool)|null  $callback
+     */
+    public function assertCustomerCreated(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->createdCustomers, $callback, 'Expected a customer to have been created on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert a customer was updated — optionally one the callback accepts.
+     *
+     * @param  (callable(Customer): bool)|null  $callback
+     */
+    public function assertCustomerUpdated(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->updatedCustomers, $callback, 'Expected a customer to have been updated on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert a checkout was created — optionally one whose request the callback accepts.
+     *
+     * @param  (callable(CheckoutRequest): bool)|null  $callback
+     */
+    public function assertCheckoutCreated(?callable $callback = null): void
+    {
+        $this->assertRecorded($this->checkouts, $callback, 'Expected a checkout to have been created on the fake gateway, but none matched.');
+    }
+
+    /**
+     * Assert at least one record matches — any record when no callback is given.
+     *
+     * @param  array<int, mixed>  $records
+     */
+    private function assertRecorded(array $records, ?callable $callback, string $message): void
+    {
+        $matches = $callback === null ? $records : array_filter($records, $callback);
+
+        Assert::assertNotEmpty($matches, $message);
+    }
+
+    /**
+     * Assert no record matches — no record at all when no callback is given.
+     *
+     * @param  array<int, mixed>  $records
+     */
+    private function assertNotRecorded(array $records, ?callable $callback, string $message): void
+    {
+        $matches = $callback === null ? $records : array_filter($records, $callback);
+
+        Assert::assertEmpty($matches, $message);
     }
 }

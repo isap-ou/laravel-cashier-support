@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Isapp\CashierSupport\Tests\Fixtures;
+namespace Isapp\CashierSupport\Testing;
 
 use Isapp\CashierSupport\Contracts\PaymentMethodType;
 use Isapp\CashierSupport\Enums\Concerns\HasCashierLabel;

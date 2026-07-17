@@ -15,7 +15,7 @@ use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\DTO\SubscriptionItem;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
-use Isapp\CashierSupport\Tests\Fixtures\FakePaymentMethodType;
+use Isapp\CashierSupport\Testing\FakePaymentMethodType;
 use Isapp\CashierSupport\Tests\TestCase;
 use Money\Currency;
 

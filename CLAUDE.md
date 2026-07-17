@@ -214,9 +214,19 @@ src/
 │   └── WebhookController.php    # routes/webhook.php → webhook/cashier/{provider}
 ├── Console/
 │   └── WebhookCommand.php       # php artisan cashier:webhook {provider?}
+├── Testing/             # SHIPPED test doubles + driver conformance suite (production autoload)
+│   ├── FakeGateway.php          # in-memory GatewayProvider; Cashier::fake() returns it. Hand-passed
+│   │                            # capability set; records ops (charges, createdSubscriptions, …) and
+│   │                            # exposes assertCharged()/assertSubscriptionCreated()/… (PHPUnit-backed)
+│   ├── FakeSubscriptionBuilder.php, FakeCheckoutSession.php   # the fake's collaborators
+│   ├── FakeIncomingWebhook.php, FakePaymentMethodType.php
+│   └── GatewayConformanceTestCase.php  # abstract; a driver extends it to prove it honours the
+│                                        # contract (supports()⇄capabilities(); every op returns its
+│                                        # type or throws UnsupportedOperationException). Not for #28's
+│                                        # BC guarantee — that is Tests\Fixtures\MinimalGateway.
 ├── Billable.php         # Meta-trait, includes all Concerns
 ├── CashierManager.php   # Macroable driver manager + per-driver model registry
-├── Facades/Cashier.php  # Facade over the manager
+├── Facades/Cashier.php  # Facade over the manager; also the static Cashier::fake() test entry point
 └── CashierSupportServiceProvider.php
 ```
 

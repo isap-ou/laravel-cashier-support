@@ -7,6 +7,7 @@ namespace Isapp\CashierSupport\Tests\Fixtures;
 use Isapp\CashierSupport\Contracts\RegistersWebhooks;
 use Isapp\CashierSupport\DTO\WebhookRegistration;
 use Isapp\CashierSupport\Exceptions\CashierException;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Throwable;
 
 /**
