@@ -260,6 +260,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   taken the *builder setter* away from every driver that has not written the mutation yet, since
   a capability holds only when every method in `Capability::methods()` is overridden.
 
+- **`Builders\GuardedSubscriptionBuilder::quantity()` now throws the exception it always
+  documented.** (#37) `Contracts\SubscriptionBuilder:40` has declared
+  `@throws InvalidArgumentException When the quantity is not positive` since it was written, and
+  nothing validated it — so `->quantity(0)` reached the driver, and a caller's typo would come
+  back from the gateway as a *billing* failure the app is invited to catch and swallow. This is
+  the second instance of the exact defect `.claude/rules/exceptions.md` was written about the
+  first time (`charge()`, same promise, same silence), which is why the rule now has two
+  citations instead of one.
+
+  Neither reference guards here (Stripe's builder checks only which price a quantity belongs to,
+  `SubscriptionBuilder.php:154`; Paddle's is a bare assignment, `:44`) — their silence does not
+  outrank a promise this package already made. Stripe's `?int $quantity` is deliberately not
+  copied along with the guard: `null` there means "send no quantity", which is what a metered
+  price needs, and our contract types this `int`, so that state is already inexpressible.
+
+  Found by pulling the thread on the quantity *mutation* guard: refusing
+  `updateSubscriptionQuantity(0)` while waving `->quantity(0)` through is one question answered
+  two ways.
+
 - **Four gateway-neutral helpers both references have and we never wrote.** (#37)
   `trialEndsAt()`, `hasDefaultPaymentMethod()`, `hasPaymentMethod()` and `deletePaymentMethods()`.
   None is a new capability or a new contract method — each composes an operation this package

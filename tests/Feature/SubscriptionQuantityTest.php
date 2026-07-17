@@ -77,6 +77,42 @@ class SubscriptionQuantityTest extends TestCase
         $this->assertSame(5, $gateway->lastBuilder?->quantity);
     }
 
+    public function test_a_quantity_of_zero_cannot_be_sold_either(): void
+    {
+        // The contract has promised this since it was written — Contracts\SubscriptionBuilder:40
+        // declares "@throws InvalidArgumentException When the quantity is not positive" — and
+        // nothing threw it, so ->quantity(0) reached the driver. Second instance of the defect
+        // .claude/rules/exceptions.md was written about ("a declared guard must exist in code",
+        // citing charge() doing exactly this).
+        //
+        // Found only because the review of the MUTATION guard prompted looking at the setter:
+        // refusing updateSubscriptionQuantity(0) while waving ->quantity(0) through is one
+        // question answered two ways.
+        $gateway = $this->driverSupporting([Capability::Subscriptions, Capability::SubscriptionQuantity]);
+
+        try {
+            (new User)->newSubscription('default', 'price_1')->quantity(0);
+            $this->fail('Expected a zero quantity to be refused.');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('0', $e->getMessage());
+        }
+
+        $this->assertNull($gateway->lastBuilder?->quantity, 'Nothing may reach the driver\'s builder.');
+    }
+
+    public function test_the_capability_gate_outranks_the_quantity_guard(): void
+    {
+        // Order matters and is not arbitrary: a gateway that bills no quantity at all must say
+        // THAT, not quibble with the number. Otherwise an app fixing the "invalid quantity" it
+        // was told about would arrive at the real answer — there is no quantity here — only on
+        // the second try.
+        $this->driverSupporting([Capability::Subscriptions]);
+
+        $this->expectException(UnsupportedOperationException::class);
+
+        (new User)->newSubscription('default', 'price_1')->quantity(0);
+    }
+
     public function test_metadata_throws_when_the_provider_stores_none(): void
     {
         // The sibling of the quantity hole, and the last ungated method on the
