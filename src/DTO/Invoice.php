@@ -17,8 +17,12 @@ use Spatie\LaravelData\Data;
 class Invoice extends Data
 {
     /**
-     * @param  int  $amount  Invoice total in minor units (cents).
+     * @param  int  $amount  Invoice total in minor units (cents). This is the canonical total;
+     *                       when the breakdown is present, subtotal + tax - discount reconciles to it.
      * @param  array<int, InvoiceLine>  $lines
+     * @param  int|null  $subtotal  Total before tax and discount, in minor units (cents); null when not broken down.
+     * @param  int|null  $tax  Aggregate tax across the invoice, in minor units (cents); null when not broken down.
+     * @param  int|null  $discount  Aggregate discount across the invoice, in minor units (cents); null when none.
      */
     public function __construct(
         public string $id,
@@ -33,5 +37,8 @@ class Invoice extends Data
         public ?CarbonImmutable $periodStart = null,
         public ?CarbonImmutable $periodEnd = null,
         public ?BillingReason $billingReason = null,
+        public ?int $subtotal = null,
+        public ?int $tax = null,
+        public ?int $discount = null,
     ) {}
 }

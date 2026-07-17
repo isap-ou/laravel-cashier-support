@@ -78,8 +78,12 @@ trait ManagesLocalInvoices
         $number = $record->getAttribute('number');
         $filename = 'invoice-'.(is_string($number) && $number !== '' ? $number : (string) $record->getKey()).'.pdf';
 
+        // Caller-supplied display lines override the persisted ones; absent them, the DTO uses
+        // whatever the record stored (see toInvoiceDto).
+        $override = isset($data['lines']) && is_array($data['lines']) ? $this->linesFrom($data) : null;
+
         return $this->renderer()
-            ->render($this->toInvoiceDto($record, $this->linesFrom($data)), $data)
+            ->render($this->toInvoiceDto($record, $override), $data)
             ->download($filename)
             ->toResponse(request());
     }
@@ -122,9 +126,12 @@ trait ManagesLocalInvoices
     }
 
     /**
-     * @param  array<int, InvoiceLine>  $lines
+     * Hydrate the DTO from a record. When $lines is null the persisted line JSON is used;
+     * pass an array (e.g. caller-supplied display lines) to override it.
+     *
+     * @param  array<int, InvoiceLine>|null  $lines
      */
-    private function toInvoiceDto(InvoiceRecord $record, array $lines = []): Invoice
+    private function toInvoiceDto(InvoiceRecord $record, ?array $lines = null): Invoice
     {
         $providerId = $record->getAttribute('provider_id');
         $number = $record->getAttribute('number');
@@ -137,13 +144,28 @@ trait ManagesLocalInvoices
             currency: $record->currency,
             status: $record->status,
             number: is_string($number) ? $number : null,
-            lines: $lines,
+            lines: $lines ?? $this->persistedLines($record),
             issuedAt: $record->issued_at,
             subscriptionId: is_string($subscriptionId) ? $subscriptionId : null,
             periodStart: $record->period_start,
             periodEnd: $record->period_end,
             billingReason: $record->billing_reason,
+            subtotal: $record->subtotal,
+            tax: $record->tax,
+            discount: $record->discount,
         );
+    }
+
+    /**
+     * Line items stored on the record's `lines` JSON column. Empty on legacy rows.
+     *
+     * @return array<int, InvoiceLine>
+     */
+    private function persistedLines(InvoiceRecord $record): array
+    {
+        $stored = $record->getAttribute('lines');
+
+        return $this->linesFromArray(is_array($stored) ? $stored : []);
     }
 
     /**
@@ -152,14 +174,28 @@ trait ManagesLocalInvoices
      */
     private function linesFrom(array $data): array
     {
+        return $this->linesFromArray(is_array($data['lines'] ?? null) ? $data['lines'] : []);
+    }
+
+    /**
+     * Build InvoiceLine DTOs from a list of associative arrays (persisted JSON or caller data).
+     *
+     * @param  array<int|string, mixed>  $rows
+     * @return array<int, InvoiceLine>
+     */
+    private function linesFromArray(array $rows): array
+    {
         $lines = [];
 
-        foreach (is_array($data['lines'] ?? null) ? $data['lines'] : [] as $line) {
+        foreach ($rows as $line) {
             if (is_array($line)) {
                 $lines[] = new InvoiceLine(
                     is_string($line['description'] ?? null) ? $line['description'] : '',
                     (int) ($line['amount'] ?? 0),
                     (int) ($line['quantity'] ?? 1),
+                    isset($line['unitAmount']) ? (int) $line['unitAmount'] : null,
+                    isset($line['taxAmount']) ? (int) $line['taxAmount'] : null,
+                    isset($line['taxRate']) ? (int) $line['taxRate'] : null,
                 );
             }
         }

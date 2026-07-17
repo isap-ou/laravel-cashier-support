@@ -29,6 +29,10 @@ class InvoiceBuilder
 
     private ?CarbonImmutable $issuedAt = null;
 
+    private ?int $tax = null;
+
+    private ?int $discount = null;
+
     /**
      * @var array<int, InvoiceLine>
      */
@@ -75,30 +79,63 @@ class InvoiceBuilder
     }
 
     /**
-     * Add a line. The amount is the line total in minor units (cents).
+     * The aggregate tax across the invoice, in minor units (cents).
      */
-    public function addLine(string $description, int $amount, int $quantity = 1): self
+    public function tax(int $tax): self
     {
-        $this->lines[] = new InvoiceLine($description, $amount, $quantity);
+        $this->tax = $tax;
 
         return $this;
     }
 
     /**
-     * Build the invoice DTO, totalling the line amounts.
+     * The aggregate discount across the invoice, in minor units (cents).
+     */
+    public function discount(int $discount): self
+    {
+        $this->discount = $discount;
+
+        return $this;
+    }
+
+    /**
+     * Add a line. All amounts are in minor units (cents); $taxRate is in basis points
+     * (2000 = 20.00%).
+     */
+    public function addLine(
+        string $description,
+        int $amount,
+        int $quantity = 1,
+        ?int $unitAmount = null,
+        ?int $taxAmount = null,
+        ?int $taxRate = null,
+    ): self {
+        $this->lines[] = new InvoiceLine($description, $amount, $quantity, $unitAmount, $taxAmount, $taxRate);
+
+        return $this;
+    }
+
+    /**
+     * Build the invoice DTO. amount (the total) is the sum of line amounts, plus any tax, less
+     * any discount. The breakdown fields stay null unless tax()/discount() were called, so an
+     * invoice with no VAT reports no breakdown rather than a row of zeros.
      */
     public function build(): Invoice
     {
-        $total = array_sum(array_map(static fn (InvoiceLine $line): int => $line->amount, $this->lines));
+        $subtotal = array_sum(array_map(static fn (InvoiceLine $line): int => $line->amount, $this->lines));
+        $hasBreakdown = $this->tax !== null || $this->discount !== null;
 
         return new Invoice(
             id: $this->id,
-            amount: $total,
+            amount: $subtotal + ($this->tax ?? 0) - ($this->discount ?? 0),
             currency: $this->currency,
             status: $this->status,
             number: $this->number,
             lines: $this->lines,
             issuedAt: $this->issuedAt,
+            subtotal: $hasBreakdown ? $subtotal : null,
+            tax: $this->tax,
+            discount: $this->discount,
         );
     }
 }

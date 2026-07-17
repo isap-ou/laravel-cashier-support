@@ -54,6 +54,11 @@ enum Capability: string
     case CheckoutAmount = 'checkout.amount';
     case Invoices = 'invoices';
     case Taxes = 'taxes';
+    // Whether a gateway's invoices can carry a discount at all. Unlike the others this backs no
+    // operation and no setter — it is a fact about the shape of DTO\Invoice this gateway can fill
+    // (the `discount` field), so an app can ask before it expects one. Stripe and Paddle both
+    // discount; a gateway that cannot must be able to say so rather than return a silent zero.
+    case Discounts = 'discounts';
     case Webhooks = 'webhooks';
 
     /**
@@ -64,7 +69,7 @@ enum Capability: string
      * drift apart. A capability holds only when EVERY method here is overridden: a gateway
      * that can list invoices but not render one does not support Invoices.
      *
-     * **Ten cases return `[]`, and that is the design, not a gap.** An interface — or a
+     * **Eleven cases return `[]`, and that is the design, not a gap.** An interface — or a
      * method — can say *the operation exists*; it cannot say *which intent it honours*:
      *
      *  - `swapSubscription()` is ONE method behind SwapImmediate and SwapAtPeriodEnd. Revolut
@@ -76,8 +81,10 @@ enum Capability: string
      *    DTO\CheckoutRequest::capability().
      *  - Trials, Quantity, Metadata and Taxes are setters on Contracts\SubscriptionBuilder,
      *    which is not the gateway at all; Builders\GuardedSubscriptionBuilder gates those.
+     *  - Discounts backs no operation and no setter — it is a fact about the shape a gateway's
+     *    DTO\Invoice can carry (the `discount` field), so there is no method to read it off.
      *
-     * Those ten are declared by the driver (`BaseGateway::declaredCapabilities()`). The
+     * Those eleven are declared by the driver (`BaseGateway::declaredCapabilities()`). The
      * split is not cosmetic: it is why interfaces alone could never have replaced this enum.
      *
      * @return array<int, string>
@@ -114,7 +121,8 @@ enum Capability: string
             self::SubscriptionTrials,
             self::SubscriptionQuantity,
             self::SubscriptionMetadata,
-            self::Taxes => [],
+            self::Taxes,
+            self::Discounts => [],
         };
     }
 }

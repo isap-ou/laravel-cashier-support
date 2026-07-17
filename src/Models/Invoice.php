@@ -22,6 +22,10 @@ use Isapp\CashierSupport\Facades\Cashier;
  * model is shared across all providers.
  *
  * @property int $amount
+ * @property int|null $subtotal
+ * @property int|null $tax
+ * @property int|null $discount
+ * @property array<int, array<string, mixed>>|null $lines
  * @property Currency $currency
  * @property PaymentStatus $status
  * @property CarbonImmutable|null $issued_at
@@ -47,6 +51,10 @@ abstract class Invoice extends Model
     {
         return [
             'amount' => 'integer',
+            'subtotal' => 'integer',
+            'tax' => 'integer',
+            'discount' => 'integer',
+            'lines' => 'array',
             'currency' => Currency::class,
             'status' => PaymentStatus::class,
             'issued_at' => 'immutable_datetime',
