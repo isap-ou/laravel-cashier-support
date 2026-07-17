@@ -62,4 +62,13 @@ trait RefusesSubscriptions
                 : Capability::SubscriptionSwapAtPeriodEnd
         );
     }
+
+    /**
+     * SubscriptionQuantityUpdate, not SubscriptionQuantity: a gateway that bills per seat at
+     * creation but cannot restate the count later supports the second and refuses this one.
+     */
+    public function updateSubscriptionQuantity(Model $billable, string $type, int $quantity, string $price): Subscription
+    {
+        throw UnsupportedOperationException::forCapability(Capability::SubscriptionQuantityUpdate);
+    }
 }

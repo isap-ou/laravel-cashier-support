@@ -32,6 +32,13 @@ enum Capability: string
     case SubscriptionSwapAtPeriodEnd = 'subscription.swap.at_period_end';
     case SubscriptionTrials = 'subscription.trials';
     case SubscriptionQuantity = 'subscription.quantity';
+    // Billing per seat and being able to change the seat count later are different facts,
+    // and the references agree they are: both carry a quantity into creation AND expose
+    // updateQuantity() afterwards, so a gateway may honestly have the first without the
+    // second. Kept apart from SubscriptionQuantity for the reason spelled out on Customers
+    // below — folding them would silently take the builder setter away from every driver
+    // that has not written the mutation yet.
+    case SubscriptionQuantityUpdate = 'subscription.quantity.update';
     case SubscriptionMetadata = 'subscription.metadata';
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
@@ -82,6 +89,9 @@ enum Capability: string
             self::SubscriptionCancelNow => ['cancelSubscriptionNow'],
             self::SubscriptionPause => ['pauseSubscription'],
             self::SubscriptionResume => ['resumeSubscription'],
+            // The mutation is the gateway's; the setter below is the builder's. Only this one
+            // can be read off a method — which is exactly why the two cannot share a case.
+            self::SubscriptionQuantityUpdate => ['updateSubscriptionQuantity'],
             self::PaymentMethodsList => ['paymentMethods', 'defaultPaymentMethod'],
             self::PaymentMethodsAdd => ['addPaymentMethod'],
             self::PaymentMethodsDelete => ['deletePaymentMethod'],

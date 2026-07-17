@@ -97,6 +97,28 @@ class GatewayDefaultsTest extends TestCase
         Cashier::provider('minimal')->pauseSubscription($user);
     }
 
+    public function test_the_inherited_refusal_names_the_quantity_update_not_the_setter(): void
+    {
+        // Reached by calling the provider DIRECTLY, and it has to be: Billable's gate refuses
+        // first and would never let this body run, so a test going through the concern proves
+        // nothing about what is written here. That path is real — .claude/rules/capabilities.md
+        // notes a direct provider call bypasses Billable — and it is the only one that sees
+        // this refusal's wording.
+        //
+        // The distinction it protects: a gateway may bill per seat at creation
+        // (SubscriptionQuantity) and still have no way to restate the count later. Told the
+        // wrong capability, an app would conclude the gateway has no quantity concept at all.
+        $user = new User(['id' => 1]);
+
+        try {
+            Cashier::provider('minimal')->updateSubscriptionQuantity($user, 'default', 5, 'price_monthly');
+            $this->fail('Expected the default quantity update to refuse.');
+        } catch (UnsupportedOperationException $e) {
+            $this->assertSame(Capability::SubscriptionQuantityUpdate, $e->capability);
+            $this->assertStringNotContainsString(Capability::SubscriptionQuantity->value.']', $e->getMessage());
+        }
+    }
+
     public function test_a_refusal_names_the_intent_not_merely_the_method(): void
     {
         // swapSubscription() is one method behind two capabilities. A gateway that can only
@@ -184,7 +206,7 @@ class GatewayDefaultsTest extends TestCase
             }
         }
 
-        $this->assertCount(21, Capability::cases());
+        $this->assertCount(22, Capability::cases());
     }
 
     public function test_a_default_returns_nothing_it_only_refuses(): void

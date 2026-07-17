@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Concerns;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use InvalidArgumentException;
 use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\SwapTiming;
+use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
+use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Models\Subscription as SubscriptionRecord;
+use Isapp\CashierSupport\Models\SubscriptionItem as SubscriptionItemRecord;
 
 /**
  * Subscription lifecycle for a billable model.
@@ -197,5 +202,237 @@ trait ManagesSubscriptions
         $this->ensureTaxRatesSupported();
 
         return $this->cashierProvider()->swapSubscription($this, $type, $prices, $timing, $options);
+    }
+
+    /**
+     * Set how many of a subscription's price the entity is billed for.
+     *
+     * The absolute form: $quantity is the number to land on. Both references make this the
+     * only call a gateway ever sees, with increment and decrement composed on top
+     * (Stripe Subscription.php:518, Paddle :532).
+     *
+     * @param  string  $type  The subscription type.
+     * @param  int  $quantity  The new quantity, which must be at least 1.
+     * @param  string|null  $price  Which item to change; omit when the subscription has one.
+     *
+     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws SubscriptionUpdateFailure When there is no such subscription, or no such price on it.
+     * @throws InvalidArgumentException When $quantity is below 1, or the subscription has
+     *                                  several prices and none was named.
+     */
+    public function updateSubscriptionQuantity(string $type, int $quantity, ?string $price = null): Subscription
+    {
+        $this->ensureCashierSupports(Capability::SubscriptionQuantityUpdate);
+
+        $this->ensureCashierQuantityIsPositive($quantity);
+
+        // Resolved for its guards, not its value: this is what refuses an ambiguous call
+        // before a gateway has to guess which line to bill.
+        $item = $this->cashierQuantityItem($type, $price);
+
+        return $this->cashierSetQuantity($type, $quantity, $item);
+    }
+
+    /**
+     * Bill for $count more of a subscription's price than it is billed for now.
+     *
+     * @param  string  $type  The subscription type.
+     * @param  int  $count  How many to add, at least 1.
+     * @param  string|null  $price  Which item to change; omit when the subscription has one.
+     *
+     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws SubscriptionUpdateFailure When there is no such subscription or price, or the
+     *                                   current quantity is unknown.
+     * @throws InvalidArgumentException When $count is below 1, or the subscription has several
+     *                                  prices and none was named.
+     */
+    public function incrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null): Subscription
+    {
+        $this->ensureCashierSupports(Capability::SubscriptionQuantityUpdate);
+
+        $this->ensureCashierCountIsPositive($count, 'increment');
+
+        $item = $this->cashierQuantityItem($type, $price);
+
+        return $this->cashierSetQuantity($type, $this->cashierKnownQuantity($item) + $count, $item);
+    }
+
+    /**
+     * Bill for $count fewer of a subscription's price than it is billed for now.
+     *
+     * Floors at 1, as both references do (Stripe Subscription.php:506, Paddle :522): a
+     * decrement that walked into zero would be a cancellation nobody asked for.
+     *
+     * @param  string  $type  The subscription type.
+     * @param  int  $count  How many to remove, at least 1.
+     * @param  string|null  $price  Which item to change; omit when the subscription has one.
+     *
+     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws SubscriptionUpdateFailure When there is no such subscription or price, or the
+     *                                   current quantity is unknown.
+     * @throws InvalidArgumentException When $count is below 1, or the subscription has several
+     *                                  prices and none was named.
+     */
+    public function decrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null): Subscription
+    {
+        $this->ensureCashierSupports(Capability::SubscriptionQuantityUpdate);
+
+        $this->ensureCashierCountIsPositive($count, 'decrement');
+
+        $item = $this->cashierQuantityItem($type, $price);
+
+        return $this->cashierSetQuantity(
+            $type,
+            max(1, $this->cashierKnownQuantity($item) - $count),
+            $item,
+        );
+    }
+
+    /**
+     * Refuse a relative change that is not one.
+     *
+     * Neither reference guards this, and both are wrong not to: `decrementQuantity(-5)` on a
+     * subscription billed for 3 sends `max(1, 3 - -5)` = 8, so a method named *decrement*
+     * silently RAISES the bill to eight seats. The `$quantity < 1` guard cannot catch it — 8
+     * passes. Increment is the mirror: `incrementQuantity(-5)` on 3 computes -2 and then fails
+     * naming -2, a number the caller never typed.
+     *
+     * Not deference to the references, because .claude/rules/exceptions.md decides this and not
+     * they do: a negative count to "add some" is a malformed argument, which is the caller's bug
+     * to fix rather than a billing failure to catch. Direction is what these methods are FOR;
+     * an argument that reverses it is not a quantity, it is a typo.
+     *
+     * @throws InvalidArgumentException When $count is below 1.
+     */
+    private function ensureCashierCountIsPositive(int $count, string $verb): void
+    {
+        if ($count < 1) {
+            throw new InvalidArgumentException(
+                "A quantity to {$verb} by must be at least 1, {$count} given. To move the other way, "
+                .($verb === 'increment' ? 'decrement' : 'increment').' instead.'
+            );
+        }
+    }
+
+    /**
+     * Send an already-resolved absolute quantity to the gateway.
+     *
+     * Split out so increment and decrement do not resolve the item and re-check the gate a
+     * second time by calling the public method: they have both already done exactly that, and
+     * seat changes are the hot path this whole ticket exists to enable.
+     *
+     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws InvalidArgumentException When $quantity is below 1.
+     */
+    private function cashierSetQuantity(string $type, int $quantity, SubscriptionItemRecord $item): Subscription
+    {
+        $this->ensureCashierQuantityIsPositive($quantity);
+
+        return $this->cashierProvider()->updateSubscriptionQuantity($this, $type, $quantity, $item->price);
+    }
+
+    /**
+     * Refuse a quantity a subscription cannot hold.
+     *
+     * Paddle refuses this too ("Quantities of zero are not allowed.", Subscription.php:535).
+     * Not a CashierException: the gateway never sees the call, so there is no billing failure
+     * to report — only a bug to fix. Zero seats is a cancellation, and it has its own method.
+     *
+     * @throws InvalidArgumentException When $quantity is below 1.
+     */
+    private function ensureCashierQuantityIsPositive(int $quantity): void
+    {
+        if ($quantity < 1) {
+            throw new InvalidArgumentException(
+                "A subscription quantity must be at least 1, {$quantity} given. To end a subscription, cancel it."
+            );
+        }
+    }
+
+    /**
+     * The local item a quantity change is about.
+     *
+     * $price may be omitted only when there is exactly one item — both references guard the
+     * same way (Stripe guardAgainstMultiplePrices() :1543, Paddle singleItemOrFail() :99),
+     * because "set the quantity to 5" on a subscription billed on two prices has no answer,
+     * and picking one silently bills the wrong line.
+     *
+     * The ambiguity test is Paddle's (count the items) rather than Stripe's, which asks
+     * whether its own `stripe_price` column is null — a column of a gateway's own schema, and
+     * not a shape this package has or wants.
+     *
+     * @throws SubscriptionUpdateFailure When there is no such subscription, or no such price on it.
+     * @throws InvalidArgumentException When several prices are billed and none was named.
+     */
+    private function cashierQuantityItem(string $type, ?string $price): SubscriptionItemRecord
+    {
+        $subscription = $this->subscription($type);
+
+        if ($subscription === null) {
+            throw new SubscriptionUpdateFailure("There is no [{$type}] subscription to change the quantity of.");
+        }
+
+        $items = $subscription->items()->get();
+
+        if ($price === null) {
+            if ($items->count() > 1) {
+                throw new InvalidArgumentException(
+                    "The [{$type}] subscription is billed on several prices, so one must be named to change its quantity."
+                );
+            }
+
+            $item = $items->first();
+        } else {
+            $item = $items->firstWhere('price', $price);
+        }
+
+        if ($item === null) {
+            throw new SubscriptionUpdateFailure(
+                $price === null
+                    ? "The [{$type}] subscription has no priced items to change the quantity of."
+                    : "The [{$type}] subscription is not billed on [{$price}]."
+            );
+        }
+
+        return $item;
+    }
+
+    /**
+     * The item's current quantity, when a relative change needs one to build on.
+     *
+     * An edge neither reference has, because neither stores a nullable quantity: here null
+     * means "unknown", never zero and never one (Models\SubscriptionItem), so a gateway with
+     * no quantity concept can write the row honestly. There is then nothing for an increment
+     * to add to — and treating unknown as 0 would invent a seat count and bill it. Absolute
+     * updateSubscriptionQuantity() is unaffected: not knowing where you are does not stop you
+     * naming where to go.
+     *
+     * @throws SubscriptionUpdateFailure When the quantity is unknown.
+     */
+    private function cashierKnownQuantity(SubscriptionItemRecord $item): int
+    {
+        if ($item->quantity === null) {
+            throw new SubscriptionUpdateFailure(
+                "The quantity billed for [{$item->price}] is unknown, so it cannot be raised or lowered. Set it outright instead."
+            );
+        }
+
+        return $item->quantity;
+    }
+
+    /**
+     * When the entity's trial of the given type ends, if it is on one.
+     *
+     * **Narrower than both references, because the concept they fall back to does not exist
+     * here.** Theirs answer for a "generic" trial — one held before any subscription exists —
+     * first, and only then read the subscription (Stripe ManagesSubscriptions.php:118, Paddle
+     * :109). That trial is stored somewhere we have nothing equivalent to, and the two
+     * references do not even agree where: Stripe on the billable's own table, Paddle on the
+     * customer row. So this reads the subscription and nothing else. Not a different answer to
+     * the same question — a narrower question, until generic trials have a home of their own.
+     */
+    public function trialEndsAt(string $type = 'default'): ?CarbonImmutable
+    {
+        return $this->subscription($type)?->trial_ends_at;
     }
 }

@@ -218,6 +218,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Seat-based billing is now possible at all.** (#37) Quantity could be set once, on the
+  builder at creation (`Contracts\SubscriptionBuilder::quantity()`), and never again — no
+  increment, no decrement, no update, anywhere. An app that billed per seat could sell a
+  subscription and then had no way to add a seat to it.
+
+  `Contracts\SubscriptionOperations::updateSubscriptionQuantity()` is new, and on `Billable`
+  there are three ways to reach it: `updateSubscriptionQuantity('default', 5)` sets the count,
+  `incrementSubscriptionQuantity()` / `decrementSubscriptionQuantity()` move it relative to what
+  is stored. **The gateway only ever learns the absolute number.** Both references make increment
+  and decrement compositions over `updateQuantity()` rather than operations of their own, so the
+  arithmetic stays on this side of the boundary and a driver implements one method.
+
+  Three guards, each taken from what the references agree on: a quantity below 1 raises
+  `InvalidArgumentException` (zero seats is a cancellation, and it has its own method); a
+  subscription billed on several prices refuses a change that names none of them; decrement
+  floors at 1. Two more are ours, because the edges are:
+
+  - **A count below 1 is refused, which neither reference does.** Theirs will happily take
+    `decrementQuantity(-5)`, compute `max(1, 3 - -5)` and bill for **eight** seats — a method
+    named *decrement* raising the bill, silently, past a floor that cannot catch it. Direction
+    is what these methods are for, so an argument that reverses it is a typo, and
+    `.claude/rules/exceptions.md` makes that the caller's bug rather than a billing failure.
+  - **An unknown quantity cannot be incremented.** Our `quantity` column is nullable and null
+    means *unknown*, so a relative change has nothing to build on; increment/decrement raise
+    `SubscriptionUpdateFailure` rather than treat unknown as zero and bill a seat count they
+    invented. Setting a quantity outright still works — not knowing where you are does not stop
+    you naming where to go.
+
+  **`$price` is optional on `Billable` and required on the contract**, which is the one place
+  this deliberately parts from both references. Theirs is `updateQuantity($quantity, $price =
+  null)` on the *subscription*, which holds its own items and can resolve "the only one" itself.
+  Ours is on the gateway, which holds no local records — so null there would mean asking a driver
+  to guess which line to bill. The concern resolves it against the local items and refuses the
+  ambiguous call, and by the time a driver is asked, the answer is named.
+
+  **`Capability::SubscriptionQuantityUpdate` is a 22nd case, kept apart from
+  `SubscriptionQuantity`** — the same shape as `Customers`/`CustomersUpdate` above and for the
+  same reason. Billing per seat at creation and being able to restate the count later are
+  different facts about a gateway, and folding the method into `SubscriptionQuantity` would have
+  taken the *builder setter* away from every driver that has not written the mutation yet, since
+  a capability holds only when every method in `Capability::methods()` is overridden.
+
+- **Four gateway-neutral helpers both references have and we never wrote.** (#37)
+  `trialEndsAt()`, `hasDefaultPaymentMethod()`, `hasPaymentMethod()` and `deletePaymentMethods()`.
+  None is a new capability or a new contract method — each composes an operation this package
+  already owned and inherits its gate. Two are narrower than the Cashier method they are named
+  after, and say so in their docblocks rather than quietly answering a different question:
+
+  - `trialEndsAt()` reads the subscription and nothing else. Both references consult a *generic*
+    trial first — one held before any subscription exists — and we have no storage for one; the
+    references do not even agree where it should live (Stripe on the billable's own table, Paddle
+    on the customer row). A narrower question, not a different answer to the same one.
+  - `hasDefaultPaymentMethod()` asks the gateway, where Stripe reads a locally cached column. We
+    cache nothing, so it costs a round-trip and it can refuse — catchably — where Stripe's would
+    return a confident `false` it never checked. Do not put it in a loop.
+  - `hasPaymentMethod()` / `deletePaymentMethods()` take a `Contracts\PaymentMethodType` where
+    Stripe takes a string, because there the strings *are* Stripe's own wire values and there is
+    no such vocabulary here to borrow. A plain string still works, compared against the enum's
+    backing value.
+
 - **A customer can now be corrected, and a model can say where its own name lives.** (#36)
   A customer could be created and never updated: a user changed their email in the app and
   nothing could push it, so the gateway's record drifted from ours permanently.

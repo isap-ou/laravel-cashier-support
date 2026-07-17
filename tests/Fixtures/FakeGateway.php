@@ -50,6 +50,17 @@ class FakeGateway implements GatewayProvider
     public ?CustomerDetails $lastCustomerDetails = null;
 
     /**
+     * What the last updateSubscriptionQuantity() call was told to land on — the only way to
+     * prove increment/decrement did their arithmetic against the STORED quantity, rather
+     * than merely that a number arrived.
+     */
+    public ?int $lastQuantity = null;
+
+    public ?string $lastQuantityType = null;
+
+    public ?string $lastQuantityPrice = null;
+
+    /**
      * The raw bytes and headers the last webhook() call was given — lets a test see
      * that the controller passed the body through untouched, which is what a signature
      * is checked against.
@@ -169,6 +180,15 @@ class FakeGateway implements GatewayProvider
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
 
+    public function updateSubscriptionQuantity(Model $billable, string $type, int $quantity, string $price): Subscription
+    {
+        $this->lastQuantity = $quantity;
+        $this->lastQuantityType = $type;
+        $this->lastQuantityPrice = $price;
+
+        return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
+    }
+
     public function invoices(Model $billable, array $parameters = []): array
     {
         return [];
@@ -184,14 +204,34 @@ class FakeGateway implements GatewayProvider
         return new Response('%PDF-fake');
     }
 
+    /**
+     * The stored payment methods this gateway reports.
+     *
+     * @var array<int, PaymentMethod>
+     */
+    public array $storedPaymentMethods = [];
+
+    /**
+     * The default this gateway reports, if any.
+     */
+    public ?PaymentMethod $storedDefaultPaymentMethod = null;
+
+    /**
+     * Every id handed to deletePaymentMethod(), in order — the only way to prove a bulk
+     * delete reached each one rather than merely returning quietly.
+     *
+     * @var array<int, string>
+     */
+    public array $deletedPaymentMethods = [];
+
     public function paymentMethods(Model $billable): array
     {
-        return [];
+        return $this->storedPaymentMethods;
     }
 
     public function defaultPaymentMethod(Model $billable): ?PaymentMethod
     {
-        return null;
+        return $this->storedDefaultPaymentMethod;
     }
 
     public function addPaymentMethod(Model $billable, string $paymentMethod): PaymentMethod
@@ -199,7 +239,10 @@ class FakeGateway implements GatewayProvider
         return new PaymentMethod(id: $paymentMethod, type: FakePaymentMethodType::Card);
     }
 
-    public function deletePaymentMethod(Model $billable, string $paymentMethodId): void {}
+    public function deletePaymentMethod(Model $billable, string $paymentMethodId): void
+    {
+        $this->deletedPaymentMethods[] = $paymentMethodId;
+    }
 
     public function checkout(Model $billable, CheckoutRequest $request): CheckoutSession
     {
