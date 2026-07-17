@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Builders;
 
 use DateTimeInterface;
+use InvalidArgumentException;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
@@ -66,10 +67,39 @@ final class GuardedSubscriptionBuilder implements SubscriptionBuilder
 
     /**
      * {@inheritDoc}
+     *
+     * **The contract has promised this guard since it was written and nothing threw it** —
+     * Contracts\SubscriptionBuilder:40 says "@throws InvalidArgumentException When the quantity
+     * is not positive", and `->quantity(0)` sailed into the driver. That is not a new rule being
+     * invented here; it is `.claude/rules/exceptions.md`'s "a declared guard must exist in code",
+     * and the second instance of the exact defect that rule was written about the first time:
+     * charge() documented the same throw for a non-positive amount and validated nothing, so the
+     * caller's own bug travelled to the gateway, came back a 4xx, and arrived as a *billing*
+     * failure the app is invited to swallow. Zero seats is a typo, and a typo must not be
+     * catchable as a decline.
+     *
+     * Neither reference guards here, and that is worth stating rather than hiding: Stripe's
+     * builder checks only WHICH price a quantity belongs to, never the value
+     * (SubscriptionBuilder.php:154); Paddle's is a bare assignment (:44). Their silence is not
+     * assent, and it does not outrank a promise this package already made to its callers.
+     *
+     * Stripe's `?int $quantity` is deliberately NOT copied along with the guard: null there means
+     * "send no quantity", which is what a metered price needs and is the same idea our nullable
+     * column carries as "unknown". The contract types this `int`, so that state is already
+     * inexpressible on this builder — widening it to say so is a decision, not a guard, and not
+     * this ticket's.
+     *
+     * @throws InvalidArgumentException When $quantity is below 1.
      */
     public function quantity(int $quantity): static
     {
         Cashier::ensureSupports(Capability::SubscriptionQuantity, $this->driver);
+
+        if ($quantity < 1) {
+            throw new InvalidArgumentException(
+                "A subscription quantity must be at least 1, {$quantity} given. To sell no seats, do not subscribe."
+            );
+        }
 
         $this->builder = $this->builder->quantity($quantity);
 

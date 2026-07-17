@@ -65,9 +65,13 @@ $user->updateCustomer(['email' => '...']);   // only the named fields; unmention
 $user->syncCustomerDetails();                // push what the model knows: cashierName()/cashierEmail()
 $user->updateOrCreateCustomer(['email' => '...']);
 $user->defaultPaymentMethod();
+$user->hasDefaultPaymentMethod();             // asks the gateway — Stripe's reads a local column
+$user->hasPaymentMethod(AcmeType::Card);      // driver-owned enum, or its value: 'card'
 $user->addPaymentMethod('pm_xxx');
+$user->deletePaymentMethods();                // all of them, or narrowed to one type
 $user->invoices();
 $user->downloadInvoice('inv_xxx');
+$user->trialEndsAt('default');                // the subscription's trial only — no generic trial here
 
 // Subscription MUTATIONS live on Billable, NOT on the model — unlike Cashier.
 // `$user->subscription('default')` returns a read-only model with no mutators.
@@ -76,13 +80,18 @@ $user->cancelSubscriptionNow('default');
 $user->resumeSubscription('default');
 $user->pauseSubscription('default');
 $user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
+// Quantity mutation is on Billable too, and the gateway is only ever told the absolute number.
+$user->updateSubscriptionQuantity('default', 5);
+$user->incrementSubscriptionQuantity('default', 2, 'price_seats');   // $price only when several
+$user->decrementSubscriptionQuantity('default');                      // floors at 1
 ```
 
 **Not implemented, despite existing in Cashier** (do not call, do not document as working):
-`$user->subscription(...)->cancel()/resume()/swap()`, `subscribedToProduct()`, `trialEndsAt()`,
-`onGenericTrial()`, `hasIncompletePayment()`, `deletePaymentMethods()`,
-`updateDefaultPaymentMethod()`, `upcomingInvoice()`, `tab()`/`invoiceFor()`, coupons/promotion
-codes, proration, quantity mutation (`incrementQuantity` etc.).
+`$user->subscription(...)->cancel()/resume()/swap()`, `subscribedToProduct()`/`onProduct()`,
+`onGenericTrial()`, `hasIncompletePayment()`, `updateDefaultPaymentMethod()`, `upcomingInvoice()`,
+`tab()`/`invoiceFor()`, coupons/promotion codes, proration, the model predicates (`valid()`,
+`recurring()`, `pastDue()`, `hasSinglePrice()`, …), item-level quantity
+(`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is ours).
 
 ## Architecture
 
@@ -195,7 +204,8 @@ enum Capability: string {
     case SubscriptionSwapImmediate = 'subscription.swap.immediate';
     case SubscriptionSwapAtPeriodEnd = 'subscription.swap.at_period_end';
     case SubscriptionTrials = 'subscription.trials';
-    case SubscriptionQuantity = 'subscription.quantity';
+    case SubscriptionQuantity = 'subscription.quantity';        // a seat count at creation
+    case SubscriptionQuantityUpdate = 'subscription.quantity.update';   // ...and changing it later
     case SubscriptionMetadata = 'subscription.metadata';
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
@@ -295,11 +305,12 @@ resolves it by language rule (own > trait > parent), so a driver's trait beats t
 
 Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
 today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
-12 of the 20 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+14 of the 22 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
 the code; the other 8 cannot be read off anything (`swapSubscription()` is one method behind two
 timings, `checkout()` one method behind two shapes, and four are `SubscriptionBuilder` setters) and
 stay declared via `declaredCapabilities()`. That split is why interfaces could never have replaced
-the enum.
+the enum. **Count those two numbers against the enum before repeating them** — they were wrong here
+until #37 (the file said 12 of 20 when the code said 13 of 21), which is #38's whole shape.
 
 **The subscription mutation surface is ours, not Cashier's, and that is undecided (#39).**
 Mutations live on `Billable` (`$user->cancelSubscription('default')`); `Models\Subscription` has
