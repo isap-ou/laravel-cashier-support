@@ -22,6 +22,13 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['provider', 'provider_id']);
+
+            // The columns Concerns\ManagesSubscriptions::subscriptions() filters on, in filter
+            // order, so the query scopes on Models\Subscription land on an index rather than a
+            // scan. #29 asks for (owner_type, owner_id, status) — Stripe's shape — but every
+            // scope query arrives through subscriptions(), which always carries `provider`;
+            // an index that skips it stops being useful after owner_id.
+            $table->index(['owner_type', 'owner_id', 'provider', 'status']);
         });
     }
 

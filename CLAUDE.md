@@ -94,8 +94,21 @@ $user->subscription('default')->incomplete();
 $user->subscription('default')->hasPrice('price_monthly');
 $user->subscription('default')->hasSinglePrice();     // ...and hasMultiplePrices()
 
+// Every predicate above that reads a column is also a query scope, and the two agree by
+// construction. This is the only way to ask the question without hydrating the row.
+User::whereHas('subscriptions', fn ($q) => $q->active())->get();
+// valid/active, pastDue/incomplete, canceled, onTrial, onGracePeriod, ended — and the four
+// negations, which have no predicate twin: PHP has `!`, a query builder does not.
+$user->subscriptions()->notOnTrial()->notCanceled()->get();
+
+// Off the model, the class is per-driver: Models\Subscription is ABSTRACT, so
+// `Subscription::query()` is a fatal, not an entry point. Ask the registry for the driver's.
+$subscriptions = Cashier::subscriptionModel('revolut');   // ...or () for the default driver
+$subscriptions::query()->pastDue()->get();                // the dunning cron, without a table scan
+
 // A past_due or incomplete customer keeps access only if the app says so. Global, not
-// per-driver: it is product policy, not something a gateway can answer.
+// per-driver: it is product policy, not something a gateway can answer. Both the predicates
+// and the scopes read these.
 Cashier::keepPastDueSubscriptionsActive();
 Cashier::keepIncompleteSubscriptionsActive();
 ```
@@ -104,8 +117,11 @@ Cashier::keepIncompleteSubscriptionsActive();
 `$user->subscription(...)->cancel()/resume()/swap()`, `subscribedToProduct()`/`onProduct()`,
 `onGenericTrial()`, `hasIncompletePayment()`, `updateDefaultPaymentMethod()`, `upcomingInvoice()`,
 `tab()`/`invoiceFor()`, coupons/promotion codes, proration, `Models\Subscription::recurring()`
-(the references disagree on its body — it is a design, not a port), the query scopes, item-level
-quantity (`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is ours).
+(the references disagree on its body — it is a design, not a port) and `scopeRecurring` with it,
+the paused scopes (`scopePaused`/`scopeNotPaused`/`scopeOnPausedGracePeriod` — Paddle-only, and
+the last needs a `paused_at` column we do not have), `hasExpiredTrial()`/`scopeExpiredTrial`,
+item-level quantity (`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is
+ours).
 
 ## Architecture
 
@@ -156,6 +172,15 @@ src/
 │   ├── PaymentSucceeded/Failed.php, RefundProcessed.php
 ├── Models/              # Abstract Eloquent — READ-ONLY: predicates + relations, no mutators
 │   ├── Subscription.php, SubscriptionItem.php, Customer.php
+│   ├── Concerns/                # Subscription's predicates, each WITH the query scope that
+│   │   │                        # must agree with it. Composed into Models\Subscription the way
+│   │   │                        # BaseGateway composes Defaults/ — one trait per column-family,
+│   │   │                        # flattened into the abstract base. Pairing the two is the point:
+│   │   │                        # split across files, predicate/scope drift is invisible (#29)
+│   │   ├── DecidesAccess.php        # valid()/active() + scopes; the status lists both read
+│   │   ├── ReportsStatus.php        # pastDue()/incomplete() + scopes
+│   │   ├── TracksCancellation.php   # canceled()/onGracePeriod()/hasEnded() + scopes
+│   │   └── TracksTrialPeriod.php    # onTrial() + scopes
 │   └── Invoice.php              # Local invoice model (provider-independent)
 ├── Invoice/                     # Invoice generation (shared, not provider-dependent)
 │   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
