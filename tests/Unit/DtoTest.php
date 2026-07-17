@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Unit;
 
+use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Customer;
+use Isapp\CashierSupport\DTO\CustomerDetails;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\PaymentMethod;
 use Isapp\CashierSupport\DTO\Subscription;
@@ -46,6 +48,60 @@ class DtoTest extends TestCase
 
         $this->assertSame('cus_1', $customer->id);
         $this->assertSame('Ada', $customer->name);
+    }
+
+    public function test_customer_details_lifts_the_typed_fields_out_of_the_bag(): void
+    {
+        $details = CustomerDetails::fromOptions([
+            'name' => 'Ada',
+            'email' => 'ada@example.com',
+            'phone' => '+3531234567',
+        ]);
+
+        $this->assertSame('Ada', $details->name);
+        $this->assertSame('ada@example.com', $details->email);
+        $this->assertSame(['phone' => '+3531234567'], $details->options, 'What support has no concept for stays in the named hatch — it is not support\'s to understand, but it is support\'s not to lose.');
+    }
+
+    public function test_customer_details_refuses_a_non_string_name(): void
+    {
+        // A programmer error, so it raises SPL's InvalidArgumentException and is meant to be
+        // fixed, not caught (.claude/rules/exceptions.md). The first draft rerouted it into
+        // $options instead, which was worse than either obvious wrong answer: the hook then
+        // filled the typed field and a driver got name: 'Ada' beside options: ['name' => 42],
+        // resolving one field two ways by array-merge order.
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("A customer's [name] must be a string, array given.");
+
+        CustomerDetails::fromOptions(['name' => ['Ada', 'Lovelace']]);
+    }
+
+    public function test_customer_details_refuses_a_non_string_email(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("A customer's [email] must be a string, int given.");
+
+        CustomerDetails::fromOptions(['email' => 42]);
+    }
+
+    public function test_customer_details_treats_an_explicit_null_as_not_specified(): void
+    {
+        // Not an error: the class note says null MEANS "not specified", so raising here would
+        // contradict the type's own contract. The key is still consumed rather than left in the
+        // bag — one field must never arrive at a driver twice.
+        $details = CustomerDetails::fromOptions(['name' => null, 'phone' => '+353']);
+
+        $this->assertNull($details->name);
+        $this->assertSame(['phone' => '+353'], $details->options);
+    }
+
+    public function test_customer_details_defaults_to_nothing_specified(): void
+    {
+        $details = CustomerDetails::fromOptions([]);
+
+        $this->assertNull($details->name);
+        $this->assertNull($details->email);
+        $this->assertSame([], $details->options);
     }
 
     public function test_subscription_nests_items(): void

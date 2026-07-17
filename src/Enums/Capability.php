@@ -15,6 +15,12 @@ enum Capability: string
     case Charges = 'charges';
     case Refunds = 'refunds';
     case Customers = 'customers';
+    // Having customers and being able to change one are different facts about a gateway, and
+    // the references prove it rather than suggest it: Stripe pushes name/email out
+    // (ManagesCustomer.php:266), Paddle has no customer update at all and only accepts them
+    // back in via a webhook. A gateway that can create a customer it can never correct is a
+    // real gateway; this is how it says so.
+    case CustomersUpdate = 'customers.update';
     case Subscriptions = 'subscriptions';
     case SubscriptionCancelNow = 'subscription.cancel_now';
     case SubscriptionPause = 'subscription.pause';
@@ -66,7 +72,12 @@ enum Capability: string
         return match ($this) {
             self::Charges => ['charge'],
             self::Refunds => ['refund'],
+            // Deliberately NOT ['createCustomer', 'asCustomer', 'updateCustomer']: a capability
+            // holds only when every method here is overridden, so folding update in would strip
+            // Customers from every driver that has not written one yet — silently, since a lie
+            // about capabilities reads exactly like the truth until an app calls the method.
             self::Customers => ['createCustomer', 'asCustomer'],
+            self::CustomersUpdate => ['updateCustomer'],
             self::Subscriptions => ['newSubscription', 'cancelSubscription'],
             self::SubscriptionCancelNow => ['cancelSubscriptionNow'],
             self::SubscriptionPause => ['pauseSubscription'],

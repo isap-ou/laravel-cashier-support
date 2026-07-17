@@ -12,6 +12,7 @@ use Isapp\CashierSupport\Contracts\IncomingWebhook;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\DTO\Customer;
+use Isapp\CashierSupport\DTO\CustomerDetails;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\PaymentMethod;
@@ -40,6 +41,13 @@ class FakeGateway implements GatewayProvider
      * legacy arguments normalized into.
      */
     public ?CheckoutRequest $lastCheckoutRequest = null;
+
+    /**
+     * The details handed to the last createCustomer()/updateCustomer() call — lets a test see
+     * what the concern resolved out of the hooks and the options bag, which is the only way to
+     * prove a name reached the gateway rather than merely being asked for.
+     */
+    public ?CustomerDetails $lastCustomerDetails = null;
 
     /**
      * The raw bytes and headers the last webhook() call was given — lets a test see
@@ -102,9 +110,18 @@ class FakeGateway implements GatewayProvider
         return in_array($capability, $this->capabilities, true);
     }
 
-    public function createCustomer(Model $billable, array $options = []): Customer
+    public function createCustomer(Model $billable, CustomerDetails $details): Customer
     {
-        return new Customer(id: 'cus_fake');
+        $this->lastCustomerDetails = $details;
+
+        return new Customer(id: 'cus_fake', name: $details->name, email: $details->email);
+    }
+
+    public function updateCustomer(Model $billable, CustomerDetails $details): Customer
+    {
+        $this->lastCustomerDetails = $details;
+
+        return new Customer(id: 'cus_fake', name: $details->name, email: $details->email);
     }
 
     public function asCustomer(Model $billable): Customer
