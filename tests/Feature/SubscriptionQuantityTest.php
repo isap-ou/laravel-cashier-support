@@ -12,9 +12,9 @@ use Isapp\CashierSupport\Exceptions\CashierException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Gateway\BaseGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscription;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscriptionItem;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
 

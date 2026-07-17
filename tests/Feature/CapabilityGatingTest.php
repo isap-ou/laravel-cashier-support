@@ -7,7 +7,7 @@ namespace Isapp\CashierSupport\Tests\Feature;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\PriceTaxedUser;
 use Isapp\CashierSupport\Tests\Fixtures\TaxedUser;
 use Isapp\CashierSupport\Tests\Fixtures\User;

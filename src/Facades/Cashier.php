@@ -6,6 +6,8 @@ namespace Isapp\CashierSupport\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use Isapp\CashierSupport\CashierManager;
+use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Testing\FakeGateway;
 
 /**
  * @method static \Isapp\CashierSupport\Contracts\GatewayProvider provider(?string $driver = null)
@@ -36,5 +38,33 @@ class Cashier extends Facade
     protected static function getFacadeAccessor(): string
     {
         return CashierManager::class;
+    }
+
+    /**
+     * Swap in an in-memory FakeGateway as the active driver and return it, so an app can test
+     * its billing code with no real driver installed and then assert against the fake.
+     *
+     * Mirrors Laravel's own Event::fake()/Bus::fake() shape. With no argument the fake supports
+     * every capability — the friendly default for "just fake billing"; pass an explicit list to
+     * constrain what it answers to, exactly as the FakeGateway constructor does.
+     *
+     * @param  array<int, Capability>  $capabilities
+     */
+    public static function fake(array $capabilities = []): FakeGateway
+    {
+        $fake = new FakeGateway($capabilities === [] ? Capability::cases() : $capabilities);
+
+        /** @var CashierManager $manager */
+        $manager = static::getFacadeRoot();
+        $manager->extend('fake', fn () => $fake);
+
+        config()->set('cashier-support.default', 'fake');
+
+        // Drop any driver already resolved this request — including a previous fake() — so the
+        // one just registered is what the next provider() call hands back. Without this the
+        // Manager's instance cache would keep serving the earlier gateway.
+        $manager->forgetDrivers();
+
+        return $fake;
     }
 }

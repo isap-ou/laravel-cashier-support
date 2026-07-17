@@ -60,6 +60,10 @@ deptrac:
       collectors:
         - type: directory
           value: src/Console/.*
+    - name: Testing
+      collectors:
+        - type: directory
+          value: src/Testing/.*
     - name: Manager
       collectors:
         - type: classLike
@@ -123,11 +127,13 @@ deptrac:
       - Models
 
     # Facades mirror the manager's typed API, including model-registry types.
+    # The Testing edge is Cashier::fake(), which builds and registers a FakeGateway.
     Facades:
       - Manager
       - Contracts
       - Enums
       - Models
+      - Testing
 
     # The capability gate a Concern hands back to the caller. Exceptions is not
     # from an import: the builder inherits the @throws surface its contract
@@ -176,6 +182,17 @@ deptrac:
       - Contracts
       - DTO
       - Manager
+
+    # Shipped test doubles: the FakeGateway and its collaborators implement the
+    # Contracts against the DTO payloads and Enums, and inherit the contracts'
+    # @throws surface (Exceptions), which deptrac resolves as it does for Builders.
+    # The conformance TestCase also names the ServiceProvider in getPackageProviders().
+    Testing:
+      - Enums
+      - Exceptions
+      - DTO
+      - Contracts
+      - ServiceProvider
 
     ServiceProvider:
       - Manager

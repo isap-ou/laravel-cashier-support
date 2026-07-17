@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A host app can now `Cashier::fake()`, and a driver can prove it conforms.** The complete
+  in-memory `FakeGateway` lived in `tests/` (autoload-dev only), so an app depending on this
+  package could not fake its billing and every driver re-mocked `GatewayProvider` by hand. It now
+  ships under `Isapp\CashierSupport\Testing` (`src/Testing/`, production autoload) with its
+  collaborators. `Cashier::fake(array $capabilities = [])` swaps it in as the active driver and
+  returns it — no argument supports every capability, an explicit list constrains — and the fake
+  records its operations so a test can `assertSubscriptionCreated()`, `assertCharged()`,
+  `assertRefunded()`, `assertSubscriptionCanceled()`, `assertCustomerCreated()` /
+  `assertCustomerUpdated()`, `assertCheckoutCreated()` (each takes an optional callback), with the
+  `assertNot*` inverses. `Testing\GatewayConformanceTestCase` is an abstract suite any driver
+  extends to prove it honours the contract — `supports()` ⇄ `capabilities()` agreement, and every
+  operation either returns its declared type or refuses with `UnsupportedOperationException`.
+  `phpunit/phpunit` and `orchestra/testbench` are now `suggest`ed for these Testing utilities. (#34)
+
 - **A money amount can now be rendered for a human.** There was no formatting API — the only
   formatter was hand-rolled in the invoice view, printing `EUR 12.00` with no locale, no symbol
   and wrong minor units. `Cashier::formatAmount(int $amount, Money\Currency|string|null $currency, ?string $locale, array $options)`

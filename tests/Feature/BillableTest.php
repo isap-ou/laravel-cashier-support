@@ -8,7 +8,7 @@ use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\SecondaryDriverUser;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;

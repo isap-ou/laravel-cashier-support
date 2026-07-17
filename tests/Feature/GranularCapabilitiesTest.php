@@ -13,7 +13,7 @@ use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
 use Money\Currency;

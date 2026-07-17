@@ -9,7 +9,7 @@ use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\TestCase;
 
 class CashierManagerTest extends TestCase

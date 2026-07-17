@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Isapp\CashierSupport\Tests\Fixtures;
+namespace Isapp\CashierSupport\Testing;
 
 use DateTimeInterface;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
@@ -28,7 +28,12 @@ class FakeSubscriptionBuilder implements SubscriptionBuilder
 
     public ?string $paymentMethod = null;
 
-    public function __construct(private readonly string $type) {}
+    /**
+     * The gateway that made this builder, so create()/add() can record the subscription
+     * it produced onto the gateway's spy — the only place a test can prove creation
+     * happened, since newSubscription() only hands back a builder.
+     */
+    public function __construct(private readonly FakeGateway $gateway, private readonly string $type) {}
 
     public function trialDays(int $days): static
     {
@@ -62,7 +67,11 @@ class FakeSubscriptionBuilder implements SubscriptionBuilder
     {
         $this->paymentMethod = $paymentMethod;
 
-        return new Subscription(id: 'sub_fake', type: $this->type, status: SubscriptionStatus::Active);
+        $subscription = new Subscription(id: 'sub_fake', type: $this->type, status: SubscriptionStatus::Active);
+
+        $this->gateway->createdSubscriptions[] = $subscription;
+
+        return $subscription;
     }
 
     public function add(array $options = []): Subscription

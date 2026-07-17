@@ -6,7 +6,7 @@ namespace Isapp\CashierSupport\Tests\Feature;
 
 use Isapp\CashierSupport\Exceptions\CashierException;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\PublishesWebhooksGateway;
 use Isapp\CashierSupport\Tests\TestCase;
 

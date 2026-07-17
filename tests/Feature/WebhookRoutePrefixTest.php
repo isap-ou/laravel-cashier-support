@@ -6,7 +6,7 @@ namespace Isapp\CashierSupport\Tests\Feature;
 
 use Illuminate\Foundation\Application;
 use Isapp\CashierSupport\Facades\Cashier;
-use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
+use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\TestCase;
 
 /**
