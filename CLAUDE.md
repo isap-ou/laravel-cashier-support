@@ -113,8 +113,17 @@ src/
 ├── Invoice/                     # Invoice generation (shared, not provider-dependent)
 │   ├── InvoiceBuilder.php       # Build invoice from local payment/subscription data
 │   └── InvoiceRenderer.php      # concrete class, hard-bound to spatie/laravel-pdf
-├── Gateway/                     # Traits a driver mixes in (DB reads/writes — real logic)
-│   ├── ManagesCustomerRecords.php, ManagesLocalInvoices.php
+├── Gateway/                     # What a driver inherits or mixes in
+│   ├── BaseGateway.php          # abstract; composes the Defaults/ traits, adds
+│   │                            # capabilities()/supports() derived from what was overridden.
+│   │                            # Extend it: that is what makes a new contract method non-breaking (#28)
+│   ├── Defaults/                # one trait per operations contract, each method refusing with
+│   │   │                        # UnsupportedOperationException. Composed INTO BaseGateway —
+│   │   │                        # a driver must not mix these in directly (trait collision)
+│   │   ├── RefusesCharges.php, RefusesCheckout.php, RefusesCustomers.php
+│   │   ├── RefusesInvoices.php, RefusesPaymentMethods.php
+│   │   └── RefusesSubscriptions.php, RefusesWebhooks.php
+│   ├── ManagesCustomerRecords.php, ManagesLocalInvoices.php   # traits (DB reads/writes — real logic)
 ├── Http/Controllers/            # The webhook entry point for EVERY driver
 │   └── WebhookController.php    # routes/webhook.php → webhook/cashier/{provider}
 ├── Console/
@@ -232,11 +241,33 @@ says it is a concrete class, so the map moves with it. That is the map doing its
 
 Three things are worth knowing before you plan, because they decide what work is even possible:
 
-**`GatewayProvider` is not segregated (#28) — the root blocker.** It extends all seven operations
-interfaces and none ships default implementations, so **any** new contract method is an instant
-fatal in every driver: not a deprecation, a driver that does not implement it stops loading. So
-every feature needing a new method either queues behind #28 or costs a coordinated release across
-support and every driver.
+**A new contract method is no longer a BC break — but only for a driver that extends
+`Gateway\BaseGateway` (#28).** `GatewayProvider` still bundles all seven operations interfaces and
+still requires all 19 methods, deliberately: drivers are drop-in replacements, so an operation a
+gateway cannot do must still *answer* — catchably — rather than not exist. Segregating into opt-in
+`instanceof` interfaces was considered and rejected for exactly that reason; do not re-propose it
+without reading `BaseGateway`'s docblock first.
+
+What changed is who writes the refusals. `BaseGateway` ships a default for every contract method
+(`throw UnsupportedOperationException`), grouped one trait per contract under `Gateway/Defaults/`, so
+**adding a method to a contract + to its `Defaults\Refuses*` trait in the same commit breaks
+nothing** — a driver that extends `BaseGateway` inherits the refusal and reports the new capability
+unsupported by itself.
+
+It is a base class rather than traits a driver mixes in, and that is load-bearing:
+`Gateway\ManagesLocalInvoices` already implements three of those methods, and two traits defining the
+same method in one class is a fatal collision — so a driver mixing in the defaults would need an
+`insteadof` per collision, re-edited on every new method, which is the BC break itself. Inheritance
+resolves it by language rule (own > trait > parent), so a driver's trait beats the default for free.
+**Do not use a `Defaults\*` trait from a driver** — that walks straight back into the collision.
+
+Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
+today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
+12 of the 20 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+the code; the other 8 cannot be read off anything (`swapSubscription()` is one method behind two
+timings, `checkout()` one method behind two shapes, and four are `SubscriptionBuilder` setters) and
+stay declared via `declaredCapabilities()`. That split is why interfaces could never have replaced
+the enum.
 
 **The subscription mutation surface is ours, not Cashier's, and that is undecided (#39).**
 Mutations live on `Billable` (`$user->cancelSubscription('default')`); `Models\Subscription` has
