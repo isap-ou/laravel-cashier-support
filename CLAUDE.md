@@ -9,6 +9,27 @@ abstraction; where they differ, the difference is what a `Capability` is for.
 `mollie/laravel-cashier-mollie` is a last resort only — it builds its own local
 subscription engine, which the smart-stub rule forbids, so it is not a design authority.
 
+**This package does not know which drivers exist.** Stripe and Paddle are the design
+authorities and they are on disk; a driver is not a third one. So a driver's API is never an
+argument about the shape of a contract, in either direction — *"our driver cannot do X"* is not
+a reason to leave X out, and *"our driver already does X this way"* is not a reason to shape a
+method around it. That reasoning yields a description of one gateway wearing generic names,
+which is the one thing this package must not be.
+
+A driver may legitimately **motivate** a capability: `.claude/rules/capabilities.md` cites a
+gateway that can only swap at cycle end as why `SwapTiming` exists, and that is the rule working,
+not breaking. It motivates the capability; it does not shape the contract. The order is read the
+references, take what they agree on, and where they differ the difference is a `Capability`.
+What any given gateway then declares is not this package's business — and since #28 its refusal
+is already written for it.
+
+This is written down because #36 got it wrong twice in one sitting, at both ends: the design
+question was first framed as "can our driver update a customer" (it is not the question — the
+references' disagreement is), and then a field was argued out of the contract because "our
+driver may not have somewhere to put it" (also not the question — one reference having it and
+the other not is). Both times the correct argument existed and was available; the driver was
+simply the nearer thing to reach for.
+
 This package contains mostly: interfaces, DTOs, enums, exceptions, abstract models, traits, events.
 **Zero *outbound* HTTP** (enforced by `deptrac.yaml`, whose `HttpClient` layer is unreachable) —
 which is not the same as no HTTP: `src/Http/Controllers/WebhookController.php` is the webhook
@@ -40,6 +61,9 @@ $user->onGracePeriod('default');
 $user->checkout(['price_xxx' => 1], ['success_url' => '...', 'cancel_url' => '...']);
 $user->createAsCustomer(['name' => '...', 'email' => '...']);
 $user->asCustomer();
+$user->updateCustomer(['email' => '...']);   // only the named fields; unmentioned ones stay
+$user->syncCustomerDetails();                // push what the model knows: cashierName()/cashierEmail()
+$user->updateOrCreateCustomer(['email' => '...']);
 $user->defaultPaymentMethod();
 $user->addPaymentMethod('pm_xxx');
 $user->invoices();
@@ -79,7 +103,7 @@ src/
 │   ├── IncomingWebhook.php          # one delivery: parse() then pipeline(): bool
 │   └── RegistersWebhooks.php        # opt-in: gateways that create endpoints via API
 ├── DTO/                 # Spatie Laravel Data classes
-│   ├── Customer.php, Payment.php, Subscription.php, SubscriptionItem.php
+│   ├── Customer.php, CustomerDetails.php, Payment.php, Subscription.php, SubscriptionItem.php
 │   ├── Invoice.php, InvoiceLine.php, PaymentMethod.php
 │   ├── Refund.php, CheckoutRequest.php, WebhookRegistration.php
 ├── Enums/               # String-backed BackedEnum
@@ -164,6 +188,7 @@ enum Capability: string {
     case Charges = 'charges';
     case Refunds = 'refunds';
     case Customers = 'customers';
+    case CustomersUpdate = 'customers.update';
     case Subscriptions = 'subscriptions';
     case SubscriptionPause = 'subscription.pause';
     case SubscriptionResume = 'subscription.resume';
@@ -253,6 +278,13 @@ What changed is who writes the refusals. `BaseGateway` ships a default for every
 **adding a method to a contract + to its `Defaults\Refuses*` trait in the same commit breaks
 nothing** — a driver that extends `BaseGateway` inherits the refusal and reports the new capability
 unsupported by itself.
+
+**Adding is what became free — changing did not.** Altering an existing method's signature is
+still a fatal in every driver that overrode it ("Declaration must be compatible"), and no default
+can absorb that. #36 changed `createCustomer()` to take `DTO\CustomerDetails` and paid the
+coordinated release for it, deliberately, because typing `updateCustomer()` while leaving its
+neighbour an untyped bag would have been worse than either. Know which of the two you are doing
+before you price the work.
 
 It is a base class rather than traits a driver mixes in, and that is load-bearing:
 `Gateway\ManagesLocalInvoices` already implements three of those methods, and two traits defining the

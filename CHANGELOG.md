@@ -151,6 +151,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`CustomerOperations::createCustomer()` now takes `DTO\CustomerDetails`, not
+  `array $options`. Every driver must change.** (#36) This is a signature change, so it is a
+  fatal — "Declaration must be compatible" — for a driver that overrode the old shape;
+  `BaseGateway` made *adding* a method safe (#28), not changing one. The coordinated release
+  it costs was accepted rather than leaving two neighbouring methods of one interface in two
+  different shapes: `updateCustomer()` had to be typed, and a contract half-typed is worse
+  than either.
+
+  Apps are unaffected. `$user->createAsCustomer(['name' => '…'])` still takes an array and
+  still means what it did — the concern resolves it into `CustomerDetails` and the bag never
+  reaches a driver, which is the point. What changes for a driver is that it is handed a name
+  instead of having to go and guess which attribute of the app's model holds one.
+
 - **The exception boundary is stated, and true.** `CashierException` claimed that
   *every* exception thrown by the package and its drivers extends it. It never did:
   a malformed argument raises SPL's `InvalidArgumentException`, here and in the
@@ -204,6 +217,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   supports one.
 
 ### Added
+
+- **A customer can now be corrected, and a model can say where its own name lives.** (#36)
+  A customer could be created and never updated: a user changed their email in the app and
+  nothing could push it, so the gateway's record drifted from ours permanently.
+
+  `Contracts\CustomerOperations::updateCustomer()` is new, and on `Billable` there are three ways
+  to reach it — `updateCustomer(['email' => '…'])` changes named fields, `syncCustomerDetails()`
+  makes the gateway match the model, `updateOrCreateCustomer()` branches on whether there is a
+  customer yet. **Create fills in blanks from the model and update deliberately does not**: create
+  has no prior state, update does, and auto-filling an unmentioned field would silently overwrite
+  it. Stripe draws the same line — `updateStripeCustomer()` is a bare passthrough and
+  `syncStripeCustomerDetails()` is the one that reads the hooks. Paddle cannot draw it either way:
+  it has no customer update at all, which is the same fact that made this a capability.
+
+  `cashierName()` / `cashierEmail()` are the new seam. Override them when the model keeps its
+  name elsewhere. Before them a model had no way to declare where its identity lived, which left
+  a driver two moves and the usual one was the worse: reach into the app's model and guess an
+  attribute. That is the coupling this package exists to remove, and it was happening in the one
+  place nobody looks.
+
+  **`updateCustomer` is `Capability::CustomersUpdate`, not `Customers`** — a 21st case. Having
+  customers and being able to change one are different facts about a gateway, and the references
+  settle it rather than suggest it: Stripe pushes name/email out, Paddle has no customer update at
+  all. Folding the method into `Customers` would also have stripped that capability from every
+  driver that had not written an update yet, since a capability holds only when *every* method in
+  `Capability::methods()` is overridden — silently, because a lie about capabilities reads exactly
+  like the truth until an app calls the method.
+
+- **`DTO\CustomerDetails`** — the typed thing a driver now receives where it used to get an
+  untyped `array<string, mixed>`. Two fields, `name` and `email`, because that is precisely what
+  the two references agree on; Stripe's other four are Stripe's, and `preferred_locales` is not
+  even a concept but a field name in its request body. Typing those here would carve one
+  gateway's schema into the package that must not know any gateway exists. Anything else rides in
+  `options`, declared as the provider-specific escape hatch — the shape `DTO\CheckoutRequest`
+  already uses. A `null` field means "not specified", never "set to empty".
 
 - **`Gateway\BaseGateway` — adding a method to a contract no longer breaks every driver.** (#28)
   `GatewayProvider` bundles all seven operations interfaces and nothing shipped default
