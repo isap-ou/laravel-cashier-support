@@ -277,23 +277,32 @@ driver returns its own implementation:
 
 ## Invoices
 
-Invoices are generated **locally** from stored data — a shared feature, not a
-provider call:
+Invoice **data** is assembled **locally** from stored records — a shared feature, not a
+provider call — with `Invoice\InvoiceBuilder`:
 
 ```php
 use Isapp\CashierSupport\Invoice\InvoiceBuilder;
-use Isapp\CashierSupport\Invoice\InvoiceRenderer;
 use Money\Currency;
 
 $invoice = InvoiceBuilder::make()
     ->id('in_1')->currency(new Currency('EUR'))
     ->addLine('Pro plan', 1000)
     ->build();
-
-return app(InvoiceRenderer::class)->render($invoice)->download('invoice.pdf');
 ```
 
-Rendering uses `spatie/laravel-pdf`; the PDF engine is your application's choice.
+**Rendering is the driver's, not this package's** — support ships no PDF engine. A gateway
+that renders local invoices implements `Contracts\RendersInvoices` and returns its own
+`Contracts\InvoiceRenderer`, which turns an `Invoice` DTO into bytes. Support handles delivery
+off those bytes — a streamed download or a saved file:
+
+```php
+return $user->downloadInvoice('in_1');                          // streamed PDF response
+$path = $user->storeInvoice('in_1');                            // written to the default disk, returns the path
+$path = $user->storeInvoice('in_1', disk: 's3', path: 'invoices/in_1.pdf');
+```
+
+A gateway that does not implement `Contracts\RendersInvoices` answers both with
+`UnsupportedOperationException`.
 
 ## Events
 

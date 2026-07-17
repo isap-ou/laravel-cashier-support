@@ -40,4 +40,9 @@ trait RefusesInvoices
     {
         throw UnsupportedOperationException::forCapability(Capability::Invoices);
     }
+
+    public function storeInvoice(Model $billable, string $invoiceId, array $data = [], ?string $disk = null, ?string $path = null): string
+    {
+        throw UnsupportedOperationException::forCapability(Capability::Invoices);
+    }
 }

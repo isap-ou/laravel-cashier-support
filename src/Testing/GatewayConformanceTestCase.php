@@ -25,7 +25,6 @@ use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Money\Currency;
 use Orchestra\Testbench\TestCase;
 use Spatie\LaravelData\LaravelDataServiceProvider;
-use Spatie\LaravelPdf\PdfServiceProvider;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -83,7 +82,6 @@ abstract class GatewayConformanceTestCase extends TestCase
     {
         return [
             LaravelDataServiceProvider::class,
-            PdfServiceProvider::class,
             CashierSupportServiceProvider::class,
         ];
     }
@@ -218,7 +216,7 @@ abstract class GatewayConformanceTestCase extends TestCase
      *     method: string,
      *     label: string,
      *     invoke: callable(GatewayProvider, Model): mixed,
-     *     returns?: class-string|'array',
+     *     returns?: class-string|'array'|'string',
      *     nullable?: bool,
      *     void?: bool,
      * }>
@@ -260,6 +258,8 @@ abstract class GatewayConformanceTestCase extends TestCase
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->findInvoice($b, $this->sampleInvoiceId())],
             ['method' => 'downloadInvoice', 'label' => 'downloadInvoice', 'returns' => Response::class,
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->downloadInvoice($b, $this->sampleInvoiceId())],
+            ['method' => 'storeInvoice', 'label' => 'storeInvoice', 'returns' => 'string',
+                'invoke' => fn (GatewayProvider $g, Model $b) => $g->storeInvoice($b, $this->sampleInvoiceId())],
             ['method' => 'paymentMethods', 'label' => 'paymentMethods', 'returns' => 'array',
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->paymentMethods($b)],
             ['method' => 'defaultPaymentMethod', 'label' => 'defaultPaymentMethod', 'returns' => PaymentMethod::class, 'nullable' => true,
@@ -285,7 +285,7 @@ abstract class GatewayConformanceTestCase extends TestCase
      * Assert an operation returned the type its contract declares — allowing for array, nullable
      * and void returns.
      *
-     * @param  array{method: string, label: string, invoke: callable, returns?: class-string|'array', nullable?: bool, void?: bool}  $operation
+     * @param  array{method: string, label: string, invoke: callable, returns?: class-string|'array'|'string', nullable?: bool, void?: bool}  $operation
      */
     private function assertOperationReturnsDeclaredType(array $operation, mixed $result): void
     {
@@ -299,6 +299,12 @@ abstract class GatewayConformanceTestCase extends TestCase
 
         if (($operation['returns'] ?? null) === 'array') {
             $this->assertIsArray($result, "[{$label}] must return an array.");
+
+            return;
+        }
+
+        if (($operation['returns'] ?? null) === 'string') {
+            $this->assertIsString($result, "[{$label}] must return a string.");
 
             return;
         }

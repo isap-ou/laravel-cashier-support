@@ -7,7 +7,12 @@ namespace Isapp\CashierSupport\Tests\Feature;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Isapp\CashierSupport\Contracts\InvoiceRenderer;
+use Isapp\CashierSupport\Contracts\RendersInvoices;
+use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\Enums\PaymentStatus;
+use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Gateway\ManagesLocalInvoices;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteInvoice;
@@ -45,6 +50,34 @@ class LocalInvoicesGatewayTest extends TestCase
             protected function driverName(): string
             {
                 return 'fake';
+            }
+        };
+    }
+
+    /**
+     * A gateway that DOES render — it implements RendersInvoices and hands back a fake
+     * renderer that echoes the invoice id, so download/store can be asserted on bytes.
+     */
+    private function renderingGateway(): object
+    {
+        return new class implements RendersInvoices
+        {
+            use ManagesLocalInvoices;
+
+            protected function driverName(): string
+            {
+                return 'fake';
+            }
+
+            public function invoiceRenderer(): InvoiceRenderer
+            {
+                return new class implements InvoiceRenderer
+                {
+                    public function render(Invoice $invoice, array $data = []): string
+                    {
+                        return '%PDF '.$invoice->id;
+                    }
+                };
             }
         };
     }
@@ -148,11 +181,96 @@ class LocalInvoicesGatewayTest extends TestCase
         $bob = User::query()->create(['name' => 'Bob']);
         $this->invoiceFor($bob, 'ord_bob');
 
-        $gateway = $this->gatewayInvoices();
+        // A gateway that CAN render still 404s on a foreign invoice — ownership is checked
+        // after the render gate passes.
+        $gateway = $this->renderingGateway();
 
         $this->assertNull($gateway->findInvoice($ada, 'ord_bob'));
 
         $this->expectException(NotFoundHttpException::class);
         $gateway->downloadInvoice($ada, 'ord_bob');
+    }
+
+    public function test_the_filename_falls_back_to_the_record_key_without_a_number(): void
+    {
+        $ada = User::query()->create(['name' => 'Ada']);
+        $record = $this->invoiceFor($ada, 'ord_nonum'); // no 'number' attribute
+
+        $response = $this->renderingGateway()->downloadInvoice($ada, 'ord_nonum');
+
+        $this->assertStringContainsString(
+            'invoice-'.$record->getKey().'.pdf',
+            (string) $response->headers->get('Content-Disposition'),
+        );
+    }
+
+    public function test_a_gateway_that_cannot_render_refuses_even_a_missing_invoice(): void
+    {
+        // The refusal is unconditional: the render gate fires before the record lookup, so a
+        // missing id yields UnsupportedOperationException, not a 404 that masks the misconfig.
+        $ada = User::query()->create(['name' => 'Ada']);
+
+        $this->expectException(UnsupportedOperationException::class);
+        $this->gatewayInvoices()->downloadInvoice($ada, 'nope');
+    }
+
+    public function test_it_downloads_a_rendered_invoice(): void
+    {
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_dl', ['number' => 'INV-7']);
+
+        $response = $this->renderingGateway()->downloadInvoice($ada, 'ord_dl');
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('attachment;', (string) $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('invoice-INV-7.pdf', (string) $response->headers->get('Content-Disposition'));
+        $this->assertSame('%PDF ord_dl', $response->getContent());
+    }
+
+    public function test_it_stores_a_rendered_invoice_and_returns_the_path(): void
+    {
+        Storage::fake();
+
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_store', ['number' => 'INV-9']);
+
+        $path = $this->renderingGateway()->storeInvoice($ada, 'ord_store');
+
+        $this->assertSame('invoices/invoice-INV-9.pdf', $path);
+        Storage::assertExists($path);
+        $this->assertSame('%PDF ord_store', Storage::get($path));
+    }
+
+    public function test_store_honours_a_custom_disk_and_path(): void
+    {
+        Storage::fake('invoices-disk');
+
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_custom');
+
+        $path = $this->renderingGateway()->storeInvoice($ada, 'ord_custom', [], 'invoices-disk', 'custom/inv.pdf');
+
+        $this->assertSame('custom/inv.pdf', $path);
+        Storage::disk('invoices-disk')->assertExists('custom/inv.pdf');
+        $this->assertSame('%PDF ord_custom', Storage::disk('invoices-disk')->get('custom/inv.pdf'));
+    }
+
+    public function test_download_refuses_when_the_gateway_does_not_render(): void
+    {
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_norender');
+
+        $this->expectException(UnsupportedOperationException::class);
+        $this->gatewayInvoices()->downloadInvoice($ada, 'ord_norender');
+    }
+
+    public function test_store_refuses_when_the_gateway_does_not_render(): void
+    {
+        $ada = User::query()->create(['name' => 'Ada']);
+        $this->invoiceFor($ada, 'ord_norender');
+
+        $this->expectException(UnsupportedOperationException::class);
+        $this->gatewayInvoices()->storeInvoice($ada, 'ord_norender');
     }
 }

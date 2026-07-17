@@ -21,7 +21,6 @@ class CashierSupportServiceProvider extends ServiceProvider
     {
         $this->loadRoutesFrom(__DIR__.'/../routes/webhook.php');
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'cashier-support');
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'cashier-support');
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -35,10 +34,6 @@ class CashierSupportServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/cashier-support.php' => config_path('cashier-support.php'),
             ], 'cashier-support-config');
-
-            $this->publishes([
-                __DIR__.'/../resources/views' => resource_path('views/vendor/cashier-support'),
-            ], 'cashier-support-views');
 
             $this->publishes([
                 __DIR__.'/../lang' => $this->app->langPath('vendor/cashier-support'),

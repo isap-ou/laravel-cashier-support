@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Tests\Feature;
 
 use InvalidArgumentException;
+use Isapp\CashierSupport\Contracts\RendersInvoices;
 use Isapp\CashierSupport\Contracts\WebhookHandler;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\Enums\Capability;
@@ -157,6 +158,7 @@ class ExceptionBoundaryTest extends TestCase
      */
     private const FACTORY_METHODS = [
         WebhookHandler::class => ['webhook'],
+        RendersInvoices::class => ['invoiceRenderer'],
     ];
 
     /**

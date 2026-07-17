@@ -252,6 +252,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Invoice rendering is now a driver-supplied contract, and this package pins no PDF engine.**
+  `Invoice\InvoiceRenderer` was a concrete class hard-bound to `spatie/laravel-pdf`, whose own
+  engine (Browsershot — Node + headless Chrome) was only `suggest`ed, so a host app installed a
+  renderer that failed at runtime — heavier in dependencies and weaker in abstraction than the
+  reference it abstracts (#38). It is replaced by `Contracts\InvoiceRenderer`
+  (`render(Invoice, array): string` — raw document bytes), which a gateway supplies through the
+  new opt-in `Contracts\RendersInvoices`, exactly as it supplies webhook handling. Support keeps
+  delivery: `Gateway\ManagesLocalInvoices::downloadInvoice()` builds the response from those bytes,
+  and a new `storeInvoice(Model, string, array, ?string $disk, ?string $path): string` writes the
+  invoice to a disk and returns the path — both refuse with `UnsupportedOperationException` when the
+  gateway does not implement `RendersInvoices`. `InvoiceOperations` and `Concerns\ManagesInvoices`
+  gain `storeInvoice()`. **BC:** `spatie/laravel-pdf` is removed from `require`, the
+  `cashier-support::invoice` blade view and the `invoices.*` config block leave this package — a
+  driver now ships its own renderer, view and PDF engine; any custom `InvoiceOperations`
+  implementation must add `storeInvoice()`. (#33)
+
 - **Currency is now moneyphp/money's `Money\Currency`, not a 15-value enum.** `Enums\Currency`
   was a closed whitelist — KRW, BRL, INR, TRY and most of ISO-4217 were inexpressible — and its
   `minorUnits()` returned `2` for everything but JPY, wrong for 3-decimal (BHD, KWD) and other

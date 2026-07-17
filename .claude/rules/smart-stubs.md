@@ -29,6 +29,8 @@ concept it *does* have under its own name.
 
 ## Provider-independent features (NOT workarounds)
 
-Invoices are generated locally by cashier-support from payment/subscription data stored in the DB.
+Invoice DATA is assembled locally by cashier-support from payment/subscription data stored in the DB.
 This is a shared feature for all providers, not a workaround for a missing API.
-Lives in `src/Invoice/` (InvoiceBuilder, InvoiceRenderer) and `src/Models/Invoice.php`.
+Lives in `src/Invoice/InvoiceBuilder.php` and `src/Models/Invoice.php`. RENDERING that data to a
+document is the driver's, not this package's: support ships only `Contracts\InvoiceRenderer`,
+supplied through the gateway via `Contracts\RendersInvoices` — no PDF engine is pinned here (#33).
