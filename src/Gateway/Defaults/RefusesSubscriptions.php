@@ -52,15 +52,12 @@ trait RefusesSubscriptions
      *
      * Timing is not a detail of a swap, it IS the swap (Enums\SwapTiming): a gateway that
      * can only defer must refuse "upgrade me now" by that name, or the app is told the wrong
-     * thing about why it failed.
+     * thing about why it failed. The mapping lives on SwapTiming, so this reads it rather than
+     * re-deriving it.
      */
     public function swapSubscription(Model $billable, string $type, string|array $prices, SwapTiming $timing = SwapTiming::Immediate, array $options = []): Subscription
     {
-        throw UnsupportedOperationException::forCapability(
-            $timing === SwapTiming::Immediate
-                ? Capability::SubscriptionSwapImmediate
-                : Capability::SubscriptionSwapAtPeriodEnd
-        );
+        throw UnsupportedOperationException::forCapability($timing->capability());
     }
 
     /**
