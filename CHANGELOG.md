@@ -203,6 +203,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Capability::SubscriptionQuantity` to `capabilities()` if their gateway really
   supports one.
 
+### Added
+
+- **`Gateway\BaseGateway` — adding a method to a contract no longer breaks every driver.** (#28)
+  `GatewayProvider` bundles all seven operations interfaces and nothing shipped default
+  implementations, so one new contract method was an instant fatal in every driver: not a
+  deprecation, a driver that did not implement it stopped loading. That is why the features that
+  need a new method queued behind each other instead of landing independently.
+
+  Extend `BaseGateway` and every contract method already has a body that throws
+  `UnsupportedOperationException` — grouped one trait per operations contract under
+  `Gateway/Defaults/` (`RefusesCharges`, `RefusesSubscriptions`, …), composed into the base class, so
+  each new contract method has an obvious home next to its own contract. Override what the gateway
+  genuinely does. Adding a method to a contract **and to its `Refuses*` trait in the same commit** is
+  now inherited by every driver that extends `BaseGateway` — it keeps loading and reports the new capability unsupported on its own. Nothing is
+  removed and nothing is required to change: a driver that implements `GatewayProvider` directly,
+  as before, still works exactly as it did.
+
+  **The contract was deliberately NOT segregated.** Splitting the operations into opt-in interfaces
+  and asking `$provider instanceof SupportsPause` was the obvious reading of #28 and it was
+  rejected: drivers are *drop-in replacements for each other*, so an app moving from one gateway to
+  the next would get `Call to undefined method` where it used to catch a `CashierException`, and
+  would have to ask `instanceof` at every call site — putting the gateway back in the caller's
+  head, which is the coupling this package exists to remove. A driver's throwing stubs were never
+  the disease; they are how substitution works. The only real complaint was that each driver
+  hand-wrote them.
+
+  It is a base class, and the defaults are composed **into** it rather than mixed into drivers, for
+  a reason that is not style: `Gateway\ManagesLocalInvoices` already implements
+  `invoices()`/`findInvoice()`/`downloadInvoice()`, and a class using two traits that define the same
+  method is a fatal collision. A driver mixing in the defaults would have had to write `insteadof`
+  per collision and edit that list whenever support added a method — the very BC break this removes.
+  PHP resolves methods as own class, then trait, then parent, so inherited from the base a default is
+  beaten by a driver's trait with no ceremony at all. The corollary: a driver must not `use` a
+  `Defaults\*` trait directly.
+
+- **`Enums\Capability::methods()` — a driver's capabilities are read off its code, not its word.**
+  12 of the 20 cases map to the gateway methods that implement them, so `BaseGateway::supports()`
+  answers by checking what the driver actually overrode; a capability holds only when *every* one
+  of its methods does (a gateway that lists invoices but cannot render one does not support
+  `Invoices`).
+
+  `capabilities()` and `supports()` are **final**, for the reason `Builders\GuardedSubscriptionBuilder`
+  is a final class: the gate is not the driver's to make, and a lie about capabilities reads exactly
+  like the truth until an app calls the method. Nothing legitimate is lost — what they derive is a
+  structural fact, and `declaredCapabilities()` remains the extension point, asked on every call. A
+  gateway that genuinely needs its own `supports()` implements `Contracts\GatewayProvider` directly,
+  as drivers do today. The known limit, stated rather than hidden: an operation that is implemented
+  but disabled per account cannot report itself unsupported — `supports()` answers "can this gateway
+  do this at all", and a runtime refusal is a `CashierException`.
+
+  The remaining 8 map to nothing and are declared by hand, because no method can
+  express them: `swapSubscription()` is **one** method behind `SubscriptionSwapImmediate` and
+  `SubscriptionSwapAtPeriodEnd` — Revolut can defer a swap but not do it now — `checkout()` is one
+  method behind `CheckoutPrices` and `CheckoutAmount`, and Trials/Quantity/Metadata/Taxes are
+  setters on `SubscriptionBuilder`, which is not the gateway. That split is precisely why
+  interfaces alone could never have replaced this enum.
+
 ### Fixed
 
 - **Every `illuminate/*` package `src/` imports from is now declared, and a test keeps it

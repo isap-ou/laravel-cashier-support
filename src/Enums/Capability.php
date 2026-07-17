@@ -37,4 +37,54 @@ enum Capability: string
     case Invoices = 'invoices';
     case Taxes = 'taxes';
     case Webhooks = 'webhooks';
+
+    /**
+     * The GatewayProvider methods that implement this capability, if any can.
+     *
+     * This map is what lets `Gateway\BaseGateway::supports()` read a driver's capabilities
+     * off its code instead of a hand-kept list, so "declares it" and "wrote it" cannot
+     * drift apart. A capability holds only when EVERY method here is overridden: a gateway
+     * that can list invoices but not render one does not support Invoices.
+     *
+     * **Eight cases return `[]`, and that is the design, not a gap.** An interface — or a
+     * method — can say *the operation exists*; it cannot say *which intent it honours*:
+     *
+     *  - `swapSubscription()` is ONE method behind SwapImmediate and SwapAtPeriodEnd. Revolut
+     *    schedules a swap for cycle end and cannot do it now: same method, one capability.
+     *  - `checkout()` is ONE method behind CheckoutPrices and CheckoutAmount — see
+     *    DTO\CheckoutRequest::capability().
+     *  - Trials, Quantity, Metadata and Taxes are setters on Contracts\SubscriptionBuilder,
+     *    which is not the gateway at all; Builders\GuardedSubscriptionBuilder gates those.
+     *
+     * Those eight are declared by the driver (`BaseGateway::declaredCapabilities()`). The
+     * split is not cosmetic: it is why interfaces alone could never have replaced this enum.
+     *
+     * @return array<int, string>
+     */
+    public function methods(): array
+    {
+        return match ($this) {
+            self::Charges => ['charge'],
+            self::Refunds => ['refund'],
+            self::Customers => ['createCustomer', 'asCustomer'],
+            self::Subscriptions => ['newSubscription', 'cancelSubscription'],
+            self::SubscriptionCancelNow => ['cancelSubscriptionNow'],
+            self::SubscriptionPause => ['pauseSubscription'],
+            self::SubscriptionResume => ['resumeSubscription'],
+            self::PaymentMethodsList => ['paymentMethods', 'defaultPaymentMethod'],
+            self::PaymentMethodsAdd => ['addPaymentMethod'],
+            self::PaymentMethodsDelete => ['deletePaymentMethod'],
+            self::Invoices => ['invoices', 'findInvoice', 'downloadInvoice'],
+            self::Webhooks => ['webhook'],
+
+            self::SubscriptionSwapImmediate,
+            self::SubscriptionSwapAtPeriodEnd,
+            self::CheckoutPrices,
+            self::CheckoutAmount,
+            self::SubscriptionTrials,
+            self::SubscriptionQuantity,
+            self::SubscriptionMetadata,
+            self::Taxes => [],
+        };
+    }
 }
