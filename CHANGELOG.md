@@ -252,6 +252,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A missing invoice is now a catchable `InvoiceNotFoundException`, not a Symfony 404.**
+  `downloadInvoice()`/`storeInvoice()` threw Symfony `NotFoundHttpException` for a missing or non-owned
+  invoice, but `Contracts\InvoiceOperations` declared `@throws CashierException` for that case — so an
+  app's `catch (CashierException)` missed it and the contract's `@throws` was a lie
+  (`NotFoundHttpException` extends `RuntimeException`). They now throw `Exceptions\InvoiceNotFoundException`
+  (a `CashierException`, mirroring `CustomerNotFoundException`), so the boundary in
+  `.claude/rules/exceptions.md` holds. A `deptrac` guardrail marks `Symfony\...\HttpKernel\Exception`
+  unreachable, so a domain layer cannot 404 again. This is a deliberate divergence from the reference
+  (Stripe/Paddle 404 the invoice download at the HTTP layer) in favour of this package's own
+  exception boundary. **BC:** an app that relied on the automatic 404 from
+  `return $user->downloadInvoice($id)` must now catch `InvoiceNotFoundException` / `CashierException`
+  and render its own 404. (#68)
+
 - **Invoice rendering is now a driver-supplied contract, and this package pins no PDF engine.**
   `Invoice\InvoiceRenderer` was a concrete class hard-bound to `spatie/laravel-pdf`, whose own
   engine (Browsershot — Node + headless Chrome) was only `suggest`ed, so a host app installed a

@@ -80,6 +80,10 @@ deptrac:
           value: Illuminate\\Http\\Client\\.*
         - type: classLike
           value: Symfony\\Component\\HttpClient\\.*
+    - name: SymfonyHttpException
+      collectors:
+        - type: classLike
+          value: Symfony\\Component\\HttpKernel\\Exception\\.*
 
   ruleset:
     # Foundation layers depend on nothing internal.
@@ -201,3 +205,8 @@ deptrac:
     # HttpClient is intentionally unreachable: no layer may depend on it, which
     # enforces the "zero HTTP calls" rule for this package.
     HttpClient: ~
+
+    # Symfony HTTP exceptions are intentionally unreachable too: a domain layer
+    # signals "not found" with a catchable CashierException (InvoiceNotFoundException),
+    # never a framework HTTP response the caller cannot catch as a billing fact (#68).
+    SymfonyHttpException: ~
