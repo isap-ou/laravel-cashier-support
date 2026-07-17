@@ -6,6 +6,7 @@ namespace Isapp\CashierSupport\Tests\Feature;
 
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
@@ -181,5 +182,66 @@ class MigrationsTest extends TestCase
         $this->assertSame(Currency::EUR, $fresh->currency);
         $this->assertSame(PaymentStatus::Succeeded, $fresh->status);
         $this->assertTrue($fresh->paid());
+    }
+
+    /**
+     * #29: the query scopes exist so that "every past_due subscription" is a query rather than
+     * a table scan, which only pays off if the query has an index to land on.
+     *
+     * The column ORDER is the assertion, not merely the membership. These are the columns
+     * Concerns\ManagesSubscriptions::subscriptions() filters on, in the order it filters them —
+     * a composite index is only usable left to right, so the same four columns permuted would
+     * satisfy a membership check while being unusable to the query it exists for.
+     */
+    public function test_subscriptions_are_indexed_by_owner_provider_and_status(): void
+    {
+        $columns = collect(Schema::getIndexes('cashier_subscriptions'))
+            ->map(fn (array $index): array => $index['columns'])
+            ->values()
+            ->all();
+
+        $this->assertContains(
+            ['owner_type', 'owner_id', 'provider', 'status'],
+            $columns,
+            'The scopes have no index to land on. Indexes present: '.json_encode($columns),
+        );
+    }
+
+    /**
+     * Every index this package creates must be nameable on MySQL, whose identifier limit is 64
+     * characters.
+     *
+     * The composite index above is the tight one: Laravel names it from the table and all four
+     * columns, giving `cashier_subscriptions_owner_type_owner_id_provider_status_index` — 63
+     * characters, one under the limit. That is thin enough to be worth a test rather than a
+     * comment, and thin enough that adding a fifth column, or renaming a column, breaks a host
+     * app's first migrate rather than anything we would notice here.
+     *
+     * Known gap this does NOT cover: Blueprint::createIndexName() prepends the connection's table
+     * prefix when `prefix_indexes` is set, which is the default in Laravel's shipped
+     * config/database.php. A host app with a non-empty DB_PREFIX therefore gets 63 + prefix, and
+     * MySQL rejects it. Testbench runs with no prefix, so this test cannot see that; an explicit
+     * name in the migration is the fix if it ever bites.
+     *
+     * Reads names out of the SCHEMA rather than measuring a literal: asserting
+     * `strlen('...') <= 64` against a copy of the name would compare two constants and keep
+     * passing after any rename. Tests run on SQLite, which has no identifier limit and will
+     * never report the failure itself — so the budget must be asserted against what the
+     * migration actually created, or it is not asserted at all.
+     */
+    public function test_every_index_name_clears_mysqls_identifier_limit(): void
+    {
+        foreach (['cashier_subscriptions', 'cashier_subscription_items', 'cashier_invoices', 'cashier_customers'] as $table) {
+            foreach (Schema::getIndexes($table) as $index) {
+                $name = (string) $index['name'];
+
+                $this->assertLessThanOrEqual(64, strlen($name), sprintf(
+                    'MySQL rejects identifiers over 64 characters; %s.%s is %d.',
+                    $table,
+                    $name,
+                    strlen($name),
+                ));
+            }
+        }
     }
 }

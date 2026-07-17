@@ -34,6 +34,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is deliberately absent — the references disagree on its body and give opposite answers for
   `past_due`, so it is a design and not a port.
 
+- **"All active subscriptions" is now a query.** (#29) `Models\Subscription` had no query
+  scopes at all, so every predicate was a PHP method on an already-hydrated row:
+  `whereHas('subscriptions', fn ($q) => $q->active())` could not be written — a predicate cannot
+  reach inside a subquery — and a dunning cron asking for `past_due` had to load the table to
+  find them. Twelve scopes now mirror the predicates: `valid`, `active`, `pastDue`, `incomplete`,
+  `canceled`/`notCanceled`, `onTrial`/`notOnTrial`, `onGracePeriod`/`notOnGracePeriod`,
+  `ended`/`notEnded`. The four negations have no predicate twin on purpose — PHP has `!` and a
+  query builder does not, so they are the only way to express a complement inside a group.
+
+  **They agree with the predicates by construction, not by review.** The list of statuses that
+  grant access is filtered off `SubscriptionStatus::cases()` through the same `match` the
+  predicate uses, and both `active()` and `scopeActive()` read that one body — including the
+  `keepPastDueSubscriptionsActive()` / `keepIncompleteSubscriptionsActive()` toggles, which the
+  scopes honour exactly as the predicates do. This is the defect the references demonstrate:
+  Stripe's `active()` and `scopeActive()` are two hand-maintained bodies, both status-*negative*
+  ("not one of these four bad statuses"), which stays correct only until the enum grows a bad
+  status nobody added to the list — and ours has one, `paused`. A test asserts the agreement over
+  all 8 statuses × 3 `ends_at` × 3 `trial_ends_at` = 72 states, comparing each scope's result set
+  against its predicate row by row rather than against a hand-written expectation.
+
+  The predicates moved into `Models\Concerns\*`, each beside the scope that must agree with it —
+  one trait per column-family, composed into the abstract model the way `Gateway\BaseGateway`
+  composes `Gateway\Defaults\*`. No behaviour changed in the move. `scopeRecurring` is absent
+  because `recurring()` is (#60); the paused scopes need a `paused_at` column that does not exist
+  (#30); `scopeExpiredTrial` has no predicate here to match.
+
+  `cashier_subscriptions` gains an index on `(owner_type, owner_id, provider, status)` — the
+  columns `subscriptions()` filters on, in filter order. #29 asked for Stripe's
+  `(owner_type, owner_id, status)`, but every scope query arrives through `subscriptions()`,
+  which always carries `provider`; an index that skips it stops being useful after `owner_id`.
+  Written into the create migration rather than added by a new one: nothing has installed this
+  package yet, so there is nothing to migrate from.
+
 - `Exceptions\UnexpectedWebhookEventException` — "the gateway sent a body this driver
   cannot read as an event" is provider-agnostic, and it used to be a driver-private type
   thrown from a contract method: undeclared, and uncatchable without naming the driver.
