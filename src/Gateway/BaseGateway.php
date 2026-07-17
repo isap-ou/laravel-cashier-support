@@ -70,8 +70,9 @@ abstract class BaseGateway implements GatewayProvider
      * Capabilities no method can express, declared by the driver.
      *
      * Everything else is read off the code by supports(), so a driver cannot claim an
-     * operation it never wrote. These eight can't be: SubscriptionSwapImmediate and
-     * SubscriptionSwapAtPeriodEnd are one swapSubscription(); CheckoutPrices and
+     * operation it never wrote. These ten can't be: SubscriptionSwapImmediate and
+     * SubscriptionSwapAtPeriodEnd are one swapSubscription(); SubscriptionPauseImmediate and
+     * SubscriptionPauseAtPeriodEnd are one pauseSubscription(); CheckoutPrices and
      * CheckoutAmount are one checkout(); and Trials/Quantity/Metadata/Taxes are setters on
      * SubscriptionBuilder, which is not this object at all. See Enums\Capability::methods().
      *

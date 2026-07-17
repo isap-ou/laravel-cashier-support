@@ -25,6 +25,17 @@ enum SubscriptionStatus: string implements HasLabel
     case Incomplete = 'incomplete';
     case IncompleteExpired = 'incomplete_expired';
     case Trialing = 'trialing';
+
+    /**
+     * Whether a subscription is paused is answered by Models\Subscription::paused(), which reads
+     * the paused_at column — NOT by this status. The references put the paused fact in different
+     * places: Paddle moves the status here (Subscription.php:314), while Stripe's pause_collection
+     * pauses payment collection and leaves the status untouched — and Stripe reaches status=paused
+     * only when a trial ends with no payment method (/api/subscriptions/object), a different
+     * concept an app never requests. So a driver may report a paused subscription with this status
+     * or without it; the column is the fact both gateways can carry, and the predicate reads it.
+     * (Distinguishing Stripe's two meanings of `paused` is deferred — see #30's spec, Non-goals.)
+     */
     case Paused = 'paused';
 
     /**

@@ -57,8 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The predicates moved into `Models\Concerns\*`, each beside the scope that must agree with it —
   one trait per column-family, composed into the abstract model the way `Gateway\BaseGateway`
   composes `Gateway\Defaults\*`. No behaviour changed in the move. `scopeRecurring` is absent
-  because `recurring()` is (#60); the paused scopes need a `paused_at` column that does not exist
-  (#30); `scopeExpiredTrial` has no predicate here to match.
+  because `recurring()` is (#60); the paused scopes arrived with the `paused_at` column in #30
+  below; `scopeExpiredTrial` has no predicate here to match.
 
   `cashier_subscriptions` gains an index on `(owner_type, owner_id, provider, status)` — the
   columns `subscriptions()` filters on, in filter order. #29 asked for Stripe's
@@ -66,6 +66,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which always carries `provider`; an index that skips it stops being useful after `owner_id`.
   Written into the create migration rather than added by a new one: nothing has installed this
   package yet, so there is nothing to migrate from.
+
+- **A pause can say _when_, and a scheduled pause has somewhere to live.** (#30) `Paused` existed
+  as a capability, a method and a status with nowhere to store it: `pauseSubscription()` took no
+  timing, and a driver had to either write `Paused` immediately — revoking access on the click —
+  or lose the request. Pause now mirrors swap. `Enums\PauseTiming` (`Immediate` / `AtPeriodEnd`)
+  lets the caller state intent, and `Capability::SubscriptionPause` splits into
+  `SubscriptionPauseImmediate` / `SubscriptionPauseAtPeriodEnd` so a gateway that can only do one
+  refuses the other by name. The default is `AtPeriodEnd`, which inverts `SwapTiming::Immediate`
+  on purpose: Stripe does not wrap pausing at all (its `pause_collection` is immediate-only and
+  does not even change the status), so it offers no default to copy, and Paddle — the only
+  reference that pauses — defers by default, making the bare verb the deferred one exactly as
+  `cancel()`/`cancelNow()` do.
+
+  `cashier_subscriptions` gains `paused_at` and `resumes_at` (nullable timestamps, written into
+  the create migration — nothing has installed this package yet). `paused_at` is the instant the
+  pause takes effect, not "paused since": tense tells the states apart, as `ends_at` does for
+  cancellation. `Models\Concerns\TracksPause` adds `paused()` (`paused_at` in the past) and
+  `onPausedGracePeriod()` (`paused_at` in the future — scheduled, still serving), each beside its
+  query scope, with `scopeNotPaused` / `scopeNotOnPausedGracePeriod` derived so the negations
+  cannot drift. `active()` and `valid()` are unchanged and were already right: a pause scheduled
+  for period end keeps the status `Active` until `paused_at`, so access survives — the issue's
+  premise that `active()` erased the grace period did not hold against the reference.
 
 - `Exceptions\UnexpectedWebhookEventException` — "the gateway sent a body this driver
   cannot read as an event" is provider-agnostic, and it used to be a driver-private type

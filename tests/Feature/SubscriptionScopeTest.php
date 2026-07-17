@@ -25,11 +25,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *
  * The issue's acceptance is "each predicate has a matching scope, and both agree on the same
  * fixture set". Agreement is asserted over the WHOLE fixture space rather than a sample: all 8
- * statuses × {no ends_at, past, future} × {no trial_ends_at, past, future} = 72 rows, seeded
- * once, and every scope compared against its predicate row by row. A sampled matrix would pass
- * while the one state nobody thought of disagreed — and the states nobody thinks of are exactly
- * where our predicates diverge from the references (a status-only trial, a canceled row with no
- * date), which is why the space is enumerated instead of chosen.
+ * statuses × {no ends_at, past, future} × {no trial_ends_at, past, future} × {no paused_at, past,
+ * future} = 216 rows, seeded once, and every scope compared against its predicate row by row. A
+ * sampled matrix would pass while the one state nobody thought of disagreed — and the states
+ * nobody thinks of are exactly where our predicates diverge from the references (a status-only
+ * trial, a canceled row with no date), which is why the space is enumerated instead of chosen.
+ * The paused_at axis (#30) is what pins the pause scopes' null-explicit negations: a nullable
+ * column compared directly would drop its NULL rows from both a scope and its negation, and only
+ * enumerating the null combination catches it.
  *
  * The comparison runs the predicate in PHP over the same rows the scope filtered in SQL, so
  * neither side is hand-written. A hand-written expectation would be a third body to keep in
@@ -93,11 +96,15 @@ class SubscriptionScopeTest extends TestCase
             'notOnGracePeriod' => ['notOnGracePeriod', fn (ConcreteSubscription $s): bool => ! $s->onGracePeriod()],
             'ended' => ['ended', fn (ConcreteSubscription $s): bool => $s->hasEnded()],
             'notEnded' => ['notEnded', fn (ConcreteSubscription $s): bool => ! $s->hasEnded()],
+            'paused' => ['paused', fn (ConcreteSubscription $s): bool => $s->paused()],
+            'notPaused' => ['notPaused', fn (ConcreteSubscription $s): bool => ! $s->paused()],
+            'onPausedGracePeriod' => ['onPausedGracePeriod', fn (ConcreteSubscription $s): bool => $s->onPausedGracePeriod()],
+            'notOnPausedGracePeriod' => ['notOnPausedGracePeriod', fn (ConcreteSubscription $s): bool => ! $s->onPausedGracePeriod()],
         ];
     }
 
     /**
-     * The whole state space: 8 statuses × 3 ends_at × 3 trial_ends_at.
+     * The whole state space: 8 statuses × 3 ends_at × 3 trial_ends_at × 3 paused_at.
      *
      * Some of these states are incoherent — a driver should never write `unpaid` with a future
      * trial date — and they are seeded anyway. A scope and a predicate disagreeing on a row
@@ -115,26 +122,29 @@ class SubscriptionScopeTest extends TestCase
         foreach (SubscriptionStatus::cases() as $status) {
             foreach ([null, 'past', 'future'] as $endsAt) {
                 foreach ([null, 'past', 'future'] as $trialEndsAt) {
-                    $subscription = ConcreteSubscription::query()->create([
-                        'owner_type' => $user->getMorphClass(),
-                        'owner_id' => $user->getKey(),
-                        'type' => 'default',
-                        'provider' => 'fake',
-                        // (provider, provider_id) is uniquely indexed — the idempotency guard.
-                        'provider_id' => 'sub_'.(++$seeded),
-                        'status' => $status,
-                        'ends_at' => self::date($endsAt),
-                        'trial_ends_at' => self::date($trialEndsAt),
-                    ]);
+                    foreach ([null, 'past', 'future'] as $pausedAt) {
+                        $subscription = ConcreteSubscription::query()->create([
+                            'owner_type' => $user->getMorphClass(),
+                            'owner_id' => $user->getKey(),
+                            'type' => 'default',
+                            'provider' => 'fake',
+                            // (provider, provider_id) is uniquely indexed — the idempotency guard.
+                            'provider_id' => 'sub_'.(++$seeded),
+                            'status' => $status,
+                            'ends_at' => self::date($endsAt),
+                            'trial_ends_at' => self::date($trialEndsAt),
+                            'paused_at' => self::date($pausedAt),
+                        ]);
 
-                    $this->assertInstanceOf(ConcreteSubscription::class, $subscription);
+                        $this->assertInstanceOf(ConcreteSubscription::class, $subscription);
 
-                    $rows[] = $subscription;
+                        $rows[] = $subscription;
+                    }
                 }
             }
         }
 
-        $this->assertCount(72, $rows, 'The matrix must cover the whole space, or it is a sample.');
+        $this->assertCount(216, $rows, 'The matrix must cover the whole space, or it is a sample.');
 
         return $rows;
     }
@@ -154,10 +164,11 @@ class SubscriptionScopeTest extends TestCase
     private static function describe(ConcreteSubscription $subscription): string
     {
         return sprintf(
-            '%s / ends_at %s / trial_ends_at %s',
+            '%s / ends_at %s / trial_ends_at %s / paused_at %s',
             $subscription->status->value,
             self::describeDate($subscription->ends_at),
             self::describeDate($subscription->trial_ends_at),
+            self::describeDate($subscription->paused_at),
         );
     }
 
@@ -244,9 +255,9 @@ class SubscriptionScopeTest extends TestCase
         ));
 
         // A scope that matched everything, or nothing, would agree with a predicate that did
-        // the same and prove nothing about either. Every scope here divides the 72 rows.
+        // the same and prove nothing about either. Every scope here divides the 216 rows.
         $this->assertNotCount(0, $actual, sprintf('scope%s() matched no row in the whole space.', ucfirst($scope)));
-        $this->assertNotCount(72, $actual, sprintf('scope%s() matched every row in the whole space.', ucfirst($scope)));
+        $this->assertNotCount(216, $actual, sprintf('scope%s() matched every row in the whole space.', ucfirst($scope)));
     }
 
     // ---------------------------------------------------------------------
@@ -352,12 +363,12 @@ class SubscriptionScopeTest extends TestCase
 
         // count() is the assertion that cannot be satisfied by a PHP filter: it is a COUNT(*)
         // the database answers, so it sees whatever the WHERE clause left. A scope that filtered
-        // after hydration would answer 72 here and still return the right 9 from get().
-        $this->assertSame(9, ConcreteSubscription::query()->pastDue()->count(), 'The scope must narrow the query, not the collection.');
+        // after hydration would answer 216 here and still return the right 27 from get().
+        $this->assertSame(27, ConcreteSubscription::query()->pastDue()->count(), 'The scope must narrow the query, not the collection.');
 
         $pastDue = ConcreteSubscription::query()->pastDue()->get();
 
-        $this->assertCount(9, $pastDue, 'Nine of the 72 rows are past_due — one per date combination.');
+        $this->assertCount(27, $pastDue, 'Twenty-seven of the 216 rows are past_due — one per date combination.');
         $this->assertTrue($pastDue->every(fn (ConcreteSubscription $s): bool => $s->pastDue()));
     }
 

@@ -158,7 +158,7 @@ before delegating; unsupported operations throw `UnsupportedOperationException`
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Facades\Cashier;
 
-if (Cashier::supports(Capability::SubscriptionPause)) {
+if (Cashier::supports(Capability::SubscriptionPauseAtPeriodEnd)) {
     $user->pauseSubscription('default');
 }
 ```
@@ -202,6 +202,31 @@ if ($subscription->hasPendingPriceChange()) {
 `SubscriptionPriceChangeScheduled` fires when the change is scheduled, and
 `SubscriptionUpdated` when it actually lands — so a listener that provisions
 entitlements does not grant the new plan a cycle early.
+
+**Pause timing.** Pause splits the same way, and the default inverts swap's on
+purpose. Paddle pauses at the end of the cycle unless told otherwise; Stripe pauses
+only immediately. So the bare verb defers — matching `cancel()`/`cancelNow()` — and
+`PauseTiming::Immediate` is the opt-in:
+
+```php
+use Isapp\CashierSupport\Enums\PauseTiming;
+
+// Default: pause at the end of the current billing period.
+$user->pauseSubscription('default');
+
+// Pause now. Throws UnsupportedOperationException on a defer-only gateway.
+$user->pauseSubscription('default', PauseTiming::Immediate);
+```
+
+A pause scheduled for period end leaves the subscription usable until it lands —
+`paused_at` is the instant it takes effect, so tense tells the two states apart:
+
+```php
+$subscription = $user->subscription('default');
+
+$subscription->onPausedGracePeriod();  // paused_at in the future — scheduled, still serving
+$subscription->paused();               // paused_at in the past — the pause is in force
+```
 
 **Checkout shape.** Some gateways check out a catalogue of prices, others an
 ad-hoc amount. `CheckoutRequest` names both, and the gate keys on the shape — so

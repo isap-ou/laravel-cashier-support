@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Unit;
 
+use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\Currency;
+use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\RefundReason;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
@@ -54,6 +56,17 @@ class EnumTest extends TestCase
         $this->assertFalse(SubscriptionStatus::Canceled->isActive());
         $this->assertFalse(SubscriptionStatus::Unpaid->isActive());
         $this->assertFalse(SubscriptionStatus::IncompleteExpired->isActive());
+    }
+
+    /**
+     * The pause timing routes to the capability a gateway must declare — the single mapping
+     * RefusesSubscriptions and ManagesSubscriptions both read, so it is pinned here rather than
+     * left to be re-derived at each call site.
+     */
+    public function test_pause_timing_maps_to_its_capability(): void
+    {
+        $this->assertSame(Capability::SubscriptionPauseImmediate, PauseTiming::Immediate->capability());
+        $this->assertSame(Capability::SubscriptionPauseAtPeriodEnd, PauseTiming::AtPeriodEnd->capability());
     }
 
     /**
