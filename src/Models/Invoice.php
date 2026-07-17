@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Isapp\CashierSupport\Casts\CurrencyEloquentCast;
 use Isapp\CashierSupport\Enums\BillingReason;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Facades\Cashier;
+use Money\Currency;
 
 /**
  * Abstract local, provider-independent invoice record.
@@ -55,7 +56,7 @@ abstract class Invoice extends Model
             'tax' => 'integer',
             'discount' => 'integer',
             'lines' => 'array',
-            'currency' => Currency::class,
+            'currency' => CurrencyEloquentCast::class,
             'status' => PaymentStatus::class,
             'issued_at' => 'immutable_datetime',
             'period_start' => 'immutable_datetime',

@@ -6,7 +6,6 @@ namespace Isapp\CashierSupport\Tests\Feature;
 
 use Carbon\CarbonImmutable;
 use Isapp\CashierSupport\Enums\BillingReason;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Facades\Cashier;
@@ -15,6 +14,7 @@ use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscription;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscriptionItem;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 
 /**
  * A subscription has a period it is paid through, and an invoice pays for one.
@@ -95,7 +95,7 @@ class SubscriptionPeriodTest extends TestCase
             'provider' => 'fake',
             'provider_id' => 'in_ext',
             'amount' => 1500,
-            'currency' => Currency::EUR,
+            'currency' => new Currency('EUR'),
             'status' => PaymentStatus::Succeeded,
             'subscription_id' => $subscription->getKey(),
             'period_start' => CarbonImmutable::parse('2026-07-01T00:00:00Z'),
@@ -124,7 +124,7 @@ class SubscriptionPeriodTest extends TestCase
             'provider' => 'fake',
             'provider_id' => 'in_oneoff',
             'amount' => 500,
-            'currency' => Currency::EUR,
+            'currency' => new Currency('EUR'),
             'status' => PaymentStatus::Succeeded,
             'billing_reason' => BillingReason::Manual,
         ])->fresh();

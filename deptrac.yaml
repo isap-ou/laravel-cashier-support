@@ -6,6 +6,10 @@ deptrac:
       collectors:
         - type: directory
           value: src/Enums/.*
+    - name: Casts
+      collectors:
+        - type: directory
+          value: src/Casts/.*
     - name: Exceptions
       collectors:
         - type: directory
@@ -77,6 +81,9 @@ deptrac:
     # Foundation layers depend on nothing internal.
     Enums: ~
 
+    # Currency casts wrap moneyphp (external) — no internal dependency.
+    Casts: ~
+
     Exceptions:
       - Enums
 
@@ -84,6 +91,7 @@ deptrac:
     # payloads, while DTO\PaymentMethod type-hints the PaymentMethodType contract.
     DTO:
       - Enums
+      - Casts
       - Contracts
     Contracts:
       - Enums
@@ -98,15 +106,18 @@ deptrac:
     # (via the facade).
     Models:
       - Enums
+      - Casts
       - Facades
 
     Invoice:
       - Enums
+      - Casts
       - DTO
 
     # The manager owns the per-driver model registry, hence the Models edge.
     Manager:
       - Enums
+      - Casts
       - Exceptions
       - Contracts
       - Models

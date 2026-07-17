@@ -6,9 +6,9 @@ namespace Isapp\CashierSupport\Tests\Feature;
 
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\InvoiceLine;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 
 class InvoiceRenderTest extends TestCase
 {
@@ -17,7 +17,7 @@ class InvoiceRenderTest extends TestCase
         $invoice = new Invoice(
             id: 'in_vat',
             amount: 1700,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             status: PaymentStatus::Succeeded,
             number: '2026-001',
             lines: [
@@ -33,16 +33,17 @@ class InvoiceRenderTest extends TestCase
         // exercises the PDF content without a headless browser.
         $html = view('cashier-support::invoice', ['invoice' => $invoice, 'seller' => []])->render();
 
-        // Footer breakdown rows.
+        // Footer breakdown rows, now rendered locale-aware via Cashier::formatAmount()
+        // (default locale 'en' → the euro symbol, not the bare "EUR" code).
         $this->assertStringContainsString('Subtotal', $html);
-        $this->assertStringContainsString('EUR 15.00', $html);
+        $this->assertStringContainsString('€15.00', $html);
         $this->assertStringContainsString('Tax', $html);
-        $this->assertStringContainsString('EUR 3.00', $html);
+        $this->assertStringContainsString('€3.00', $html);
         $this->assertStringContainsString('Discount', $html);
-        $this->assertStringContainsString('-EUR 1.00', $html);
+        $this->assertStringContainsString('-€1.00', $html);
 
         // Per-line tax amount and rate.
-        $this->assertStringContainsString('EUR 2.00', $html);
+        $this->assertStringContainsString('€2.00', $html);
         $this->assertStringContainsString('(20%)', $html);
     }
 
@@ -51,7 +52,7 @@ class InvoiceRenderTest extends TestCase
         $invoice = new Invoice(
             id: 'in_plain',
             amount: 1000,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             status: PaymentStatus::Succeeded,
             lines: [new InvoiceLine('Pro plan', 1000)],
         );
@@ -62,6 +63,6 @@ class InvoiceRenderTest extends TestCase
         $this->assertStringNotContainsString('Discount', $html);
         // The Total row is always present.
         $this->assertStringContainsString('Total', $html);
-        $this->assertStringContainsString('EUR 10.00', $html);
+        $this->assertStringContainsString('€10.00', $html);
     }
 }

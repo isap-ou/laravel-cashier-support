@@ -7,13 +7,13 @@ namespace Isapp\CashierSupport\Tests\Feature;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Gateway\ManagesLocalInvoices;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteInvoice;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class LocalInvoicesGatewayTest extends TestCase
@@ -57,7 +57,7 @@ class LocalInvoicesGatewayTest extends TestCase
             'provider' => 'fake',
             'provider_id' => $providerId,
             'amount' => 1500,
-            'currency' => Currency::EUR,
+            'currency' => new Currency('EUR'),
             'status' => PaymentStatus::Succeeded,
             'issued_at' => now(),
         ], $overrides));

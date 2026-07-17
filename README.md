@@ -234,9 +234,10 @@ a mis-shaped request throws here, before any driver sees it:
 
 ```php
 use Isapp\CashierSupport\DTO\CheckoutRequest;
+use Money\Currency;
 
 $user->checkout(CheckoutRequest::forPrices(['price_monthly' => 1], successUrl: '...'));
-$user->checkout(CheckoutRequest::forAmount(1500, Currency::EUR, 'One coffee'));
+$user->checkout(CheckoutRequest::forAmount(1500, new Currency('EUR'), 'One coffee'));
 ```
 
 A bare price id or an items map still works — it is a price-shaped request.
@@ -280,12 +281,12 @@ Invoices are generated **locally** from stored data — a shared feature, not a
 provider call:
 
 ```php
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Invoice\InvoiceBuilder;
 use Isapp\CashierSupport\Invoice\InvoiceRenderer;
+use Money\Currency;
 
 $invoice = InvoiceBuilder::make()
-    ->id('in_1')->currency(Currency::EUR)
+    ->id('in_1')->currency(new Currency('EUR'))
     ->addLine('Pro plan', 1000)
     ->build();
 

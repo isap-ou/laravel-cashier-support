@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport;
 
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Traits\Macroable;
 use InvalidArgumentException;
+use Isapp\CashierSupport\Casts\CurrencyCast;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
@@ -16,6 +18,11 @@ use Isapp\CashierSupport\Models\Customer as CustomerModel;
 use Isapp\CashierSupport\Models\Invoice as InvoiceModel;
 use Isapp\CashierSupport\Models\Subscription as SubscriptionModel;
 use Isapp\CashierSupport\Models\SubscriptionItem as SubscriptionItemModel;
+use Money\Currencies\ISOCurrencies;
+use Money\Currency;
+use Money\Formatter\IntlMoneyFormatter;
+use Money\Money;
+use NumberFormatter;
 
 /**
  * Driver manager for gateway providers.
@@ -196,6 +203,62 @@ class CashierManager extends Manager
     public function deactivatesIncomplete(): bool
     {
         return $this->deactivateIncomplete;
+    }
+
+    /**
+     * A custom formatter that overrides formatAmount().
+     *
+     * Instance state rather than the references' public static (Cashier.php:127), for the
+     * same reason the dunning flags are: a singleton per application, no manual reset in tests.
+     *
+     * @var (Closure(int, Currency|string|null, string|null, array<string, mixed>): string)|null
+     */
+    protected ?Closure $formatCurrencyUsing = null;
+
+    /**
+     * Set the custom currency formatter used by formatAmount().
+     *
+     * Mirrors Cashier::formatCurrencyUsing() (vendor/laravel/cashier/src/Cashier.php:137).
+     */
+    public function formatCurrencyUsing(callable $callback): void
+    {
+        $this->formatCurrencyUsing = $callback(...);
+    }
+
+    /**
+     * Format an integer minor-unit amount into a displayable, locale-aware currency string.
+     *
+     * The raw minor units go straight into moneyphp's Money — no float arithmetic — and
+     * ISOCurrencies supplies the per-currency decimals (JPY 0, EUR 2, BHD 3). Mirrors
+     * Cashier::formatAmount() (vendor/laravel/cashier/src/Cashier.php:151-170); it additionally
+     * accepts a Money\Currency, since that is how this package types currency.
+     *
+     * @param  int  $amount  Amount in minor units (cents).
+     * @param  array<string, mixed>  $options  Supports 'min_fraction_digits'.
+     *
+     * @throws InvalidArgumentException when a string $currency is not a known ISO-4217 currency
+     */
+    public function formatAmount(int $amount, Currency|string|null $currency = null, ?string $locale = null, array $options = []): string
+    {
+        if ($this->formatCurrencyUsing !== null) {
+            return ($this->formatCurrencyUsing)($amount, $currency, $locale, $options);
+        }
+
+        $resolved = $currency instanceof Currency
+            ? $currency
+            : CurrencyCast::fromCode((string) ($currency ?? $this->config->get('cashier-support.currency')));
+
+        $money = new Money($amount, $resolved);
+
+        $locale ??= (string) $this->config->get('cashier-support.currency_locale');
+
+        $numberFormatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
+
+        if (isset($options['min_fraction_digits'])) {
+            $numberFormatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, (int) $options['min_fraction_digits']);
+        }
+
+        return (new IntlMoneyFormatter($numberFormatter, new ISOCurrencies))->format($money);
     }
 
     /**

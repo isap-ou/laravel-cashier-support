@@ -20,11 +20,11 @@ use Isapp\CashierSupport\DTO\PaymentMethod;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
+use Money\Currency;
 use Throwable;
 
 /**
@@ -153,12 +153,12 @@ class FakeGateway implements GatewayProvider
 
     public function charge(Model $billable, int $amount, string $paymentMethod, array $options = []): Payment
     {
-        return new Payment(id: 'pay_fake', amount: $amount, currency: Currency::EUR, status: PaymentStatus::Succeeded);
+        return new Payment(id: 'pay_fake', amount: $amount, currency: new Currency('EUR'), status: PaymentStatus::Succeeded);
     }
 
     public function refund(Model $billable, string $paymentId, array $options = []): Refund
     {
-        return new Refund(id: 're_fake', paymentId: $paymentId, amount: 0, currency: Currency::EUR);
+        return new Refund(id: 're_fake', paymentId: $paymentId, amount: 0, currency: new Currency('EUR'));
     }
 
     public function newSubscription(Model $billable, string $type, string|array $prices): SubscriptionBuilder

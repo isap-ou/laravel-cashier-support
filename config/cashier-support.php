@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use Isapp\CashierSupport\Enums\Currency;
-
 return [
     /*
     |--------------------------------------------------------------------------
@@ -22,11 +20,24 @@ return [
     | Default Currency
     |--------------------------------------------------------------------------
     |
-    | The ISO 4217 currency used when an operation does not specify one.
-    | Must match a case of Isapp\CashierSupport\Enums\Currency.
+    | The ISO 4217 currency code used when an operation does not specify one.
+    | Any code known to moneyphp/money's ISOCurrencies is accepted.
     |
     */
-    'currency' => env('CASHIER_CURRENCY', Currency::EUR->value),
+    'currency' => env('CASHIER_CURRENCY', 'EUR'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Currency Locale
+    |--------------------------------------------------------------------------
+    |
+    | The locale used by Cashier::formatAmount() to render a money amount for a
+    | human (symbol placement, grouping, decimals). Formatting relies on the
+    | "intl" PHP extension; to use a locale other than the default, verify it is
+    | installed.
+    |
+    */
+    'currency_locale' => env('CASHIER_CURRENCY_LOCALE', 'en'),
 
     /*
     |--------------------------------------------------------------------------

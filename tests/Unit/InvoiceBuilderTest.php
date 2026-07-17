@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Unit;
 
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Invoice\InvoiceBuilder;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 
 class InvoiceBuilderTest extends TestCase
 {
@@ -16,7 +16,7 @@ class InvoiceBuilderTest extends TestCase
         $invoice = InvoiceBuilder::make()
             ->id('in_1')
             ->number('2026-001')
-            ->currency(Currency::EUR)
+            ->currency(new Currency('EUR'))
             ->status(PaymentStatus::Succeeded)
             ->addLine('Pro plan', 1000)
             ->addLine('Add-on', 500, 2)
@@ -25,14 +25,14 @@ class InvoiceBuilderTest extends TestCase
         $this->assertSame('in_1', $invoice->id);
         $this->assertSame(1500, $invoice->amount);
         $this->assertCount(2, $invoice->lines);
-        $this->assertSame(Currency::EUR, $invoice->currency);
+        $this->assertSame('EUR', $invoice->currency->getCode());
     }
 
     public function test_it_computes_subtotal_tax_and_discount(): void
     {
         $invoice = InvoiceBuilder::make()
             ->id('in_2')
-            ->currency(Currency::EUR)
+            ->currency(new Currency('EUR'))
             ->addLine('Pro plan', 1000, 1, unitAmount: 1000, taxAmount: 200, taxRate: 2000)
             ->addLine('Add-on', 500, 2, unitAmount: 250, taxAmount: 100, taxRate: 2000)
             ->tax(300)
@@ -56,7 +56,7 @@ class InvoiceBuilderTest extends TestCase
         // rather than rows of zeros.
         $invoice = InvoiceBuilder::make()
             ->id('in_3')
-            ->currency(Currency::EUR)
+            ->currency(new Currency('EUR'))
             ->addLine('Pro plan', 1000)
             ->build();
 

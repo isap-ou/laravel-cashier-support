@@ -147,8 +147,9 @@ src/
 │   ├── Customer.php, CustomerDetails.php, Payment.php, Subscription.php, SubscriptionItem.php
 │   ├── Invoice.php, InvoiceLine.php, PaymentMethod.php
 │   ├── Refund.php, CheckoutRequest.php, WebhookRegistration.php
+├── Casts/               # CurrencyCast (spatie-data), CurrencyEloquentCast — string <-> Money\Currency
 ├── Enums/               # String-backed BackedEnum
-│   ├── PaymentStatus.php, SubscriptionStatus.php, Currency.php
+│   ├── PaymentStatus.php, SubscriptionStatus.php
 │   ├── RefundReason.php, BillingReason.php
 │   ├── Interval.php, CheckoutMode.php, SwapTiming.php
 │   └── Capability.php               # Granular feature flags per provider
@@ -213,9 +214,11 @@ src/
 - `declare(strict_types=1)` everywhere
 - DTOs — extend `Spatie\LaravelData\Data` (`spatie/laravel-data`)
 - Enums — `string`-backed, `snake_case` values
-- Money — `int` (minor units) + `Currency` enum, never `float`. A money library
-  (`moneyphp/money`, as both references use) is **allowed** if a task needs one — it was left
-  out only because we had never used it, not as a ban. See #32.
+- Money — amounts are `int` (minor units), never `float`. Currency is `Money\Currency`
+  (`moneyphp/money`, as both references use), bridged into DTOs and Eloquent by
+  `Casts\CurrencyCast` / `Casts\CurrencyEloquentCast`; any ISO-4217 code is valid.
+  `Cashier::formatAmount()` renders an amount locale-aware via `IntlMoneyFormatter` (no
+  float, decimals per ISO-4217). See #32.
 - Method names strictly from Stripe Cashier — on the surface an app calls. Where Cashier
   encodes a concept without naming it (inline comparisons, a static flag, no such type),
   an internal predicate may be coined; cite the reference lines it encodes in its docblock.
@@ -365,8 +368,8 @@ initiative.
 
 **Some gaps are inexpressible, not unimplemented — this is the trap.** It is not "the driver
 lacks it", it is "the contract has nowhere to put it", so no `Capability` flag routes around it
-and no driver can supply it. There is no money formatting and `Currency` is a closed whitelist
-(#32); `DTO\Payment` has no `clientSecret`, so an SCA payment cannot be completed (#35).
+and no driver can supply it. `DTO\Payment` has no `clientSecret`, so an SCA payment cannot be
+completed (#35).
 Recognising this class matters more than the individual issues: the instinct it triggers — "the
 gateway must not support it, I will work around it" — is exactly backwards. `DTO\Invoice` was the
 canonical case — no tax, discount or subtotal, so a VAT invoice was not representable — and #31

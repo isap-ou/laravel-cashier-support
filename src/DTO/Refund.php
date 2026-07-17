@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\DTO;
 
 use Carbon\CarbonImmutable;
-use Isapp\CashierSupport\Enums\Currency;
+use Isapp\CashierSupport\Casts\CurrencyCast;
 use Isapp\CashierSupport\Enums\RefundReason;
+use Money\Currency;
+use Spatie\LaravelData\Attributes\WithCastAndTransformer;
 use Spatie\LaravelData\Data;
 
 /**
@@ -21,6 +23,7 @@ class Refund extends Data
         public string $id,
         public string $paymentId,
         public int $amount,
+        #[WithCastAndTransformer(CurrencyCast::class)]
         public Currency $currency,
         public ?RefundReason $reason = null,
         public ?CarbonImmutable $createdAt = null,
