@@ -13,7 +13,6 @@ use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Events\SubscriptionCreated;
@@ -23,6 +22,7 @@ use Isapp\CashierSupport\Tests\Fixtures\QueuedEventProbe;
 use Isapp\CashierSupport\Tests\Fixtures\RecordingBillableListener;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use ReflectionNamedType;
@@ -360,7 +360,7 @@ class EventSerializationTest extends TestCase
         return new Payment(
             id: 'pay_ext',
             amount: 1000,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             status: PaymentStatus::Succeeded,
         );
     }
@@ -371,7 +371,7 @@ class EventSerializationTest extends TestCase
             id: 'ref_ext',
             paymentId: 'pay_ext',
             amount: 1000,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
         );
     }
 
@@ -380,7 +380,7 @@ class EventSerializationTest extends TestCase
         return new Invoice(
             id: 'inv_ext',
             amount: 1000,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             status: PaymentStatus::Succeeded,
         );
     }

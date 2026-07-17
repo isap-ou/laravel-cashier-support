@@ -13,11 +13,11 @@ use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\PaymentMethod;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\DTO\SubscriptionItem;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Tests\Fixtures\FakePaymentMethodType;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 
 class DtoTest extends TestCase
 {
@@ -31,7 +31,7 @@ class DtoTest extends TestCase
         ]);
 
         $this->assertSame(1500, $payment->amount);
-        $this->assertSame(Currency::EUR, $payment->currency);
+        $this->assertSame('EUR', $payment->currency->getCode());
         $this->assertSame(PaymentStatus::Succeeded, $payment->status);
 
         $this->assertSame([
@@ -158,7 +158,7 @@ class DtoTest extends TestCase
         $plain = new Invoice(
             id: 'in_1',
             amount: 1200,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             status: PaymentStatus::Succeeded,
         );
 
@@ -169,7 +169,7 @@ class DtoTest extends TestCase
         $withBreakdown = new Invoice(
             id: 'in_2',
             amount: 1200,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             status: PaymentStatus::Succeeded,
             subtotal: 1000,
             tax: 300,

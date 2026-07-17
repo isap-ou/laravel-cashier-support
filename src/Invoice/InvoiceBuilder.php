@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Invoice;
 
 use Carbon\CarbonImmutable;
+use Isapp\CashierSupport\Casts\CurrencyCast;
 use Isapp\CashierSupport\DTO\Invoice;
 use Isapp\CashierSupport\DTO\InvoiceLine;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
+use Money\Currency;
 
 /**
  * Fluent builder that assembles an Invoice DTO from local data.
@@ -23,7 +24,7 @@ class InvoiceBuilder
 
     private ?string $number = null;
 
-    private Currency $currency = Currency::EUR;
+    private ?Currency $currency = null;
 
     private PaymentStatus $status = PaymentStatus::Succeeded;
 
@@ -128,7 +129,9 @@ class InvoiceBuilder
         return new Invoice(
             id: $this->id,
             amount: $subtotal + ($this->tax ?? 0) - ($this->discount ?? 0),
-            currency: $this->currency,
+            // Fall back to the app's configured currency only when none was set, so make()
+            // never touches config and an explicit currency() bypasses it entirely.
+            currency: $this->currency ?? CurrencyCast::fromCode((string) config('cashier-support.currency')),
             status: $this->status,
             number: $this->number,
             lines: $this->lines,

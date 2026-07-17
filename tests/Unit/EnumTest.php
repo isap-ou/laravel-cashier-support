@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Tests\Unit;
 
 use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\RefundReason;
@@ -38,12 +37,6 @@ class EnumTest extends TestCase
             ['pending', 'processing', 'succeeded', 'failed', 'canceled', 'refunded'],
             PaymentStatus::values()->all(),
         );
-    }
-
-    public function test_currency_minor_units(): void
-    {
-        $this->assertSame(2, Currency::EUR->minorUnits());
-        $this->assertSame(0, Currency::JPY->minorUnits());
     }
 
     public function test_backed_values(): void

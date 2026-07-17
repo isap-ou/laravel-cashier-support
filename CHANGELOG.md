@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A money amount can now be rendered for a human.** There was no formatting API — the only
+  formatter was hand-rolled in the invoice view, printing `EUR 12.00` with no locale, no symbol
+  and wrong minor units. `Cashier::formatAmount(int $amount, Money\Currency|string|null $currency, ?string $locale, array $options)`
+  renders an amount locale-aware via moneyphp/money's `IntlMoneyFormatter` + `ISOCurrencies` (raw
+  minor units in, no float; decimals per ISO-4217 — JPY 0, EUR 2, BHD 3), and
+  `Cashier::formatCurrencyUsing(callable)` overrides it. A `currency_locale` config key
+  (`env('CASHIER_CURRENCY_LOCALE', 'en')`) sets the default locale. The invoice view now renders
+  through `formatAmount`. Mirrors `laravel/cashier`. (#32)
+
 - **A VAT invoice can now be expressed.** `DTO\Invoice` and `DTO\InvoiceLine` carried only a
   single total, so tax, discount and subtotal had nowhere to live — a VAT invoice was not
   representable, whatever the driver could supply. `DTO\Invoice` gains optional `subtotal`,
@@ -228,6 +237,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is empty until something resolves one.
 
 ### Changed
+
+- **Currency is now moneyphp/money's `Money\Currency`, not a 15-value enum.** `Enums\Currency`
+  was a closed whitelist — KRW, BRL, INR, TRY and most of ISO-4217 were inexpressible — and its
+  `minorUnits()` returned `2` for everything but JPY, wrong for 3-decimal (BHD, KWD) and other
+  0-decimal (KRW, VND) currencies. It is removed; the `currency` field of `DTO\{Payment,Invoice,Refund,CheckoutRequest}`,
+  `Models\Invoice` and `Invoice\InvoiceBuilder` is now `Money\Currency`, bridged by
+  `Casts\CurrencyCast` (spatie/laravel-data) and `Casts\CurrencyEloquentCast` (Eloquent). Any
+  ISO-4217 code is valid and minor units come from `ISOCurrencies`; an unknown code is rejected at
+  the cast boundary with SPL `InvalidArgumentException`. **BC:** code that used `Enums\Currency`
+  (e.g. `Currency::EUR`, `$dto->currency->value`) must switch to `new Money\Currency('EUR')` /
+  `->getCode()`; adds a `moneyphp/money` dependency. (#32)
 
 - **`Models\Subscription::active()` has been renamed to `valid()`, and `active()` now means
   what Cashier means by it.** (#25) The old `active()` computed "active, trialing, or still

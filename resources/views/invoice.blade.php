@@ -1,17 +1,8 @@
 @php
     /** @var \Isapp\CashierSupport\DTO\Invoice $invoice */
-    $minor = $invoice->currency->minorUnits();
-    // Integer-only money formatting — no float arithmetic on amounts.
-    $money = static function (int $cents) use ($minor): string {
-        if ($minor === 0) {
-            return number_format($cents, 0);
-        }
-
-        $units = intdiv($cents, 10 ** $minor);
-        $fraction = str_pad((string) abs($cents % (10 ** $minor)), $minor, '0', STR_PAD_LEFT);
-
-        return number_format($units, 0).'.'.$fraction;
-    };
+    // Locale-aware money formatting: raw minor units in, currency symbol + decimals out.
+    $money = static fn (int $cents): string =>
+        \Isapp\CashierSupport\Facades\Cashier::formatAmount($cents, $invoice->currency);
     // Tax rate is basis points (2000 = 20.00%). Integer-only, display-only formatting.
     $rate = static function (int $basisPoints): string {
         $whole = intdiv($basisPoints, 100);
@@ -21,7 +12,6 @@
             ? $whole.'%'
             : $whole.'.'.str_pad((string) $frac, 2, '0', STR_PAD_LEFT).'%';
     };
-    $currencyCode = $invoice->currency->value;
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -76,11 +66,11 @@
                 <tr>
                     <td>{{ $line->description }}</td>
                     <td class="amount">{{ $line->quantity }}</td>
-                    <td class="amount">{{ $line->unitAmount !== null ? $currencyCode.' '.$money($line->unitAmount) : '—' }}</td>
-                    <td class="amount">{{ $currencyCode }} {{ $money($line->amount) }}</td>
+                    <td class="amount">{{ $line->unitAmount !== null ? $money($line->unitAmount) : '—' }}</td>
+                    <td class="amount">{{ $money($line->amount) }}</td>
                     <td class="amount">
                         @if ($line->taxAmount !== null)
-                            {{ $currencyCode }} {{ $money($line->taxAmount) }}@if ($line->taxRate !== null) <span class="muted">({{ $rate($line->taxRate) }})</span>@endif
+                            {{ $money($line->taxAmount) }}@if ($line->taxRate !== null) <span class="muted">({{ $rate($line->taxRate) }})</span>@endif
                         @else
                             —
                         @endif
@@ -92,27 +82,27 @@
             @if ($invoice->subtotal !== null)
                 <tr>
                     <td colspan="3">Subtotal</td>
-                    <td class="amount">{{ $currencyCode }} {{ $money($invoice->subtotal) }}</td>
+                    <td class="amount">{{ $money($invoice->subtotal) }}</td>
                     <td></td>
                 </tr>
             @endif
             @if ($invoice->tax !== null)
                 <tr>
                     <td colspan="3">Tax</td>
-                    <td class="amount">{{ $currencyCode }} {{ $money($invoice->tax) }}</td>
+                    <td class="amount">{{ $money($invoice->tax) }}</td>
                     <td></td>
                 </tr>
             @endif
             @if ($invoice->discount !== null)
                 <tr>
                     <td colspan="3">Discount</td>
-                    <td class="amount">-{{ $currencyCode }} {{ $money($invoice->discount) }}</td>
+                    <td class="amount">-{{ $money($invoice->discount) }}</td>
                     <td></td>
                 </tr>
             @endif
             <tr>
                 <td colspan="3">Total</td>
-                <td class="amount">{{ $currencyCode }} {{ $money($invoice->amount) }}</td>
+                <td class="amount">{{ $money($invoice->amount) }}</td>
                 <td></td>
             </tr>
         </tfoot>

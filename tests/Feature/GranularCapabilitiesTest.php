@@ -9,7 +9,6 @@ use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\CheckoutMode;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -17,6 +16,7 @@ use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Tests\Fixtures\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 
 /**
  * A capability must gate an intent the caller expresses, not merely announce
@@ -134,7 +134,7 @@ class GranularCapabilitiesTest extends TestCase
         $this->driverSupporting([Capability::CheckoutAmount]);
 
         $session = (new User)->checkout(
-            CheckoutRequest::forAmount(1500, Currency::EUR, 'A thing'),
+            CheckoutRequest::forAmount(1500, new Currency('EUR'), 'A thing'),
         );
 
         $this->assertSame('cs_fake', $session->id());
@@ -196,7 +196,7 @@ class GranularCapabilitiesTest extends TestCase
     public function test_a_non_positive_amount_never_reaches_a_driver(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        CheckoutRequest::forAmount(0, Currency::EUR);
+        CheckoutRequest::forAmount(0, new Currency('EUR'));
     }
 
     public function test_an_empty_catalogue_is_refused(): void
@@ -259,7 +259,7 @@ class GranularCapabilitiesTest extends TestCase
     {
         $request = CheckoutRequest::forAmount(
             amount: 1500,
-            currency: Currency::EUR,
+            currency: new Currency('EUR'),
             description: 'A thing',
             successUrl: 'https://app.test/ok',
             cancelUrl: 'https://app.test/no',
@@ -267,7 +267,7 @@ class GranularCapabilitiesTest extends TestCase
         );
 
         $this->assertSame(1500, $request->amount);
-        $this->assertSame(Currency::EUR, $request->currency);
+        $this->assertSame('EUR', $request->currency->getCode());
         $this->assertSame('https://app.test/ok', $request->successUrl);
         $this->assertSame(CheckoutMode::Payment, $request->mode);
         $this->assertSame([], $request->items);

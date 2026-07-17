@@ -13,6 +13,8 @@ use Isapp\CashierSupport\CashierManager;
  * @method static array<int, string> registeredDrivers()
  * @method static bool supports(\Isapp\CashierSupport\Enums\Capability $capability, ?string $driver = null)
  * @method static void ensureSupports(\Isapp\CashierSupport\Enums\Capability $capability, ?string $driver = null)
+ * @method static string formatAmount(int $amount, \Money\Currency|string|null $currency = null, ?string $locale = null, array<string, mixed> $options = [])
+ * @method static void formatCurrencyUsing(callable $callback)
  * @method static void keepPastDueSubscriptionsActive()
  * @method static void keepIncompleteSubscriptionsActive()
  * @method static bool deactivatesPastDue()

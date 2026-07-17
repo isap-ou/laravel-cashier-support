@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\DTO;
 
 use InvalidArgumentException;
+use Isapp\CashierSupport\Casts\CurrencyCast;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\CheckoutMode;
-use Isapp\CashierSupport\Enums\Currency;
+use Money\Currency;
+use Spatie\LaravelData\Attributes\WithCastAndTransformer;
 use Spatie\LaravelData\Data;
 
 /**
@@ -31,6 +33,7 @@ class CheckoutRequest extends Data
     public function __construct(
         public array $items = [],
         public ?int $amount = null,
+        #[WithCastAndTransformer(CurrencyCast::class)]
         public ?Currency $currency = null,
         public ?string $description = null,
         public ?string $successUrl = null,

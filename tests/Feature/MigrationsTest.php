@@ -8,7 +8,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Isapp\CashierSupport\Enums\Currency;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Facades\Cashier;
@@ -17,6 +16,7 @@ use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscription;
 use Isapp\CashierSupport\Tests\Fixtures\ConcreteSubscriptionItem;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use Money\Currency;
 
 class MigrationsTest extends TestCase
 {
@@ -172,14 +172,14 @@ class MigrationsTest extends TestCase
             'owner_id' => 1,
             'number' => '2026-001',
             'amount' => 1500,
-            'currency' => Currency::EUR,
+            'currency' => new Currency('EUR'),
             'status' => PaymentStatus::Succeeded,
         ]);
 
         $fresh = ConcreteInvoice::query()->find($invoice->getKey());
 
         $this->assertSame(1500, $fresh->amount);
-        $this->assertSame(Currency::EUR, $fresh->currency);
+        $this->assertSame('EUR', $fresh->currency->getCode());
         $this->assertSame(PaymentStatus::Succeeded, $fresh->status);
         $this->assertTrue($fresh->paid());
     }
