@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -134,10 +135,28 @@ class GatewayDefaultsTest extends TestCase
         }
     }
 
+    public function test_a_pause_refusal_names_the_timing_not_merely_the_method(): void
+    {
+        // pauseSubscription() is one method behind two capabilities, like swap. A gateway that
+        // can only pause immediately must refuse "at period end" BY THAT NAME. The refusal reads
+        // the mapping off PauseTiming rather than re-deriving it, so the two cannot drift.
+        $user = new User(['id' => 1]);
+
+        try {
+            Cashier::provider('minimal')->pauseSubscription($user, 'default', PauseTiming::Immediate);
+            $this->fail('Expected the default pause to refuse.');
+        } catch (UnsupportedOperationException $e) {
+            $this->assertStringContainsString(Capability::SubscriptionPauseImmediate->value, $e->getMessage());
+            $this->assertStringNotContainsString(Capability::SubscriptionPauseAtPeriodEnd->value, $e->getMessage());
+        }
+    }
+
     public function test_support_is_read_off_the_code_not_off_a_declaration(): void
     {
-        // FakeGateway implements every operation and declares no derivable capability. If
-        // support were still a hand-kept list this would be false for all of them.
+        // A method-backed capability is read off the override, not a declaration. Resume, not
+        // pause: pause is now one method behind two timings (PauseImmediate/PauseAtPeriodEnd),
+        // so it moved to declaredCapabilities() and overriding pauseSubscription() no longer
+        // implies either — the very reason a split capability cannot be read off the code.
         $fake = new class extends BaseGateway
         {
             protected function declaredCapabilities(): array
@@ -145,14 +164,14 @@ class GatewayDefaultsTest extends TestCase
                 return [];
             }
 
-            public function pauseSubscription(Model $billable, string $type = 'default'): Subscription
+            public function resumeSubscription(Model $billable, string $type = 'default'): Subscription
             {
-                return new Subscription(id: 'sub_x', type: $type, status: SubscriptionStatus::Paused);
+                return new Subscription(id: 'sub_x', type: $type, status: SubscriptionStatus::Active);
             }
         };
 
-        $this->assertTrue($fake->supports(Capability::SubscriptionPause), 'An overridden method must report its capability supported, undeclared.');
-        $this->assertFalse($fake->supports(Capability::SubscriptionResume), 'A method left as the default must report its capability unsupported.');
+        $this->assertTrue($fake->supports(Capability::SubscriptionResume), 'An overridden method must report its capability supported, undeclared.');
+        $this->assertFalse($fake->supports(Capability::SubscriptionCancelNow), 'A method left as the default must report its capability unsupported.');
     }
 
     public function test_a_capability_needing_several_methods_needs_all_of_them(): void
@@ -177,11 +196,12 @@ class GatewayDefaultsTest extends TestCase
 
     public function test_every_capability_either_maps_to_methods_or_is_an_intent(): void
     {
-        // Inclusion by default: a 21st case must classify itself. methods() is a match with
+        // Inclusion by default: a new case must classify itself. methods() is a match with
         // no default arm, so an unclassified case throws rather than quietly returning [] —
         // this asserts the classification is deliberate, not merely present.
         $intents = [
             Capability::SubscriptionSwapImmediate, Capability::SubscriptionSwapAtPeriodEnd,
+            Capability::SubscriptionPauseImmediate, Capability::SubscriptionPauseAtPeriodEnd,
             Capability::CheckoutPrices, Capability::CheckoutAmount,
             Capability::SubscriptionTrials, Capability::SubscriptionQuantity,
             Capability::SubscriptionMetadata, Capability::Taxes,
@@ -206,7 +226,7 @@ class GatewayDefaultsTest extends TestCase
             }
         }
 
-        $this->assertCount(22, Capability::cases());
+        $this->assertCount(23, Capability::cases());
     }
 
     public function test_a_default_returns_nothing_it_only_refuses(): void

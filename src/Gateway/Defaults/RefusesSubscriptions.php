@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Gateway\Defaults;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 
@@ -42,9 +44,21 @@ trait RefusesSubscriptions
         throw UnsupportedOperationException::forCapability(Capability::SubscriptionResume);
     }
 
-    public function pauseSubscription(Model $billable, string $type = 'default'): Subscription
-    {
-        throw UnsupportedOperationException::forCapability(Capability::SubscriptionPause);
+    /**
+     * The refusal names the timing the caller asked for, not "pause".
+     *
+     * Timing is not a detail of a pause, it IS the pause (Enums\PauseTiming): a gateway that
+     * can only pause immediately must refuse "pause at cycle end" by that name, or the app is
+     * told the wrong thing about why it failed. The mapping lives on PauseTiming, so this reads
+     * it rather than re-deriving it.
+     */
+    public function pauseSubscription(
+        Model $billable,
+        string $type = 'default',
+        PauseTiming $timing = PauseTiming::AtPeriodEnd,
+        ?DateTimeInterface $until = null,
+    ): Subscription {
+        throw UnsupportedOperationException::forCapability($timing->capability());
     }
 
     /**

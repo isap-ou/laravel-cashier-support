@@ -14,6 +14,7 @@ use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Models\Concerns\DecidesAccess;
 use Isapp\CashierSupport\Models\Concerns\ReportsStatus;
 use Isapp\CashierSupport\Models\Concerns\TracksCancellation;
+use Isapp\CashierSupport\Models\Concerns\TracksPause;
 use Isapp\CashierSupport\Models\Concerns\TracksTrialPeriod;
 
 /**
@@ -38,6 +39,8 @@ use Isapp\CashierSupport\Models\Concerns\TracksTrialPeriod;
  * @property SubscriptionStatus $status
  * @property CarbonImmutable|null $trial_ends_at
  * @property CarbonImmutable|null $ends_at
+ * @property CarbonImmutable|null $paused_at
+ * @property CarbonImmutable|null $resumes_at
  * @property CarbonImmutable|null $current_period_start
  * @property CarbonImmutable|null $current_period_end
  * @property string|null $next_price
@@ -49,6 +52,7 @@ abstract class Subscription extends Model
     use HasUuids;
     use ReportsStatus;
     use TracksCancellation;
+    use TracksPause;
     use TracksTrialPeriod;
 
     protected $table = 'cashier_subscriptions';
@@ -67,6 +71,8 @@ abstract class Subscription extends Model
             'status' => SubscriptionStatus::class,
             'trial_ends_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
+            'paused_at' => 'immutable_datetime',
+            'resumes_at' => 'immutable_datetime',
             'current_period_start' => 'immutable_datetime',
             'current_period_end' => 'immutable_datetime',
             'next_price_starts_at' => 'immutable_datetime',

@@ -387,6 +387,66 @@ class SubscriptionAccessTest extends TestCase
     }
 
     // ---------------------------------------------------------------------
+    // Pause (#30) — access is unchanged; the paused fact lives in paused_at
+    // ---------------------------------------------------------------------
+
+    public function test_a_pause_scheduled_for_period_end_stays_valid_until_paused_at(): void
+    {
+        // AC-1, the issue's stated criterion. A pause scheduled for cycle end keeps the
+        // subscription usable until paused_at: the driver holds the status at Active while
+        // paused_at is in the future, exactly as Paddle does (valid()/active() never read
+        // paused_at; only recurring() subtracts the grace, Subscription.php:272). So access is
+        // untouched — the pause is merely SCHEDULED — and onPausedGracePeriod() is what reports it.
+        $subscription = $this->subscription(SubscriptionStatus::Active, [
+            'paused_at' => now()->addDays(5),
+        ]);
+
+        $this->assertTrue($subscription->valid());
+        $this->assertTrue($subscription->active(), 'A scheduled pause has not taken effect, so access is unchanged.');
+        $this->assertTrue($subscription->onPausedGracePeriod());
+        $this->assertFalse($subscription->paused(), 'The pause is scheduled, not in force.');
+    }
+
+    public function test_a_pause_in_force_is_paused_and_off_the_grace_period(): void
+    {
+        // paused_at in the past: the pause has landed. paused() flips true and the grace period
+        // is over. Whether access survives is the STATUS's business — see the two rows below.
+        $subscription = $this->subscription(SubscriptionStatus::Paused, [
+            'paused_at' => now()->subDay(),
+        ]);
+
+        $this->assertTrue($subscription->paused());
+        $this->assertFalse($subscription->onPausedGracePeriod());
+    }
+
+    public function test_whether_a_paused_subscription_keeps_access_is_the_gateways_to_decide(): void
+    {
+        // The edge the spec pins deliberately: paused() reads paused_at, and access reads the
+        // status, so the two answer independently — and the references genuinely differ.
+        //
+        // Paddle moves the status to Paused (Subscription.php:314), so a paused subscription is
+        // not active. Stripe's pause_collection pauses billing and leaves the status Active, so a
+        // "paused" Stripe subscription is STILL active — the docs say so outright. Each is faithful
+        // to its gateway; the difference is surfaced, not hidden.
+        $paddleStyle = $this->subscription(SubscriptionStatus::Paused, ['paused_at' => now()->subDay()]);
+        $stripeStyle = $this->subscription(SubscriptionStatus::Active, ['paused_at' => now()->subDay()]);
+
+        $this->assertTrue($paddleStyle->paused());
+        $this->assertFalse($paddleStyle->active(), 'Paddle pauses via the status, so access stops.');
+
+        $this->assertTrue($stripeStyle->paused());
+        $this->assertTrue($stripeStyle->active(), 'Stripe pauses collection only, so access continues.');
+    }
+
+    public function test_a_subscription_that_was_never_paused_reports_neither_pause_state(): void
+    {
+        $subscription = $this->subscription(SubscriptionStatus::Active);
+
+        $this->assertFalse($subscription->paused());
+        $this->assertFalse($subscription->onPausedGracePeriod());
+    }
+
+    // ---------------------------------------------------------------------
     // The status predicates
     // ---------------------------------------------------------------------
 

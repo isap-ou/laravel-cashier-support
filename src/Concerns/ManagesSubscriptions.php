@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Concerns;
 
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use InvalidArgumentException;
@@ -12,6 +13,7 @@ use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -175,12 +177,22 @@ trait ManagesSubscriptions
 
     /**
      * Pause an active subscription.
+     *
+     * The intent is gated, not the operation: a gateway that can only pause immediately cannot
+     * honour AtPeriodEnd, and must say so rather than quietly pausing at the wrong moment. The
+     * default is AtPeriodEnd — see Enums\PauseTiming for why it inverts swap's Immediate.
+     *
+     * @param  DateTimeInterface|null  $until  When collection auto-resumes, where the gateway
+     *                                         accepts it (Stripe's pause_collection.resumes_at).
      */
-    public function pauseSubscription(string $type = 'default'): Subscription
-    {
-        $this->ensureCashierSupports(Capability::SubscriptionPause);
+    public function pauseSubscription(
+        string $type = 'default',
+        PauseTiming $timing = PauseTiming::AtPeriodEnd,
+        ?DateTimeInterface $until = null,
+    ): Subscription {
+        $this->ensureCashierSupports($timing->capability());
 
-        return $this->cashierProvider()->pauseSubscription($this, $type);
+        return $this->cashierProvider()->pauseSubscription($this, $type, $timing, $until);
     }
 
     /**

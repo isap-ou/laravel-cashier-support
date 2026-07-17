@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Fixtures;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Response;
 use Isapp\CashierSupport\Contracts\CheckoutSession;
@@ -20,6 +21,7 @@ use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\Currency;
+use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
@@ -59,6 +61,15 @@ class FakeGateway implements GatewayProvider
     public ?string $lastQuantityType = null;
 
     public ?string $lastQuantityPrice = null;
+
+    /**
+     * The timing and resume date the last pauseSubscription() call was given — the only way to
+     * prove the caller's intent and $until reached the gateway rather than being dropped at the
+     * Billable gate.
+     */
+    public ?PauseTiming $lastPauseTiming = null;
+
+    public ?DateTimeInterface $lastPauseUntil = null;
 
     /**
      * The raw bytes and headers the last webhook() call was given — lets a test see
@@ -170,8 +181,15 @@ class FakeGateway implements GatewayProvider
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
 
-    public function pauseSubscription(Model $billable, string $type = 'default'): Subscription
-    {
+    public function pauseSubscription(
+        Model $billable,
+        string $type = 'default',
+        PauseTiming $timing = PauseTiming::AtPeriodEnd,
+        ?DateTimeInterface $until = null,
+    ): Subscription {
+        $this->lastPauseTiming = $timing;
+        $this->lastPauseUntil = $until;
+
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Paused);
     }
 

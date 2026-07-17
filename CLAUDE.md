@@ -78,7 +78,7 @@ $user->trialEndsAt('default');                // the subscription's trial only �
 $user->cancelSubscription('default');
 $user->cancelSubscriptionNow('default');
 $user->resumeSubscription('default');
-$user->pauseSubscription('default');
+$user->pauseSubscription('default', PauseTiming::AtPeriodEnd);   // AtPeriodEnd is the default — see PauseTiming
 $user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
 // Quantity mutation is on Billable too, and the gateway is only ever told the absolute number.
 $user->updateSubscriptionQuantity('default', 5);
@@ -93,12 +93,15 @@ $user->subscription('default')->pastDue();            // the status, never the a
 $user->subscription('default')->incomplete();
 $user->subscription('default')->hasPrice('price_monthly');
 $user->subscription('default')->hasSinglePrice();     // ...and hasMultiplePrices()
+$user->subscription('default')->paused();             // paused_at in the past — pause in force
+$user->subscription('default')->onPausedGracePeriod();// paused_at in the future — pause scheduled, still serving
 
 // Every predicate above that reads a column is also a query scope, and the two agree by
 // construction. This is the only way to ask the question without hydrating the row.
 User::whereHas('subscriptions', fn ($q) => $q->active())->get();
-// valid/active, pastDue/incomplete, canceled, onTrial, onGracePeriod, ended — and the four
-// negations, which have no predicate twin: PHP has `!`, a query builder does not.
+// valid/active, pastDue/incomplete, canceled, onTrial, onGracePeriod, ended, paused,
+// onPausedGracePeriod — and the negations, which have no predicate twin: PHP has `!`, a query
+// builder does not.
 $user->subscriptions()->notOnTrial()->notCanceled()->get();
 
 // Off the model, the class is per-driver: Models\Subscription is ABSTRACT, so
@@ -118,8 +121,7 @@ Cashier::keepIncompleteSubscriptionsActive();
 `onGenericTrial()`, `hasIncompletePayment()`, `updateDefaultPaymentMethod()`, `upcomingInvoice()`,
 `tab()`/`invoiceFor()`, coupons/promotion codes, proration, `Models\Subscription::recurring()`
 (the references disagree on its body — it is a design, not a port) and `scopeRecurring` with it,
-the paused scopes (`scopePaused`/`scopeNotPaused`/`scopeOnPausedGracePeriod` — Paddle-only, and
-the last needs a `paused_at` column we do not have), `hasExpiredTrial()`/`scopeExpiredTrial`,
+`hasExpiredTrial()`/`scopeExpiredTrial`,
 item-level quantity (`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is
 ours).
 
@@ -238,7 +240,8 @@ enum Capability: string {
     case Customers = 'customers';
     case CustomersUpdate = 'customers.update';
     case Subscriptions = 'subscriptions';
-    case SubscriptionPause = 'subscription.pause';
+    case SubscriptionPauseImmediate = 'subscription.pause.immediate';
+    case SubscriptionPauseAtPeriodEnd = 'subscription.pause.at_period_end';
     case SubscriptionResume = 'subscription.resume';
     case SubscriptionSwapImmediate = 'subscription.swap.immediate';
     case SubscriptionSwapAtPeriodEnd = 'subscription.swap.at_period_end';
@@ -274,9 +277,9 @@ trait ManagesSubscriptions {
     }
 }
 
-// App-level check
-if (Cashier::supports(Capability::SubscriptionPause)) {
-    $user->pauseSubscription('default');
+// App-level check — pause is timing-granular, like swap: ask for the timing you need.
+if (Cashier::supports(Capability::SubscriptionPauseAtPeriodEnd)) {
+    $user->pauseSubscription('default', PauseTiming::AtPeriodEnd);
 }
 ```
 
@@ -344,11 +347,12 @@ resolves it by language rule (own > trait > parent), so a driver's trait beats t
 
 Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
 today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
-14 of the 22 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
-the code; the other 8 cannot be read off anything (`swapSubscription()` is one method behind two
-timings, `checkout()` one method behind two shapes, and four are `SubscriptionBuilder` setters) and
-stay declared via `declaredCapabilities()`. That split is why interfaces could never have replaced
-the enum. **Count those two numbers against the enum before repeating them** — they were wrong here
+13 of the 23 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+the code; the other 10 cannot be read off anything (`swapSubscription()` is one method behind two
+timings, `pauseSubscription()` one method behind two timings since #30, `checkout()` one method
+behind two shapes, and four are `SubscriptionBuilder` setters) and stay declared via
+`declaredCapabilities()`. That split is why interfaces could never have replaced the enum.
+**Count those two numbers against the enum before repeating them** — they were wrong here
 until #37 (the file said 12 of 20 when the code said 13 of 21), which is #38's whole shape.
 
 **The subscription mutation surface is ours, not Cashier's, and that is undecided (#39).**

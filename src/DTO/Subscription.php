@@ -16,15 +16,18 @@ class Subscription extends Data
 {
     /**
      * @param  array<int, SubscriptionItem>  $items
-     */
-    /**
-     * @param  array<int, SubscriptionItem>  $items
      * @param  CarbonImmutable|null  $endsAt  When access stops (cancellation).
      * @param  CarbonImmutable|null  $currentPeriodEnd  Paid through — and, while
      *                                                  the subscription is live,
      *                                                  the next charge date. Null
      *                                                  when the gateway exposes no
      *                                                  billing cycle.
+     * @param  CarbonImmutable|null  $pausedAt  When the pause takes effect: in the past while the
+     *                                          pause is in force, in the future while it is only
+     *                                          scheduled. Null when not paused.
+     * @param  CarbonImmutable|null  $resumesAt  When collection auto-resumes (Stripe's
+     *                                           pause_collection.resumes_at), where the gateway
+     *                                           reports one. Null leaves the pause open-ended.
      */
     public function __construct(
         public string $id,
@@ -39,5 +42,7 @@ class Subscription extends Data
         public ?CarbonImmutable $currentPeriodEnd = null,
         public ?string $pendingPrice = null,
         public ?CarbonImmutable $pendingPriceStartsAt = null,
+        public ?CarbonImmutable $pausedAt = null,
+        public ?CarbonImmutable $resumesAt = null,
     ) {}
 }

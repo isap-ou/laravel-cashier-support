@@ -23,7 +23,12 @@ enum Capability: string
     case CustomersUpdate = 'customers.update';
     case Subscriptions = 'subscriptions';
     case SubscriptionCancelNow = 'subscription.cancel_now';
-    case SubscriptionPause = 'subscription.pause';
+    // Timing is not a detail of a pause; it IS the pause, exactly as with swap above. Stripe's
+    // pause is immediate-only (pause_collection, which does not even change the status); Paddle
+    // does both and defers by default. A gateway that can only do one cannot honour the other,
+    // and an app must be able to say which it needs — see Enums\PauseTiming.
+    case SubscriptionPauseImmediate = 'subscription.pause.immediate';
+    case SubscriptionPauseAtPeriodEnd = 'subscription.pause.at_period_end';
     case SubscriptionResume = 'subscription.resume';
     // Timing is not a detail of a swap; it IS the swap. A gateway that only
     // changes the plan at cycle end cannot honour "upgrade me now", and an app
@@ -59,17 +64,20 @@ enum Capability: string
      * drift apart. A capability holds only when EVERY method here is overridden: a gateway
      * that can list invoices but not render one does not support Invoices.
      *
-     * **Eight cases return `[]`, and that is the design, not a gap.** An interface — or a
+     * **Ten cases return `[]`, and that is the design, not a gap.** An interface — or a
      * method — can say *the operation exists*; it cannot say *which intent it honours*:
      *
      *  - `swapSubscription()` is ONE method behind SwapImmediate and SwapAtPeriodEnd. Revolut
      *    schedules a swap for cycle end and cannot do it now: same method, one capability.
+     *  - `pauseSubscription()` is ONE method behind PauseImmediate and PauseAtPeriodEnd, for
+     *    the same reason: Stripe pauses only immediately, Paddle both — same method, and which
+     *    timings a gateway honours cannot be read off the code.
      *  - `checkout()` is ONE method behind CheckoutPrices and CheckoutAmount — see
      *    DTO\CheckoutRequest::capability().
      *  - Trials, Quantity, Metadata and Taxes are setters on Contracts\SubscriptionBuilder,
      *    which is not the gateway at all; Builders\GuardedSubscriptionBuilder gates those.
      *
-     * Those eight are declared by the driver (`BaseGateway::declaredCapabilities()`). The
+     * Those ten are declared by the driver (`BaseGateway::declaredCapabilities()`). The
      * split is not cosmetic: it is why interfaces alone could never have replaced this enum.
      *
      * @return array<int, string>
@@ -87,7 +95,6 @@ enum Capability: string
             self::CustomersUpdate => ['updateCustomer'],
             self::Subscriptions => ['newSubscription', 'cancelSubscription'],
             self::SubscriptionCancelNow => ['cancelSubscriptionNow'],
-            self::SubscriptionPause => ['pauseSubscription'],
             self::SubscriptionResume => ['resumeSubscription'],
             // The mutation is the gateway's; the setter below is the builder's. Only this one
             // can be read off a method — which is exactly why the two cannot share a case.
@@ -100,6 +107,8 @@ enum Capability: string
 
             self::SubscriptionSwapImmediate,
             self::SubscriptionSwapAtPeriodEnd,
+            self::SubscriptionPauseImmediate,
+            self::SubscriptionPauseAtPeriodEnd,
             self::CheckoutPrices,
             self::CheckoutAmount,
             self::SubscriptionTrials,
