@@ -107,6 +107,7 @@ class QuerySideBillableTest extends TestCase
         ]);
 
         $this->assertTrue($user->onGracePeriod('default'));
+        $this->assertFalse($user->subscription('default')?->valid());
         $this->assertFalse($user->subscription('default')?->active());
         $this->assertFalse($user->subscribed('default'));
     }

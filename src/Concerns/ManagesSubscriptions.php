@@ -80,7 +80,7 @@ trait ManagesSubscriptions
             return $this->subscribedToPrice($price, $type);
         }
 
-        return (bool) $this->subscription($type)?->active();
+        return (bool) $this->subscription($type)?->valid();
     }
 
     /**
@@ -116,7 +116,7 @@ trait ManagesSubscriptions
     {
         $subscription = $this->subscription($type);
 
-        if ($subscription === null || ! $subscription->active()) {
+        if ($subscription === null || ! $subscription->valid()) {
             return false;
         }
 
