@@ -68,7 +68,7 @@ class SubscriptionPeriodTest extends TestCase
         $this->assertSame('2026-08-01T00:00:00+00:00', $subscription?->currentPeriodEnd()?->toIso8601String());
         // The period is not the end of access: the subscription is alive.
         $this->assertNull($subscription?->ends_at);
-        $this->assertTrue($subscription?->active());
+        $this->assertTrue($subscription?->valid());
     }
 
     public function test_a_gateway_without_a_billing_cycle_leaves_the_period_unknown(): void

@@ -84,14 +84,28 @@ $user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
 $user->updateSubscriptionQuantity('default', 5);
 $user->incrementSubscriptionQuantity('default', 2, 'price_seats');   // $price only when several
 $user->decrementSubscriptionQuantity('default');                      // floors at 1
+
+// The model is read-only, and its predicates are where access is decided.
+// valid() is the access question and what subscribed() asks; active() is narrower.
+$user->subscription('default')->valid();              // active, trialing, or paid through ends_at
+$user->subscription('default')->active();             // ...and the renewal has not failed
+$user->subscription('default')->pastDue();            // the status, never the access policy
+$user->subscription('default')->incomplete();
+$user->subscription('default')->hasPrice('price_monthly');
+$user->subscription('default')->hasSinglePrice();     // ...and hasMultiplePrices()
+
+// A past_due or incomplete customer keeps access only if the app says so. Global, not
+// per-driver: it is product policy, not something a gateway can answer.
+Cashier::keepPastDueSubscriptionsActive();
+Cashier::keepIncompleteSubscriptionsActive();
 ```
 
 **Not implemented, despite existing in Cashier** (do not call, do not document as working):
 `$user->subscription(...)->cancel()/resume()/swap()`, `subscribedToProduct()`/`onProduct()`,
 `onGenericTrial()`, `hasIncompletePayment()`, `updateDefaultPaymentMethod()`, `upcomingInvoice()`,
-`tab()`/`invoiceFor()`, coupons/promotion codes, proration, the model predicates (`valid()`,
-`recurring()`, `pastDue()`, `hasSinglePrice()`, …), item-level quantity
-(`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is ours).
+`tab()`/`invoiceFor()`, coupons/promotion codes, proration, `Models\Subscription::recurring()`
+(the references disagree on its body — it is a design, not a port), the query scopes, item-level
+quantity (`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is ours).
 
 ## Architecture
 

@@ -69,7 +69,7 @@ class MigrationsTest extends TestCase
         $fresh = ConcreteSubscription::query()->with('items')->find($subscription->getKey());
 
         $this->assertInstanceOf(SubscriptionStatus::class, $fresh->status);
-        $this->assertTrue($fresh->active());
+        $this->assertTrue($fresh->valid());
         $this->assertCount(1, $fresh->items);
 
         $item = $fresh->items->first();

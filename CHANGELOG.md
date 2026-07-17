@@ -18,13 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   column through `BackedEnum::from()` — so a row a driver wrote as `unpaid` or
   `incomplete_expired` did not report a lost customer, it threw a `ValueError` on read.
   Both cases now exist, and `SubscriptionStatus::deniesAccess()` gives them the semantics
-  Stripe gives them: `Models\Subscription::active()` returns `false` for either one
+  Stripe gives them: `Models\Subscription::valid()` returns `false` for either one
   regardless of `ends_at`. That guard is the point. Adding the cases alone would have
-  traded a loud failure for a quiet one: `active()` grants access on `onGracePeriod()`
+  traded a loud failure for a quiet one: `valid()` grants access on `onGracePeriod()`
   alone, so an unpaid subscription would have kept serving on the strength of a
   paid-through date it never earned. Stripe excludes exactly these two unconditionally,
   while gating `past_due` and `incomplete` behind `$deactivatePastDue` /
-  `$deactivateIncomplete`. Those two, and the toggles, are #25 and are untouched here. (#22)
+  `$deactivateIncomplete` — see the rename and those toggles under Changed. (#22)
+
+- **`Models\Subscription` answers what it is made of.** (#25) `pastDue()`, `incomplete()`,
+  `hasPrice()`, `hasSinglePrice()` and `hasMultiplePrices()` — five predicates both references
+  ship that were simply never written here. `hasMultiplePrices()` counts items, which is
+  Paddle's body (`Subscription.php:126`) and the only one expressible: Stripe asks whether its
+  own per-subscription price column is null (`:114`) and we have no such column. `recurring()`
+  is deliberately absent — the references disagree on its body and give opposite answers for
+  `past_due`, so it is a design and not a port.
 
 - `Exceptions\UnexpectedWebhookEventException` — "the gateway sent a body this driver
   cannot read as an event" is provider-agnostic, and it used to be a driver-private type
@@ -150,6 +158,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is empty until something resolves one.
 
 ### Changed
+
+- **`Models\Subscription::active()` has been renamed to `valid()`, and `active()` now means
+  what Cashier means by it.** (#25) The old `active()` computed "active, trialing, or still
+  inside the paid-through grace period" — which is Cashier's `valid()`
+  (`laravel/cashier`'s `Subscription.php:177`), not its `active()` (`:229`). An app copying
+  the Cashier idiom `$user->subscription('default')->active()` therefore got the opposite
+  answer for a `past_due` subscription in its grace period: ours said yes, Stripe and Paddle
+  both say no.
+
+  **`subscribed()` keeps answering what it answered**, with one bounded exception below.
+  `subscribed()` and `subscribedToPrice()` moved to `valid()` in the same commit, which is
+  where both references have always pointed them (`laravel/cashier`'s
+  `Concerns/ManagesSubscriptions.php:142`, `:220`; `cashier-paddle`'s `:137`, `:179`) —
+  neither reference calls `active()` from its Billable concern at all. What is new is that an
+  app that *wants* to deny a customer whose renewal failed can now say so, by asking
+  `active()` instead.
+
+  **The exception, and it widens access rather than narrowing it:** a subscription carrying a
+  future `trial_ends_at` under a status that is not `trialing` is now `valid()` where it was
+  not. `onTrial()` is date-based and Stripe's `valid()` composes it in (`Subscription.php:177`);
+  the old body consulted only `isActive() || onGracePeriod()`. Three statuses are affected —
+  `paused`, `canceled` and `past_due` — and `past_due` is the one to know about: such a
+  subscription now passes `subscribed()`. The states are incoherent (a driver writing a live
+  trial date under `past_due` is describing two things at once) and each is pinned by a named
+  row in `SubscriptionAccessTest::accessMatrix()`. `unpaid` and `incomplete_expired` are
+  **not** affected — `deniesAccess()` outranks the trial date, so the widening stops exactly
+  where #22 drew the line.
+
+  `valid()` is deliberately **narrower** than Stripe's: Stripe composes
+  `active() || onTrial() || onGracePeriod()` with nothing above it, so an `unpaid`
+  subscription that is on trial or in grace comes back valid. `SubscriptionStatus::deniesAccess()`
+  still outranks the dates here — the money never arrived, and a paid-through date it never
+  earned does not buy it back.
+
+  `active()` itself is a decision rather than a port, because the references disagree on the
+  body: Stripe's is status-negative ("not ended, and not one of these four"), which it can
+  afford only because it has no `paused` status — copied verbatim it would report a paused
+  subscription active. Paddle's is `status === active` but parks the past-due toggle in
+  `valid()`, so flipping it could never restore `active()`. Ours takes Stripe's placement
+  with our own exclusion set.
+
+- **A `past_due` or `incomplete` subscription can be kept active on purpose.** (#25) The
+  policy used to be hardcoded in `SubscriptionStatus::isActive()` with no way out. Both
+  references ship the opt-out and this mirrors their names exactly:
+  `Cashier::keepPastDueSubscriptionsActive()` (`laravel/cashier`'s `Cashier.php:189`;
+  `cashier-paddle`'s `:250`) and `Cashier::keepIncompleteSubscriptionsActive()`
+  (`laravel/cashier`'s `:201` — Paddle has no `incomplete` status to have an opinion about).
+
+  The flags are instance state on the singleton `CashierManager` rather than the references'
+  public statics, so they cannot outlive the application that set them and no test has to
+  remember to reset them. They are not a `Capability` and not per-driver: whether a customer
+  whose renewal failed keeps their seat is the app's product policy, and a driver holds no
+  bit the app lacks.
+
+  Neither toggle reopens `unpaid` or `incomplete_expired`. Stripe excludes exactly those two
+  unconditionally (`Subscription.php:232-235` — the other two arms are gated, these are not),
+  and so do we.
 
 - **`CustomerOperations::createCustomer()` now takes `DTO\CustomerDetails`, not
   `array $options`. Every driver must change.** (#36) This is a signature change, so it is a

@@ -124,6 +124,81 @@ class CashierManager extends Manager
     }
 
     /**
+     * Whether a past_due subscription stops granting access.
+     *
+     * The app's dunning policy, and deliberately not a Capability: every gateway can report
+     * past_due, and whether a customer whose renewal failed keeps their seat is a fact about
+     * the product, not about the gateway — a driver holds no bit the app lacks. Both
+     * references keep it off the gateway object for the same reason
+     * (vendor/laravel/cashier/src/Cashier.php:58, vendor/laravel/cashier-paddle/src/Cashier.php:37).
+     *
+     * Instance state rather than the references' public static: this manager is a singleton
+     * resolved per application, so the flag cannot outlive the app that set it. The statics
+     * need a manual reset in every test that touches them; this needs none.
+     */
+    protected bool $deactivatePastDue = true;
+
+    /**
+     * Whether an incomplete subscription stops granting access.
+     *
+     * Stripe-only (Cashier.php:65) — Paddle has no incomplete status to have an opinion about.
+     * Kept for symmetry with its twin: leniency here means "serve them while the initial
+     * payment confirms", which is an SCA flow #35 says this package cannot complete yet.
+     */
+    protected bool $deactivateIncomplete = true;
+
+    /**
+     * Let a past_due subscription keep granting access.
+     *
+     * Reaches where an app cannot: Concerns\ManagesSubscriptions::subscribed() asks the model
+     * for valid(), and an app has no seam there. Without this it would have to abandon
+     * subscribed() to be lenient.
+     *
+     * Mirrors Cashier::keepPastDueSubscriptionsActive() (vendor/laravel/cashier/src/Cashier.php:189,
+     * vendor/laravel/cashier-paddle/src/Cashier.php:250).
+     */
+    public function keepPastDueSubscriptionsActive(): void
+    {
+        $this->deactivatePastDue = false;
+    }
+
+    /**
+     * Let an incomplete subscription keep granting access.
+     *
+     * Mirrors Cashier::keepIncompleteSubscriptionsActive()
+     * (vendor/laravel/cashier/src/Cashier.php:201). Paddle has no equivalent.
+     */
+    public function keepIncompleteSubscriptionsActive(): void
+    {
+        $this->deactivateIncomplete = false;
+    }
+
+    /**
+     * Whether past_due currently withholds access.
+     *
+     * A reader rather than the references' public property: Stripe's callers reach for
+     * Cashier::$deactivatePastDue directly, and a facade cannot forward a property. Encodes
+     * the reads at vendor/laravel/cashier/src/Subscription.php:234 (the predicate) and :254
+     * (the scope, inside scopeActive() :244-261) — the two must consult the same flag or
+     * they answer differently about the same row, which is what #29 has to hold together.
+     */
+    public function deactivatesPastDue(): bool
+    {
+        return $this->deactivatePastDue;
+    }
+
+    /**
+     * Whether incomplete currently withholds access.
+     *
+     * Encodes the reads at vendor/laravel/cashier/src/Subscription.php:232 (the predicate)
+     * and :258 (the scope).
+     */
+    public function deactivatesIncomplete(): bool
+    {
+        return $this->deactivateIncomplete;
+    }
+
+    /**
      * Per-driver local model classes: [driver => [slot => class]].
      *
      * @var array<string, array<string, class-string<Model>>>
