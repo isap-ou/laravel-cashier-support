@@ -390,12 +390,13 @@ initiative.
 
 **Some gaps are inexpressible, not unimplemented — this is the trap.** It is not "the driver
 lacks it", it is "the contract has nowhere to put it", so no `Capability` flag routes around it
-and no driver can supply it. `DTO\Payment` has no `clientSecret`, so an SCA payment cannot be
-completed (#35).
+and no driver can supply it.
 Recognising this class matters more than the individual issues: the instinct it triggers — "the
 gateway must not support it, I will work around it" — is exactly backwards. `DTO\Invoice` was the
 canonical case — no tax, discount or subtotal, so a VAT invoice was not representable — and #31
-resolved it by adding the fields to the shape, not by working around the missing ones.
+resolved it by adding the fields to the shape, not by working around the missing ones. `DTO\Payment`
+was the same trap: no `clientSecret`, so an SCA/3DS payment could not be completed — #35 resolved it
+the same way, adding the field and the `requiresAction()` predicate family to the shape.
 
 Where we are deliberately **better** than the references (keep it this way):
 signature verification is mandatory (both references skip it when the secret is unset),

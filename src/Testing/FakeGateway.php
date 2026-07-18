@@ -107,6 +107,19 @@ class FakeGateway implements GatewayProvider
     public ?Throwable $webhookPipelineFailure = null;
 
     /**
+     * When set, the NEXT charge() returns a payment in this status (an incomplete state such
+     * as RequiresAction) instead of Succeeded, then resets — the way a real gateway answers an
+     * SCA/3DS charge before the customer has confirmed it.
+     */
+    public ?PaymentStatus $nextChargeStatus = null;
+
+    /**
+     * The client secret carried by that next incomplete charge — what a frontend would hand
+     * back to the gateway to complete it.
+     */
+    public ?string $nextChargeClientSecret = null;
+
+    /**
      * Every step of a delivery, in the order it happened. A test appends to this from a
      * listener too, which is the only way to prove the event fires BETWEEN parse and
      * pipeline rather than merely that all three happened.
@@ -212,7 +225,19 @@ class FakeGateway implements GatewayProvider
 
     public function charge(Model $billable, int $amount, string $paymentMethod, array $options = []): Payment
     {
-        $payment = new Payment(id: 'pay_fake', amount: $amount, currency: new Currency('EUR'), status: PaymentStatus::Succeeded);
+        $status = $this->nextChargeStatus ?? PaymentStatus::Succeeded;
+        $clientSecret = $this->nextChargeClientSecret;
+
+        $this->nextChargeStatus = null;
+        $this->nextChargeClientSecret = null;
+
+        $payment = new Payment(
+            id: 'pay_fake',
+            amount: $amount,
+            currency: new Currency('EUR'),
+            status: $status,
+            clientSecret: $clientSecret,
+        );
 
         $this->charges[] = $payment;
 

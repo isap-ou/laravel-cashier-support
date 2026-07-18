@@ -16,6 +16,9 @@ class EnumTest extends TestCase
     public function test_user_facing_enum_labels_resolve_from_package_translations(): void
     {
         $this->assertSame('Pending', PaymentStatus::Pending->getLabel());
+        $this->assertSame('Requires payment method', PaymentStatus::RequiresPaymentMethod->getLabel());
+        $this->assertSame('Requires confirmation', PaymentStatus::RequiresConfirmation->getLabel());
+        $this->assertSame('Requires action', PaymentStatus::RequiresAction->getLabel());
         $this->assertSame('Succeeded', PaymentStatus::Succeeded->getLabel());
         $this->assertSame('Past due', SubscriptionStatus::PastDue->getLabel());
         $this->assertSame('Unpaid', SubscriptionStatus::Unpaid->getLabel());
@@ -34,7 +37,17 @@ class EnumTest extends TestCase
     public function test_interact_with_collection_values(): void
     {
         $this->assertEqualsCanonicalizing(
-            ['pending', 'processing', 'succeeded', 'failed', 'canceled', 'refunded'],
+            [
+                'pending',
+                'requires_payment_method',
+                'requires_confirmation',
+                'requires_action',
+                'processing',
+                'succeeded',
+                'failed',
+                'canceled',
+                'refunded',
+            ],
             PaymentStatus::values()->all(),
         );
     }

@@ -41,7 +41,36 @@ class DtoTest extends TestCase
             'status' => 'succeeded',
             'paymentMethodId' => null,
             'createdAt' => null,
+            'clientSecret' => null,
         ], $payment->toArray());
+    }
+
+    public function test_payment_exposes_sca_predicates_and_the_client_secret(): void
+    {
+        $incomplete = Payment::from([
+            'id' => 'pay_2',
+            'amount' => 1500,
+            'currency' => 'EUR',
+            'status' => 'requires_action',
+            'clientSecret' => 'pi_secret_123',
+        ]);
+
+        $this->assertTrue($incomplete->requiresAction());
+        $this->assertFalse($incomplete->requiresConfirmation());
+        $this->assertFalse($incomplete->requiresPaymentMethod());
+        $this->assertSame('pi_secret_123', $incomplete->clientSecret);
+
+        $succeeded = Payment::from([
+            'id' => 'pay_3',
+            'amount' => 1500,
+            'currency' => 'EUR',
+            'status' => 'succeeded',
+        ]);
+
+        $this->assertFalse($succeeded->requiresAction());
+        $this->assertFalse($succeeded->requiresConfirmation());
+        $this->assertFalse($succeeded->requiresPaymentMethod());
+        $this->assertNull($succeeded->clientSecret);
     }
 
     public function test_customer_round_trips(): void

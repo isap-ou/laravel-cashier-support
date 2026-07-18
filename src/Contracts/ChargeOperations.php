@@ -20,6 +20,10 @@ interface ChargeOperations
     /**
      * Charge the billable entity for the given amount.
      *
+     * The returned Payment may still be incomplete — e.g. `requires_action` for 3DS/SCA. A
+     * driver returns that state as data; `Concerns\PerformsCharges::charge()` is what turns it
+     * into a catchable `IncompletePaymentException`.
+     *
      * @param  int  $amount  Amount in minor units (cents).
      * @param  string  $paymentMethod  The payment method identifier.
      * @param  array<string, mixed>  $options

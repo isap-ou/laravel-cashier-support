@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Exceptions\IncompletePaymentException;
 
 /**
  * One-off charges and refunds for a billable model.
@@ -25,6 +26,9 @@ trait PerformsCharges
      * @param  array<string, mixed>  $options
      *
      * @throws InvalidArgumentException When the amount is not positive.
+     * @throws IncompletePaymentException When the charge needs additional action (e.g. 3DS/SCA)
+     *                                    before it can complete — the exception carries the
+     *                                    client secret needed to resume it.
      */
     public function charge(int $amount, string $paymentMethod, array $options = []): Payment
     {
@@ -38,7 +42,27 @@ trait PerformsCharges
 
         $this->ensureCashierSupports(Capability::Charges);
 
-        return $this->cashierProvider()->charge($this, $amount, $paymentMethod, $options);
+        $payment = $this->cashierProvider()->charge($this, $amount, $paymentMethod, $options);
+
+        // An incomplete charge (3DS/SCA) must surface as a catchable exception carrying the
+        // client secret, not be returned as a silently-stalled "success" the caller mistakes
+        // for a completed payment. Mirrors Laravel\Cashier\Concerns\PerformsCharges::charge(),
+        // which calls $payment->validate() before returning
+        // (vendor/laravel/cashier/src/Concerns/PerformsCharges.php:35), in the same priority
+        // order as Laravel\Cashier\Payment::validate() (vendor/laravel/cashier/src/Payment.php:163).
+        if ($payment->requiresPaymentMethod()) {
+            throw IncompletePaymentException::requiresPaymentMethod($payment->id, $payment->clientSecret);
+        }
+
+        if ($payment->requiresAction()) {
+            throw IncompletePaymentException::requiresAction($payment->id, $payment->clientSecret);
+        }
+
+        if ($payment->requiresConfirmation()) {
+            throw IncompletePaymentException::requiresConfirmation($payment->id, $payment->clientSecret);
+        }
+
+        return $payment;
     }
 
     /**

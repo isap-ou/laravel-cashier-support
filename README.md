@@ -33,6 +33,7 @@ replacements for each other.
 - [How it works](#how-it-works)
 - [Making a model billable](#making-a-model-billable)
 - [Capabilities](#capabilities)
+- [Strong Customer Authentication (SCA / 3DS)](#strong-customer-authentication-sca--3ds)
 - [Provider-defined types](#provider-defined-types)
 - [Invoices](#invoices)
 - [Events](#events)
@@ -261,6 +262,37 @@ try {
 }
 // An InvalidArgumentException here means the call itself is wrong. Do not catch it.
 ```
+
+## Strong Customer Authentication (SCA / 3DS)
+
+A charge does not always complete in one step: under SCA the customer must authenticate
+(3DS) before the payment can settle. When the gateway answers with such a state, `charge()`
+throws an `IncompletePaymentException` carrying what the frontend needs to **resume** the
+payment — the payment id, its status, and the `clientSecret`:
+
+```php
+try {
+    $user->charge(1000, 'pm_1');
+} catch (IncompletePaymentException $e) {
+    // Hand $e->clientSecret to your client-side SDK to complete authentication.
+    return response()->json([
+        'payment_id'    => $e->paymentId,
+        'status'        => $e->status?->value,   // e.g. requires_action
+        'client_secret' => $e->clientSecret,
+    ]);
+}
+```
+
+`DTO\Payment` also exposes the state directly — `requiresAction()`, `requiresConfirmation()`,
+`requiresPaymentMethod()` — and `Payment::$clientSecret` (nullable; provider-neutral — Stripe
+`client_secret`, Adyen `sessionData`, Revolut order token, ... — `null` when a gateway has no
+such concept, and filled by the driver).
+
+What support does **not** ship is the completion UI. The hosted confirmation page and the
+client-side authentication step are inherently provider-specific (each gateway has its own JS
+SDK and publishable-key model), so they are the **driver's or application's** responsibility.
+This package's job is to make the SCA flow *expressible* — the data surface above — not to
+drive it.
 
 ## Provider-defined types
 
