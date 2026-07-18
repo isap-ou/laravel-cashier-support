@@ -52,8 +52,6 @@ trait HandlesCheckout
             ? $items
             : $this->checkoutRequestFromLegacyArguments($items, $options);
 
-        $this->ensureCashierSupports($request->capability());
-
         return $this->cashierProvider()->checkout($this, $request);
     }
 

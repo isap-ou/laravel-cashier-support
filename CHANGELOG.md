@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Subscription lifecycle mutations moved onto the model, and every capability gate moved to one
+  boundary (#39).** `cancel()`, `cancelNow()`, `resume()`, `pause()` and `swap()` now live on
+  `Models\Subscription` — `$user->subscription('default')->cancel()`, matching Stripe/Paddle and
+  returning the refreshed model — instead of on `Billable`. They carry no capability check of their
+  own, and neither do the Concerns any longer: `Cashier::provider()` now returns a
+  `Gateway\GuardedProvider` that gates every gateway operation at that single boundary, so a Concern,
+  a Model, or an app subclass that overrides a mutator cannot forget the check (the guard is created
+  by `CashierManager::provider()`, and one trait per operations contract gates each group, the way
+  `BaseGateway` composes its `Defaults/`). The raw, unguarded driver is reached only through the new
+  `Cashier::webhookRegistrar()`, for the one opt-in-`instanceof` case (webhook registration) the
+  guard cannot carry. Quantity mutation stays on `Billable`. (#39)
+
 - **A 3DS/SCA payment can now be completed.** `DTO\Payment` carried no `clientSecret` — the one
   value a frontend needs to hand a stalled payment back to the gateway for authentication — and
   `IncompletePaymentException` carried only a bare payment id, so a caller could learn a payment

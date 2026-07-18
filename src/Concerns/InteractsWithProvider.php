@@ -6,7 +6,6 @@ namespace Isapp\CashierSupport\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
-use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Facades\Cashier;
 
 /**
@@ -30,17 +29,13 @@ trait InteractsWithProvider
 
     /**
      * Resolve the gateway provider for this model.
+     *
+     * The returned provider is capability-guarded (Cashier::provider() wraps every driver in
+     * GuardedProvider), so a concern delegates straight to it — the gate is not the concern's to
+     * remember. That is why this trait no longer carries an ensureCashierSupports() helper.
      */
     protected function cashierProvider(): GatewayProvider
     {
         return Cashier::provider($this->cashierDriver());
-    }
-
-    /**
-     * Ensure this model's provider supports the given capability.
-     */
-    protected function ensureCashierSupports(Capability $capability): void
-    {
-        Cashier::ensureSupports($capability, $this->cashierDriver());
     }
 }

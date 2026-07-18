@@ -5,17 +5,22 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Models;
 
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
+use Isapp\CashierSupport\Enums\SwapTiming;
+use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Models\Concerns\DecidesAccess;
 use Isapp\CashierSupport\Models\Concerns\ReportsStatus;
 use Isapp\CashierSupport\Models\Concerns\TracksCancellation;
 use Isapp\CashierSupport\Models\Concerns\TracksPause;
 use Isapp\CashierSupport\Models\Concerns\TracksTrialPeriod;
+use RuntimeException;
 
 /**
  * Abstract local record of a provider subscription.
@@ -37,6 +42,8 @@ use Isapp\CashierSupport\Models\Concerns\TracksTrialPeriod;
  * them.
  *
  * @property SubscriptionStatus $status
+ * @property string $type
+ * @property string|null $provider
  * @property CarbonImmutable|null $trial_ends_at
  * @property CarbonImmutable|null $ends_at
  * @property CarbonImmutable|null $paused_at
@@ -204,5 +211,111 @@ abstract class Subscription extends Model
         }
 
         return $this->items()->where('price', $price)->exists();
+    }
+
+    /**
+     * Cancel this subscription at the end of its current billing period.
+     *
+     * Mirrors vendor/laravel/cashier/src/Subscription.php:1052 (cancel()). No gate here on
+     * purpose: Cashier::provider() hands back a capability-guarded provider, so the check is not
+     * this method's to make and an override cannot drop it. Returns the row refreshed with what
+     * the driver wrote (ends_at, status), never the gateway DTO the caller would re-read.
+     *
+     * @throws UnsupportedOperationException When the gateway does not support cancellation.
+     * @throws RuntimeException When the subscription row has no owner to act on.
+     */
+    public function cancel(): static
+    {
+        Cashier::provider($this->provider)->cancelSubscription($this->cashierOwner(), $this->type);
+
+        return $this->refresh();
+    }
+
+    /**
+     * Cancel this subscription immediately.
+     *
+     * Mirrors vendor/laravel/cashier/src/Subscription.php:1105 (cancelNow()).
+     *
+     * @throws UnsupportedOperationException When the gateway cannot cancel immediately.
+     * @throws RuntimeException When the subscription row has no owner to act on.
+     */
+    public function cancelNow(): static
+    {
+        Cashier::provider($this->provider)->cancelSubscriptionNow($this->cashierOwner(), $this->type);
+
+        return $this->refresh();
+    }
+
+    /**
+     * Resume this subscription while it is within its grace period.
+     *
+     * Mirrors vendor/laravel/cashier/src/Subscription.php:1155 (resume()).
+     *
+     * @throws UnsupportedOperationException When the gateway cannot resume subscriptions.
+     * @throws RuntimeException When the subscription row has no owner to act on.
+     */
+    public function resume(): static
+    {
+        Cashier::provider($this->provider)->resumeSubscription($this->cashierOwner(), $this->type);
+
+        return $this->refresh();
+    }
+
+    /**
+     * Pause this subscription.
+     *
+     * Mirrors vendor/laravel/cashier-paddle/src/Subscription.php:734 (pause()). The timing is the
+     * caller's intent — AtPeriodEnd by default, see Enums\PauseTiming — and the guarded provider
+     * refuses a gateway that cannot honour it.
+     *
+     * @param  DateTimeInterface|null  $until  When collection auto-resumes, where the gateway
+     *                                         accepts it (Stripe's pause_collection.resumes_at).
+     *
+     * @throws UnsupportedOperationException When the gateway cannot pause with the given timing.
+     * @throws RuntimeException When the subscription row has no owner to act on.
+     */
+    public function pause(PauseTiming $timing = PauseTiming::AtPeriodEnd, ?DateTimeInterface $until = null): static
+    {
+        Cashier::provider($this->provider)->pauseSubscription($this->cashierOwner(), $this->type, $timing, $until);
+
+        return $this->refresh();
+    }
+
+    /**
+     * Swap this subscription to one or more new prices.
+     *
+     * Mirrors vendor/laravel/cashier/src/Subscription.php:715 (swap()). The timing is the caller's
+     * intent — Immediate by default, see Enums\SwapTiming — and the guarded provider both refuses
+     * a gateway that cannot honour the timing and gates the owner's declared tax rates.
+     *
+     * @param  string|array<int, string>  $prices
+     * @param  array<string, mixed>  $options
+     *
+     * @throws UnsupportedOperationException When the gateway cannot swap with the given timing, or
+     *                                       the owner declares tax rates it cannot apply.
+     * @throws RuntimeException When the subscription row has no owner to act on.
+     */
+    public function swap(string|array $prices, SwapTiming $timing = SwapTiming::Immediate, array $options = []): static
+    {
+        Cashier::provider($this->provider)->swapSubscription($this->cashierOwner(), $this->type, $prices, $timing, $options);
+
+        return $this->refresh();
+    }
+
+    /**
+     * The billable this subscription belongs to.
+     *
+     * A subscription with no owner is a broken row, not a billing state, so this fails loudly
+     * rather than hand the gateway a null. Reads the loaded relation when there is one.
+     */
+    private function cashierOwner(): Model
+    {
+        $owner = $this->owner;
+
+        if (! $owner instanceof Model) {
+            throw new RuntimeException("The [{$this->type}] subscription has no owner to act on.");
+        }
+
+        return $owner;
     }
 }

@@ -258,4 +258,18 @@ class NeutralHelpersTest extends TestCase
 
         $this->assertSame([], $gateway->deletedPaymentMethods, 'Nothing may be deleted before the gate is passed.');
     }
+
+    public function test_a_bulk_delete_on_an_empty_set_needs_no_delete_capability(): void
+    {
+        // Since #39 the delete gate is per-method (enforced by the guarded provider on each
+        // deletePaymentMethod call), so an empty set asks nothing of the gateway: a
+        // list-capable-but-not-delete-capable gateway with no stored methods is a no-op, not a
+        // refusal. Deleting nothing needs no delete capability.
+        $gateway = $this->driverSupporting([Capability::PaymentMethodsList]);
+        $gateway->storedPaymentMethods = [];
+
+        (new User)->deletePaymentMethods();
+
+        $this->assertSame([], $gateway->deletedPaymentMethods);
+    }
 }

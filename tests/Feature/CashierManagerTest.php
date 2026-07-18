@@ -9,6 +9,7 @@ use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
+use Isapp\CashierSupport\Gateway\GuardedProvider;
 use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\TestCase;
 
@@ -46,10 +47,22 @@ class CashierManagerTest extends TestCase
         $this->assertSame([Capability::Charges], Cashier::capabilities());
     }
 
-    public function test_provider_returns_the_gateway_instance(): void
+    public function test_provider_wraps_the_driver_in_the_capability_guard(): void
     {
-        $this->assertInstanceOf(FakeGateway::class, Cashier::provider());
-        $this->assertInstanceOf(FakeGateway::class, Cashier::provider('fake'));
+        // provider() no longer hands back the raw driver — it wraps it in GuardedProvider so every
+        // operation is gated at one boundary. The guard forwards capability queries to the driver.
+        $this->assertInstanceOf(GuardedProvider::class, Cashier::provider());
+        $this->assertInstanceOf(GuardedProvider::class, Cashier::provider('fake'));
+
+        $this->assertSame([Capability::Charges], Cashier::provider()->capabilities());
+        $this->assertTrue(Cashier::provider()->supports(Capability::Charges));
+    }
+
+    public function test_a_driver_without_the_webhook_registration_interface_has_no_registrar(): void
+    {
+        // webhookRegistrar() resolves the opt-in RegistersWebhooks off the raw driver, or null —
+        // it is the one sanctioned reason to look past the guard, and the guard cannot carry it.
+        $this->assertNull(Cashier::webhookRegistrar());
     }
 
     public function test_supports_and_ensure_supports(): void

@@ -6,7 +6,6 @@ namespace Isapp\CashierSupport\Console;
 
 use Illuminate\Console\Command;
 use Isapp\CashierSupport\CashierManager;
-use Isapp\CashierSupport\Contracts\RegistersWebhooks;
 use Isapp\CashierSupport\Exceptions\CashierException;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -55,7 +54,7 @@ class WebhookCommand extends Command
         }
 
         try {
-            $gateway = $this->cashier->provider($provider);
+            $registrar = $this->cashier->webhookRegistrar($provider);
         } catch (InvalidConfigurationException $exception) {
             $this->error($exception->getMessage());
             $this->line('Known drivers: '.$this->knownDrivers());
@@ -63,7 +62,7 @@ class WebhookCommand extends Command
             return self::FAILURE;
         }
 
-        if (! $gateway instanceof RegistersWebhooks) {
+        if ($registrar === null) {
             // No stub, no pretending: this gateway has no API for creating an endpoint,
             // and saying "done" would leave the operator believing a webhook exists.
             $this->error("The [{$provider}] driver cannot register webhooks over the API.");
@@ -76,7 +75,7 @@ class WebhookCommand extends Command
         $events = $this->events();
 
         try {
-            $registration = $gateway->registerWebhook($url, $events);
+            $registration = $registrar->registerWebhook($url, $events);
         } catch (CashierException $exception) {
             $this->error("Webhook registration failed: {$exception->getMessage()}");
 

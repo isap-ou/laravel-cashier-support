@@ -128,7 +128,7 @@ class User extends Model
 $user->charge(1500, 'pm_visa', ['currency' => 'eur']);
 $user->refund('pay_123');
 $user->newSubscription('default', 'price_monthly')->trialDays(14)->create();
-$user->cancelSubscription('default');
+$user->subscription('default')->cancel();
 $user->checkout(CheckoutRequest::forPrices('price_monthly', successUrl: '...', cancelUrl: '...'));
 $user->addPaymentMethod('pm_visa');
 $user->invoices();
@@ -154,8 +154,8 @@ class Vendor extends Model
 
 ## Capabilities
 
-Providers declare which features they support. Concerns check the capability
-before delegating; unsupported operations throw `UnsupportedOperationException`
+Providers declare which features they support. `Cashier::provider()` returns a guard that checks
+the capability before every operation; unsupported operations throw `UnsupportedOperationException`
 — there are **no local workarounds**.
 
 ```php
@@ -163,7 +163,7 @@ use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Facades\Cashier;
 
 if (Cashier::supports(Capability::SubscriptionPauseAtPeriodEnd)) {
-    $user->pauseSubscription('default');
+    $user->subscription('default')->pause();
 }
 ```
 
@@ -182,9 +182,9 @@ use Isapp\CashierSupport\Enums\SwapTiming;
 
 // Default. Throws UnsupportedOperationException on a defer-only gateway
 // rather than quietly giving you a change that lands next month.
-$user->swapSubscription('default', 'price_yearly');
+$user->subscription('default')->swap('price_yearly');
 
-$user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
+$user->subscription('default')->swap('price_yearly', SwapTiming::AtPeriodEnd);
 ```
 
 A deferred change needs somewhere to live. The subscription keeps being billed on
@@ -216,10 +216,10 @@ only immediately. So the bare verb defers — matching `cancel()`/`cancelNow()` 
 use Isapp\CashierSupport\Enums\PauseTiming;
 
 // Default: pause at the end of the current billing period.
-$user->pauseSubscription('default');
+$user->subscription('default')->pause();
 
 // Pause now. Throws UnsupportedOperationException on a defer-only gateway.
-$user->pauseSubscription('default', PauseTiming::Immediate);
+$user->subscription('default')->pause(PauseTiming::Immediate);
 ```
 
 A pause scheduled for period end leaves the subscription usable until it lands —
@@ -259,7 +259,7 @@ Stripe Cashier does, and is meant to be fixed rather than caught.
 
 ```php
 try {
-    $user->swapSubscription('default', 'price_yearly');
+    $user->subscription('default')->swap('price_yearly');
 } catch (CashierException $e) {
     // Declined, unsupported, gateway down — recoverable, show the user something.
 }

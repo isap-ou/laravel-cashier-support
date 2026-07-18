@@ -48,15 +48,8 @@ class CapabilityGatingTest extends TestCase
         (new TaxedUser)->newSubscription('default', 'price_1');
     }
 
-    public function test_declared_tax_rates_throw_on_a_swap(): void
-    {
-        // Swap re-applies the billable's tax rates to the subscription items —
-        // it is a consumption point, exactly like creation.
-        $this->driverSupporting([...self::BASE, Capability::SubscriptionSwapImmediate]);
-
-        $this->expectException(UnsupportedOperationException::class);
-        (new TaxedUser)->swapSubscription('default', 'price_2');
-    }
+    // A swap also re-applies the owner's tax rates, so a gateway without Taxes must refuse it too.
+    // That path is now on Models\Subscription (#39) and is proven in SubscriptionMutationTest.
 
     public function test_price_tax_rates_alone_are_enough_to_throw(): void
     {

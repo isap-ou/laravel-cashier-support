@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Customer;
 use Isapp\CashierSupport\DTO\CustomerDetails;
-use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Models\Customer as CustomerRecord;
 
@@ -71,8 +70,6 @@ trait ManagesCustomer
      */
     public function createAsCustomer(array $options = []): Customer
     {
-        $this->ensureCashierSupports(Capability::Customers);
-
         $details = CustomerDetails::fromOptions($options);
 
         return $this->cashierProvider()->createCustomer($this, new CustomerDetails(
@@ -98,8 +95,6 @@ trait ManagesCustomer
      */
     public function updateCustomer(array $options = []): Customer
     {
-        $this->ensureCashierSupports(Capability::CustomersUpdate);
-
         return $this->cashierProvider()->updateCustomer($this, CustomerDetails::fromOptions($options));
     }
 
@@ -115,8 +110,6 @@ trait ManagesCustomer
      */
     public function syncCustomerDetails(): Customer
     {
-        $this->ensureCashierSupports(Capability::CustomersUpdate);
-
         return $this->cashierProvider()->updateCustomer($this, new CustomerDetails(
             name: $this->cashierName(),
             email: $this->cashierEmail(),
@@ -142,8 +135,6 @@ trait ManagesCustomer
      */
     public function asCustomer(): Customer
     {
-        $this->ensureCashierSupports(Capability::Customers);
-
         return $this->cashierProvider()->asCustomer($this);
     }
 

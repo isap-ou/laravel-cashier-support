@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Refund;
-use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\IncompletePaymentException;
 
 /**
@@ -40,8 +39,6 @@ trait PerformsCharges
             throw new InvalidArgumentException("A charge amount must be positive in minor units; got [{$amount}].");
         }
 
-        $this->ensureCashierSupports(Capability::Charges);
-
         $payment = $this->cashierProvider()->charge($this, $amount, $paymentMethod, $options);
 
         // An incomplete charge (3DS/SCA) must surface as a catchable exception carrying the
@@ -72,8 +69,6 @@ trait PerformsCharges
      */
     public function refund(string $paymentId, array $options = []): Refund
     {
-        $this->ensureCashierSupports(Capability::Refunds);
-
         return $this->cashierProvider()->refund($this, $paymentId, $options);
     }
 }

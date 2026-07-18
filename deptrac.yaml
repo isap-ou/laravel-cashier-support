@@ -110,25 +110,32 @@ deptrac:
       - Enums
       - DTO
 
-    # Models resolve their per-driver relations through the manager registry
-    # (via the facade).
+    # Models resolve their per-driver relations through the manager registry (via the facade).
+    # The Exceptions edge is the lifecycle mutators' documented @throws surface (#39): they
+    # surface UnsupportedOperationException from the guarded provider, which deptrac resolves off
+    # the @throws tag. Acyclic — Exceptions depends only on Enums.
     Models:
       - Enums
       - Casts
       - Facades
+      - Exceptions
 
     Invoice:
       - Enums
       - Casts
       - DTO
 
-    # The manager owns the per-driver model registry, hence the Models edge.
+    # The manager owns the per-driver model registry (Models edge) and wraps every driver in
+    # the capability guard (Gateway edge): provider() returns a Gateway\GuardedProvider. Both
+    # close a cycle with Facades — Models and the guard reach back through the facade — which is
+    # the facade-proxy pattern this package already runs on, not a new smell.
     Manager:
       - Enums
       - Casts
       - Exceptions
       - Contracts
       - Models
+      - Gateway
 
     # Facades mirror the manager's typed API, including model-registry types.
     # The Testing edge is Cashier::fake(), which builds and registers a FakeGateway.
@@ -158,7 +165,12 @@ deptrac:
       - Models
       - Builders
 
-    # Driver-side defaults (local invoice operations) composed into gateways.
+    # Driver-side defaults (local invoice operations) composed into gateways, plus
+    # GuardedProvider — the capability guard Cashier::provider() wraps every driver in.
+    # It composes the builder guard (Builders): its newSubscription() hands back a
+    # GuardedSubscriptionBuilder, so setter-gating is created at the same one boundary as
+    # operation-gating and a direct provider() call cannot get an unguarded builder. Acyclic
+    # — Builders depends on Contracts/DTO/Facades, never on Gateway.
     Gateway:
       - Enums
       - Exceptions
@@ -167,6 +179,7 @@ deptrac:
       - Facades
       - Models
       - Invoice
+      - Builders
 
     # The webhook entry point every driver shares; its whole job is to dispatch the Events
     # in an order a driver no longer chooses. It reaches a driver through the Manager and

@@ -7,7 +7,6 @@ namespace Isapp\CashierSupport\Concerns;
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\Contracts\PaymentMethodType;
 use Isapp\CashierSupport\DTO\PaymentMethod;
-use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\CashierException;
 use Isapp\CashierSupport\Exceptions\CustomerNotFoundException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -28,8 +27,6 @@ trait ManagesPaymentMethods
      */
     public function paymentMethods(): array
     {
-        $this->ensureCashierSupports(Capability::PaymentMethodsList);
-
         return $this->cashierProvider()->paymentMethods($this);
     }
 
@@ -38,8 +35,6 @@ trait ManagesPaymentMethods
      */
     public function defaultPaymentMethod(): ?PaymentMethod
     {
-        $this->ensureCashierSupports(Capability::PaymentMethodsList);
-
         return $this->cashierProvider()->defaultPaymentMethod($this);
     }
 
@@ -88,22 +83,23 @@ trait ManagesPaymentMethods
      * the app: doing it by hand means listing, looping and deleting, which is exactly where a
      * caller forgets that the list is the gateway's and not a local table.
      *
-     * Needs BOTH capabilities, and asks for them in the order it uses them: it lists first,
-     * so a gateway that can delete a named method but cannot enumerate them refuses here —
-     * naming the gate it actually lacks rather than the one that reads better.
+     * It lists first, so a gateway that cannot enumerate methods refuses on the listing gate
+     * (PaymentMethodsList), naming the gate it actually lacks. The delete gate
+     * (PaymentMethodsDelete) is enforced by the guarded provider on each method it deletes — so a
+     * gateway that lists but cannot delete refuses the moment there is a method to remove. On an
+     * EMPTY set (no methods, or none of the requested type) there is nothing to delete, so no
+     * delete capability is asked for and the call is a no-op — deleting nothing needs no gateway.
      *
      * Stripe re-syncs its cached default afterwards (ManagesPaymentMethods.php:285). We keep
      * no such cache, so there is nothing to resync — the next read asks the gateway.
      *
-     * @throws UnsupportedOperationException When the provider cannot list or delete payment methods.
+     * @throws UnsupportedOperationException When the provider cannot list, or cannot delete a method it holds.
      * @throws CustomerNotFoundException When the billable entity is not a customer at the provider.
      * @throws CashierException When the gateway call fails.
      */
     public function deletePaymentMethods(PaymentMethodType|string|null $type = null): void
     {
         $methods = $this->paymentMethodsOfType($type);
-
-        $this->ensureCashierSupports(Capability::PaymentMethodsDelete);
 
         foreach ($methods as $method) {
             $this->cashierProvider()->deletePaymentMethod($this, $method->id);
@@ -149,8 +145,6 @@ trait ManagesPaymentMethods
      */
     public function addPaymentMethod(string $paymentMethod): PaymentMethod
     {
-        $this->ensureCashierSupports(Capability::PaymentMethodsAdd);
-
         return $this->cashierProvider()->addPaymentMethod($this, $paymentMethod);
     }
 
@@ -159,8 +153,6 @@ trait ManagesPaymentMethods
      */
     public function deletePaymentMethod(string $paymentMethodId): void
     {
-        $this->ensureCashierSupports(Capability::PaymentMethodsDelete);
-
         $this->cashierProvider()->deletePaymentMethod($this, $paymentMethodId);
     }
 }

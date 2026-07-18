@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Feature;
 
-use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\CheckoutMode;
-use Isapp\CashierSupport\Enums\PauseTiming;
-use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
 use Isapp\CashierSupport\Testing\FakeGateway;
@@ -43,80 +40,10 @@ class GranularCapabilitiesTest extends TestCase
         Cashier::extend('fake', fn () => new FakeGateway([Capability::Subscriptions, ...$capabilities]));
     }
 
-    public function test_asking_for_an_immediate_swap_a_gateway_cannot_do_throws(): void
-    {
-        // Revolut's swap only ever lands at cycle end. An app that needs the
-        // upgrade to apply now must be told so, not silently given a deferred one.
-        $this->driverSupporting([Capability::SubscriptionSwapAtPeriodEnd]);
-
-        $this->expectException(UnsupportedOperationException::class);
-        (new User)->swapSubscription('default', 'price_2', SwapTiming::Immediate);
-    }
-
-    public function test_asking_for_the_timing_a_gateway_does_support_works(): void
-    {
-        $this->driverSupporting([Capability::SubscriptionSwapAtPeriodEnd]);
-
-        $subscription = (new User)->swapSubscription('default', 'price_2', SwapTiming::AtPeriodEnd);
-
-        $this->assertSame('sub_fake', $subscription->id);
-    }
-
-    public function test_the_default_timing_is_immediate(): void
-    {
-        // Stripe and Paddle both swap immediately, so that is the unsurprising
-        // default. A gateway that only defers must say so, and a caller that
-        // wants deferral must ask for it.
-        $this->driverSupporting([Capability::SubscriptionSwapAtPeriodEnd]);
-
-        $this->expectException(UnsupportedOperationException::class);
-        (new User)->swapSubscription('default', 'price_2');
-    }
-
-    public function test_asking_for_a_pause_timing_a_gateway_cannot_do_throws(): void
-    {
-        // Stripe pauses only immediately; Paddle both. A gateway that can only defer must refuse
-        // "pause now" rather than silently deferring a pause the caller wanted in force today.
-        $this->driverSupporting([Capability::SubscriptionPauseAtPeriodEnd]);
-
-        $this->expectException(UnsupportedOperationException::class);
-        (new User)->pauseSubscription('default', PauseTiming::Immediate);
-    }
-
-    public function test_asking_for_the_pause_timing_a_gateway_does_support_works(): void
-    {
-        $this->driverSupporting([Capability::SubscriptionPauseAtPeriodEnd]);
-
-        $subscription = (new User)->pauseSubscription('default', PauseTiming::AtPeriodEnd);
-
-        $this->assertSame('sub_fake', $subscription->id);
-    }
-
-    public function test_the_default_pause_timing_is_at_period_end(): void
-    {
-        // Pause inverts swap's default (see Enums\PauseTiming): the bare verb defers, as Paddle's
-        // pause() does. Proven by supporting ONLY Immediate and calling with no timing — if the
-        // default were Immediate this would succeed; because it is AtPeriodEnd, it refuses.
-        $this->driverSupporting([Capability::SubscriptionPauseImmediate]);
-
-        $this->expectException(UnsupportedOperationException::class);
-        (new User)->pauseSubscription('default');
-    }
-
-    public function test_the_pause_timing_and_resume_date_reach_the_gateway(): void
-    {
-        // The gate passes the intent through, it does not consume it: a driver is told which
-        // timing and, where it accepts one, when collection resumes — not merely that a pause
-        // was asked for.
-        $gateway = new FakeGateway([Capability::Subscriptions, Capability::SubscriptionPauseAtPeriodEnd]);
-        Cashier::extend('fake', fn () => $gateway);
-
-        $until = CarbonImmutable::parse('2026-09-01T00:00:00Z');
-        (new User)->pauseSubscription('default', PauseTiming::AtPeriodEnd, $until);
-
-        $this->assertSame(PauseTiming::AtPeriodEnd, $gateway->lastPauseTiming);
-        $this->assertSame($until, $gateway->lastPauseUntil);
-    }
+    // Subscription swap/pause timing gating moved to Models\Subscription with #39 and is proven
+    // through the model API in Tests\Feature\SubscriptionMutationTest (and on the guard itself in
+    // GuardedProviderTest). What stays here is the other half of "gate the intent": checkout,
+    // whose shape (prices vs amount) is the intent, and which is still a Billable call.
 
     public function test_a_price_checkout_on_an_amount_only_gateway_throws_in_support(): void
     {
