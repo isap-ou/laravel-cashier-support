@@ -84,19 +84,19 @@ $user->invoices();
 $user->downloadInvoice('inv_xxx');
 $user->trialEndsAt('default');                // the subscription's trial only — no generic trial here
 
-// Subscription MUTATIONS live on Billable, NOT on the model — unlike Cashier.
-// `$user->subscription('default')` returns a read-only model with no mutators.
-$user->cancelSubscription('default');
-$user->cancelSubscriptionNow('default');
-$user->resumeSubscription('default');
-$user->pauseSubscription('default', PauseTiming::AtPeriodEnd);   // AtPeriodEnd is the default — see PauseTiming
-$user->swapSubscription('default', 'price_yearly', SwapTiming::AtPeriodEnd);
-// Quantity mutation is on Billable too, and the gateway is only ever told the absolute number.
+// Subscription lifecycle MUTATIONS live on the model, as in Cashier (#39) — each returns the
+// refreshed model. `$user->subscription('default')` is the thing you act on.
+$user->subscription('default')->cancel();
+$user->subscription('default')->cancelNow();
+$user->subscription('default')->resume();
+$user->subscription('default')->pause(PauseTiming::AtPeriodEnd);   // AtPeriodEnd is the default — see PauseTiming
+$user->subscription('default')->swap('price_yearly', SwapTiming::AtPeriodEnd);
+// Quantity mutation is STILL on Billable, and the gateway is only ever told the absolute number.
 $user->updateSubscriptionQuantity('default', 5);
 $user->incrementSubscriptionQuantity('default', 2, 'price_seats');   // $price only when several
 $user->decrementSubscriptionQuantity('default');                      // floors at 1
 
-// The model is read-only, and its predicates are where access is decided.
+// The model's predicates are where access is decided.
 // valid() is the access question and what subscribed() asks; active() is narrower.
 $user->subscription('default')->valid();              // active, trialing, or paid through ends_at
 $user->subscription('default')->active();             // ...and the renewal has not failed
@@ -128,7 +128,7 @@ Cashier::keepIncompleteSubscriptionsActive();
 ```
 
 **Not implemented, despite existing in Cashier** (do not call, do not document as working):
-`$user->subscription(...)->cancel()/resume()/swap()`, `subscribedToProduct()`/`onProduct()`,
+`subscribedToProduct()`/`onProduct()`,
 `onGenericTrial()`, `hasIncompletePayment()`, `updateDefaultPaymentMethod()`, `upcomingInvoice()`,
 `tab()`/`invoiceFor()`, coupons/promotion codes, proration, `Models\Subscription::recurring()`
 (the references disagree on its body — it is a design, not a port) and `scopeRecurring` with it,
@@ -181,7 +181,7 @@ src/
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php
 │   ├── PerformsCharges.php, HandlesCheckout.php, HandlesTaxes.php
 │   └── InteractsWithProvider.php   # shared base for the 7 concerns above
-│                                    # (cashierProvider()/ensureCashierSupports()); not in Billable itself
+│                                    # (cashierProvider() → the guarded provider); not in Billable itself
 ├── Builders/
 │   └── GuardedSubscriptionBuilder.php  # wraps a provider's builder, gates every
 │                                        # capability it exposes (trials, quantity, metadata)
@@ -191,7 +191,7 @@ src/
 │   ├── SubscriptionRenewed.php, SubscriptionPastDue.php
 │   ├── SubscriptionPriceChangeScheduled.php   # scheduled, not yet in effect
 │   ├── PaymentSucceeded/Failed.php, RefundProcessed.php
-├── Models/              # Abstract Eloquent — READ-ONLY: predicates + relations, no mutators
+├── Models/              # Abstract Eloquent — predicates + relations + lifecycle mutators (cancel/resume/swap/pause, #39)
 │   ├── Subscription.php, SubscriptionItem.php, Customer.php
 │   ├── Concerns/                # Subscription's predicates, each WITH the query scope that
 │   │   │                        # must agree with it. Composed into Models\Subscription the way
@@ -206,7 +206,14 @@ src/
 │   └── Invoice.php              # Local invoice model (provider-independent)
 ├── Invoice/                     # Invoice DATA assembly (shared); rendering is the driver's (Contracts\InvoiceRenderer)
 │   └── InvoiceBuilder.php       # Build invoice from local payment/subscription data
-├── Gateway/                     # What a driver inherits or mixes in
+├── Gateway/                     # What a driver inherits or mixes in — plus the support-owned guard
+│   ├── GuardedProvider.php      # NOT driver-side: the wrapper Cashier::provider() returns around
+│   │                            # every driver, gating each op at one boundary so no Concern or
+│   │                            # Model has to (#39). Composes the Guards/ traits + wraps the builder.
+│   ├── Guards/                  # one trait per operations contract, gating that group — the way
+│   │   │                        # BaseGateway composes Defaults/. Flattened into GuardedProvider.
+│   │   ├── GuardsCharges.php, GuardsCheckout.php, GuardsCustomers.php
+│   │   ├── GuardsInvoices.php, GuardsPaymentMethods.php, GuardsSubscriptions.php
 │   ├── BaseGateway.php          # abstract; composes the Defaults/ traits, adds
 │   │                            # capabilities()/supports() derived from what was overridden.
 │   │                            # Extend it: that is what makes a new contract method non-breaking (#28)
@@ -253,7 +260,8 @@ src/
   See `.claude/rules/constraints.md`
 - PSR-12 (Pint), PHPStan level 8+ (Larastan)
 - Concerns delegate through `CashierManager` (`Cashier::provider()`), never `app(GatewayProvider::class)`
-- Concerns call `Cashier::ensureSupports(Capability)` before delegating
+- Capability gating is NOT inline in Concerns or Models — `Cashier::provider()` returns a
+  `Gateway\GuardedProvider` that gates every operation at the one boundary
 - No custom workarounds for unsupported features — throw `UnsupportedOperationException`
 - Capabilities gate the caller's INTENT, and every builder setter is gated — see
   `.claude/rules/capabilities.md`
@@ -301,10 +309,10 @@ interface GatewayProvider {
     public function supports(Capability $capability): bool;
 }
 
-// Concern checks before delegating, then resolves the driver via CashierManager
+// Gating is not the concern's to do: Cashier::provider() is a GuardedProvider that gates every
+// operation (and wraps newSubscription's builder). The concern just names the op and delegates.
 trait ManagesSubscriptions {
     public function newSubscription(string $type, string $price): SubscriptionBuilder {
-        $this->ensureCashierSupports(Capability::Subscriptions);
         return $this->cashierProvider()->newSubscription($this, $type, $price);
     }
 }
@@ -388,11 +396,15 @@ all — an invoice-shape flag, #31) and stay declared via
 **Count those two numbers against the enum before repeating them** — they were wrong here
 until #37 (the file said 12 of 20 when the code said 13 of 21), which is #38's whole shape.
 
-**The subscription mutation surface is ours, not Cashier's, and that is undecided (#39).**
-Mutations live on `Billable` (`$user->cancelSubscription('default')`); `Models\Subscription` has
-no mutators. Whether we hold API compatibility with Cashier at all is **the user's call, not an
-agent's** — until it is answered, do not "restore" Cashier-style methods on the model on your own
-initiative.
+**The subscription lifecycle mutations live on `Models\Subscription` (#39, resolved — we hold
+Cashier API compatibility).** `$user->subscription('default')->cancel()/cancelNow()/resume()/
+pause()/swap()`, each delegating to the gateway and returning the refreshed model. They carry **no
+capability gate of their own**: `Cashier::provider()` returns a `Gateway\GuardedProvider` that gates
+every operation at the one boundary, so the model — or any subclass that overrides a mutator —
+cannot drop the check. That guard is where ALL capability gating now lives; the Concerns no longer
+call `ensureSupports` inline. Quantity mutation stays on `Billable`. The raw, unguarded driver is
+reachable only through `Cashier::webhookRegistrar()`, for the one opt-in-`instanceof` case (webhook
+registration) the guard cannot carry.
 
 **Some gaps are inexpressible, not unimplemented — this is the trap.** It is not "the driver
 lacks it", it is "the contract has nowhere to put it", so no `Capability` flag routes around it

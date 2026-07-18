@@ -11,9 +11,11 @@ use Illuminate\Support\Traits\Macroable;
 use InvalidArgumentException;
 use Isapp\CashierSupport\Casts\CurrencyCast;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
+use Isapp\CashierSupport\Contracts\RegistersWebhooks;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\InvalidConfigurationException;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
+use Isapp\CashierSupport\Gateway\GuardedProvider;
 use Isapp\CashierSupport\Models\Customer as CustomerModel;
 use Isapp\CashierSupport\Models\Invoice as InvoiceModel;
 use Isapp\CashierSupport\Models\Subscription as SubscriptionModel;
@@ -90,11 +92,31 @@ class CashierManager extends Manager
     }
 
     /**
-     * Resolve a gateway provider driver.
+     * Resolve a gateway provider driver, wrapped in the capability guard.
+     *
+     * **This is the one to call.** Concerns, Models\Subscription and app code all reach the
+     * gateway through here: every operation on the returned provider passes through
+     * GuardedProvider, so the capability check is not the caller's to remember. The rarely
+     * needed unguardedProvider() is its deliberately-marked exception, not a synonym.
      *
      * @throws InvalidConfigurationException When the driver is unknown or not a gateway provider.
      */
     public function provider(?string $driver = null): GatewayProvider
+    {
+        return new GuardedProvider($this->unguardedProvider($driver), $driver ?? $this->getDefaultDriver());
+    }
+
+    /**
+     * Resolve the driver WITHOUT the capability guard — private on purpose.
+     *
+     * Nothing outside this manager may reach past the guard: the two internal readers are
+     * provider() (which wraps this) and supports() (which asks the raw driver a question the
+     * guard's own gate would otherwise re-ask). A caller that wants a driver-specific interface
+     * outside GatewayProvider asks for it by name — see webhookRegistrar().
+     *
+     * @throws InvalidConfigurationException When the driver is unknown or not a gateway provider.
+     */
+    private function unguardedProvider(?string $driver = null): GatewayProvider
     {
         try {
             $provider = $this->driver($driver);
@@ -111,11 +133,32 @@ class CashierManager extends Manager
     }
 
     /**
+     * The driver's webhook-registration interface, or null if it has none.
+     *
+     * Webhook endpoint registration is deliberately NOT a GatewayProvider operation — it is the
+     * opt-in Contracts\RegistersWebhooks, and "does not implement it" IS the driver's declaration
+     * that it registers by hand in a dashboard (see that contract). So this is a resolver of a
+     * distinct concern, like subscriptionModel(), not a way around the billing guard: the guard
+     * carries only GatewayProvider and could not answer this if it tried.
+     *
+     * @throws InvalidConfigurationException When the driver is unknown or not a gateway provider.
+     */
+    public function webhookRegistrar(?string $driver = null): ?RegistersWebhooks
+    {
+        $provider = $this->unguardedProvider($driver);
+
+        return $provider instanceof RegistersWebhooks ? $provider : null;
+    }
+
+    /**
      * Whether the given (or default) provider supports a capability.
+     *
+     * Reads the unguarded driver, not provider(): supports() is the question the guard's own
+     * gate asks, so routing it back through the guard would wrap for nothing.
      */
     public function supports(Capability $capability, ?string $driver = null): bool
     {
-        return $this->provider($driver)->supports($capability);
+        return $this->unguardedProvider($driver)->supports($capability);
     }
 
     /**

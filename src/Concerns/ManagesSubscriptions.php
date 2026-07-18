@@ -5,16 +5,11 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Concerns;
 
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use InvalidArgumentException;
-use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
-use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\PauseTiming;
-use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
@@ -136,84 +131,10 @@ trait ManagesSubscriptions
      */
     public function newSubscription(string $type, string|array $prices): SubscriptionBuilder
     {
-        $this->ensureCashierSupports(Capability::Subscriptions);
-        $this->ensureTaxRatesSupported();
-
-        return new GuardedSubscriptionBuilder(
-            $this->cashierProvider()->newSubscription($this, $type, $prices),
-            $this->cashierDriver(),
-        );
-    }
-
-    /**
-     * Cancel a subscription at period end.
-     */
-    public function cancelSubscription(string $type = 'default'): Subscription
-    {
-        $this->ensureCashierSupports(Capability::Subscriptions);
-
-        return $this->cashierProvider()->cancelSubscription($this, $type);
-    }
-
-    /**
-     * Cancel a subscription immediately.
-     */
-    public function cancelSubscriptionNow(string $type = 'default'): Subscription
-    {
-        $this->ensureCashierSupports(Capability::SubscriptionCancelNow);
-
-        return $this->cashierProvider()->cancelSubscriptionNow($this, $type);
-    }
-
-    /**
-     * Resume a subscription within its grace period.
-     */
-    public function resumeSubscription(string $type = 'default'): Subscription
-    {
-        $this->ensureCashierSupports(Capability::SubscriptionResume);
-
-        return $this->cashierProvider()->resumeSubscription($this, $type);
-    }
-
-    /**
-     * Pause an active subscription.
-     *
-     * The intent is gated, not the operation: a gateway that can only pause immediately cannot
-     * honour AtPeriodEnd, and must say so rather than quietly pausing at the wrong moment. The
-     * default is AtPeriodEnd — see Enums\PauseTiming for why it inverts swap's Immediate.
-     *
-     * @param  DateTimeInterface|null  $until  When collection auto-resumes, where the gateway
-     *                                         accepts it (Stripe's pause_collection.resumes_at).
-     */
-    public function pauseSubscription(
-        string $type = 'default',
-        PauseTiming $timing = PauseTiming::AtPeriodEnd,
-        ?DateTimeInterface $until = null,
-    ): Subscription {
-        $this->ensureCashierSupports($timing->capability());
-
-        return $this->cashierProvider()->pauseSubscription($this, $type, $timing, $until);
-    }
-
-    /**
-     * Swap a subscription to one or more new prices.
-     *
-     * @param  string|array<int, string>  $prices
-     * @param  array<string, mixed>  $options
-     */
-    public function swapSubscription(
-        string $type,
-        string|array $prices,
-        SwapTiming $timing = SwapTiming::Immediate,
-        array $options = [],
-    ): Subscription {
-        // The intent is gated, not the operation: a gateway that only defers
-        // cannot honour Immediate, and must say so rather than quietly giving
-        // the caller a change that lands next month.
-        $this->ensureCashierSupports($timing->capability());
-        $this->ensureTaxRatesSupported();
-
-        return $this->cashierProvider()->swapSubscription($this, $type, $prices, $timing, $options);
+        // The gate (Subscriptions + tax) and the GuardedSubscriptionBuilder wrapping both live in
+        // the guarded provider now — Cashier::provider() hands back a GuardedProvider whose
+        // newSubscription() does exactly that. The concern only names the operation.
+        return $this->cashierProvider()->newSubscription($this, $type, $prices);
     }
 
     /**
@@ -234,8 +155,6 @@ trait ManagesSubscriptions
      */
     public function updateSubscriptionQuantity(string $type, int $quantity, ?string $price = null): Subscription
     {
-        $this->ensureCashierSupports(Capability::SubscriptionQuantityUpdate);
-
         $this->ensureCashierQuantityIsPositive($quantity);
 
         // Resolved for its guards, not its value: this is what refuses an ambiguous call
@@ -260,8 +179,6 @@ trait ManagesSubscriptions
      */
     public function incrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null): Subscription
     {
-        $this->ensureCashierSupports(Capability::SubscriptionQuantityUpdate);
-
         $this->ensureCashierCountIsPositive($count, 'increment');
 
         $item = $this->cashierQuantityItem($type, $price);
@@ -287,8 +204,6 @@ trait ManagesSubscriptions
      */
     public function decrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null): Subscription
     {
-        $this->ensureCashierSupports(Capability::SubscriptionQuantityUpdate);
-
         $this->ensureCashierCountIsPositive($count, 'decrement');
 
         $item = $this->cashierQuantityItem($type, $price);

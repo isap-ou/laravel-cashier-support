@@ -11,6 +11,7 @@ use Isapp\CashierSupport\Testing\FakeGateway;
 
 /**
  * @method static \Isapp\CashierSupport\Contracts\GatewayProvider provider(?string $driver = null)
+ * @method static ?\Isapp\CashierSupport\Contracts\RegistersWebhooks webhookRegistrar(?string $driver = null)
  * @method static string getDefaultDriver()
  * @method static array<int, string> registeredDrivers()
  * @method static bool supports(\Isapp\CashierSupport\Enums\Capability $capability, ?string $driver = null)

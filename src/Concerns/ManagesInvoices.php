@@ -6,7 +6,6 @@ namespace Isapp\CashierSupport\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\DTO\Invoice;
-use Isapp\CashierSupport\Enums\Capability;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,8 +25,6 @@ trait ManagesInvoices
      */
     public function invoices(array $parameters = []): array
     {
-        $this->ensureCashierSupports(Capability::Invoices);
-
         return $this->cashierProvider()->invoices($this, $parameters);
     }
 
@@ -36,8 +33,6 @@ trait ManagesInvoices
      */
     public function findInvoice(string $invoiceId): ?Invoice
     {
-        $this->ensureCashierSupports(Capability::Invoices);
-
         return $this->cashierProvider()->findInvoice($this, $invoiceId);
     }
 
@@ -48,8 +43,6 @@ trait ManagesInvoices
      */
     public function downloadInvoice(string $invoiceId, array $data = []): Response
     {
-        $this->ensureCashierSupports(Capability::Invoices);
-
         return $this->cashierProvider()->downloadInvoice($this, $invoiceId, $data);
     }
 
@@ -60,8 +53,6 @@ trait ManagesInvoices
      */
     public function storeInvoice(string $invoiceId, array $data = [], ?string $disk = null, ?string $path = null): string
     {
-        $this->ensureCashierSupports(Capability::Invoices);
-
         return $this->cashierProvider()->storeInvoice($this, $invoiceId, $data, $disk, $path);
     }
 }

@@ -73,6 +73,16 @@ class FakeGateway implements GatewayProvider
     public ?DateTimeInterface $lastPauseUntil = null;
 
     /**
+     * The prices and timing the last swapSubscription() call was given — proof the caller's
+     * intent reached the gateway rather than being dropped on the way through.
+     *
+     * @var string|array<int, string>|null
+     */
+    public string|array|null $lastSwapPrices = null;
+
+    public ?SwapTiming $lastSwapTiming = null;
+
+    /**
      * The raw bytes and headers the last webhook() call was given — lets a test see
      * that the controller passed the body through untouched, which is what a signature
      * is checked against.
@@ -295,6 +305,9 @@ class FakeGateway implements GatewayProvider
 
     public function swapSubscription(Model $billable, string $type, string|array $prices, SwapTiming $timing = SwapTiming::Immediate, array $options = []): Subscription
     {
+        $this->lastSwapPrices = $prices;
+        $this->lastSwapTiming = $timing;
+
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
 

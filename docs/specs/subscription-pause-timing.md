@@ -4,6 +4,12 @@ Status: Implemented
 
 Issue: [isap-ou/laravel-cashier-support#30](https://github.com/isap-ou/laravel-cashier-support/issues/30)
 
+> **Later change (#39):** the app-facing pause moved off `Billable` onto the model —
+> `$user->subscription('default')->pause(PauseTiming::…)` — and the capability check moved to the
+> `Gateway\GuardedProvider` boundary. The timing mechanism this spec describes (the two
+> `SubscriptionPause*` capabilities, `$timing->capability()`, `SubscriptionOperations::pauseSubscription()`)
+> is unchanged; only the call site did. This document is left as the point-in-time #30 record.
+
 ## Context & Goal
 
 `Paused` exists three times in the package and has nowhere to be stored. It is a capability
