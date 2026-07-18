@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A 3DS/SCA payment can now be completed.** `DTO\Payment` carried no `clientSecret` — the one
+  value a frontend needs to hand a stalled payment back to the gateway for authentication — and
+  `IncompletePaymentException` carried only a bare payment id, so a caller could learn a payment
+  stalled but never resume it. For EU acquiring that was a regulatory blocker, not a nicety: SCA
+  is mandatory and the flow it needs was inexpressible. `DTO\Payment` now carries a nullable
+  `clientSecret` (provider-neutral, filled by the driver) and the `requiresPaymentMethod()` /
+  `requiresAction()` / `requiresConfirmation()` predicates, backed by three new `PaymentStatus`
+  states; `IncompletePaymentException` now carries the id, the `clientSecret` and the status via
+  named factories; and `charge()` surfaces an incomplete charge as that catchable exception —
+  mirroring `Laravel\Cashier\Payment::validate()` — instead of returning a silently-stalled
+  success. The hosted confirmation page and the client-side authentication step stay the
+  driver's/application's responsibility, as they are inherently provider-specific. (#35)
+
 - **A host app can now `Cashier::fake()`, and a driver can prove it conforms.** The complete
   in-memory `FakeGateway` lived in `tests/` (autoload-dev only), so an app depending on this
   package could not fake its billing and every driver re-mocked `GatewayProvider` by hand. It now
