@@ -44,6 +44,12 @@ enum Capability: string
     // that has not written the mutation yet.
     case SubscriptionQuantityUpdate = 'subscription.quantity.update';
     case SubscriptionMetadata = 'subscription.metadata';
+    // Whether a gateway lets the caller suppress proration on a mid-cycle change. Both references
+    // can prorate AND not prorate, so the axis itself is agreement, not divergence — but a third
+    // gateway may only ever prorate, and it must be able to refuse "do not prorate" rather than
+    // silently prorate anyway. Only the non-default intent is gated: a plain prorated swap needs
+    // no capability, see Enums\Proration.
+    case SubscriptionNoProration = 'subscription.no_proration';
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
     case PaymentMethodsDelete = 'payment_methods.delete';
@@ -68,7 +74,7 @@ enum Capability: string
      * drift apart. A capability holds only when EVERY method here is overridden: a gateway
      * that can list invoices but not render one does not support Invoices.
      *
-     * **Nine cases return `[]`, and that is the design, not a gap.** An interface — or a
+     * **Ten cases return `[]`, and that is the design, not a gap.** An interface — or a
      * method — can say *the operation exists*; it cannot say *which intent it honours*:
      *
      *  - `swapSubscription()` is ONE method behind SwapImmediate and SwapAtPeriodEnd. Revolut
@@ -79,8 +85,11 @@ enum Capability: string
      *    which is not the gateway at all; Builders\GuardedSubscriptionBuilder gates those.
      *  - Discounts backs no operation and no setter — it is a fact about the shape a gateway's
      *    DTO\Invoice can carry (the `discount` field), so there is no method to read it off.
+     *  - `SubscriptionNoProration` is a sub-mode of `swapSubscription()` AND
+     *    `updateSubscriptionQuantity()` — a per-call intent (Enums\Proration), not a method — and a
+     *    gateway that always prorates overrides both yet honours neither.
      *
-     * Those nine are declared by the driver (`BaseGateway::declaredCapabilities()`). The
+     * Those ten are declared by the driver (`BaseGateway::declaredCapabilities()`). The
      * split is not cosmetic: it is why interfaces alone could never have replaced this enum.
      *
      * @return array<int, string>
@@ -118,6 +127,7 @@ enum Capability: string
             self::SubscriptionTrials,
             self::SubscriptionQuantity,
             self::SubscriptionMetadata,
+            self::SubscriptionNoProration,
             self::Taxes,
             self::Discounts => [],
         };

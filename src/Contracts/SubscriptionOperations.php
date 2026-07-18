@@ -8,6 +8,7 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Subscription;
+use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\CashierException;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
@@ -81,11 +82,16 @@ interface SubscriptionOperations
      * the plan at cycle end cannot honour Immediate, and says so rather than
      * silently deferring an upgrade the caller believed was applied.
      *
+     * $proration is the caller's intent too — whether the partial period is prorated.
+     * Prorate is the default and needs no capability; NoProrate a gateway that can only
+     * ever prorate must refuse rather than silently prorate anyway (see Enums\Proration).
+     *
      * @param  string|array<int, string>  $prices
      * @param  array<string, mixed>  $options
      *
      * @throws SubscriptionUpdateFailure When there is no such subscription, or the swap fails.
-     * @throws UnsupportedOperationException When the provider cannot swap with this timing.
+     * @throws UnsupportedOperationException When the provider cannot swap with this timing, or
+     *                                       cannot honour the requested proration.
      * @throws InvalidArgumentException When the prices are empty, or more of them are
      *                                  given than the provider bills a subscription on.
      * @throws CashierException When the gateway call fails.
@@ -95,6 +101,7 @@ interface SubscriptionOperations
         string $type,
         string|array $prices,
         SwapTiming $timing = SwapTiming::Immediate,
+        Proration $proration = Proration::Prorate,
         array $options = [],
     ): Subscription;
 
@@ -118,11 +125,15 @@ interface SubscriptionOperations
      * app and resolves it against the local items before calling here; ambiguity is refused
      * on that side, and by the time a driver is asked, the answer is already named.
      *
+     * $proration is the caller's intent, defaulting to Prorate; a gateway that can only ever
+     * prorate must refuse NoProrate rather than silently prorate anyway (see Enums\Proration).
+     *
      * @param  string  $type  The subscription type.
      * @param  int  $quantity  The new quantity, always >= 1.
      * @param  string  $price  Which item to change, always named.
      *
-     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws UnsupportedOperationException When the provider cannot change a quantity, or cannot
+     *                                       honour the requested proration.
      * @throws SubscriptionUpdateFailure When there is no such subscription, or no such price on it.
      * @throws CashierException When the gateway call fails.
      */
@@ -131,5 +142,6 @@ interface SubscriptionOperations
         string $type,
         int $quantity,
         string $price,
+        Proration $proration = Proration::Prorate,
     ): Subscription;
 }

@@ -10,6 +10,7 @@ use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
+use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Enums\SwapTiming;
 
 /**
@@ -89,14 +90,19 @@ trait GuardsSubscriptions
         string $type,
         string|array $prices,
         SwapTiming $timing = SwapTiming::Immediate,
+        Proration $proration = Proration::Prorate,
         array $options = [],
     ): Subscription {
         $this->ensure($timing->capability());
         // Tax rates are consumed on a swap as well as on create — guarding only the first
         // would let a swap discard them in silence.
         $this->ensureTaxRatesSupported($billable);
+        // Prorate is the ungated baseline; only NoProrate names a capability a gateway may lack.
+        if ($capability = $proration->capability()) {
+            $this->ensure($capability);
+        }
 
-        return $this->inner()->swapSubscription($billable, $type, $prices, $timing, $options);
+        return $this->inner()->swapSubscription($billable, $type, $prices, $timing, $proration, $options);
     }
 
     /**
@@ -107,9 +113,14 @@ trait GuardsSubscriptions
         string $type,
         int $quantity,
         string $price,
+        Proration $proration = Proration::Prorate,
     ): Subscription {
         $this->ensure(Capability::SubscriptionQuantityUpdate);
+        // Prorate is the ungated baseline; only NoProrate names a capability a gateway may lack.
+        if ($capability = $proration->capability()) {
+            $this->ensure($capability);
+        }
 
-        return $this->inner()->updateSubscriptionQuantity($billable, $type, $quantity, $price);
+        return $this->inner()->updateSubscriptionQuantity($billable, $type, $quantity, $price, $proration);
     }
 }

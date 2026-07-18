@@ -91,6 +91,7 @@ $user->subscription('default')->cancelNow();
 $user->subscription('default')->resume();
 $user->subscription('default')->pause();   // immediate-only; #72 removed pause-at-period-end
 $user->subscription('default')->swap('price_yearly', SwapTiming::AtPeriodEnd);
+$user->subscription('default')->swap('price_yearly', proration: Proration::NoProrate);  // don't prorate
 // Quantity mutation is STILL on Billable, and the gateway is only ever told the absolute number.
 $user->updateSubscriptionQuantity('default', 5);
 $user->incrementSubscriptionQuantity('default', 2, 'price_seats');   // $price only when several
@@ -130,7 +131,9 @@ Cashier::keepIncompleteSubscriptionsActive();
 **Not implemented, despite existing in Cashier** (do not call, do not document as working):
 `subscribedToProduct()`/`onProduct()`,
 `onGenericTrial()`, `hasIncompletePayment()`, `updateDefaultPaymentMethod()`, `upcomingInvoice()`,
-`tab()`/`invoiceFor()`, coupons/promotion codes, proration, `Models\Subscription::recurring()`
+`tab()`/`invoiceFor()`, coupons/promotion codes, the proration invoice-now axis, Paddle
+`do_not_bill`, and cancel-now proration (#53 shipped only the prorate/no-prorate intent on swap and
+quantity — see `Enums\Proration`), `Models\Subscription::recurring()`
 (the references disagree on its body — it is a design, not a port) and `scopeRecurring` with it,
 `hasExpiredTrial()`/`scopeExpiredTrial`,
 item-level quantity (`$item->updateQuantity()` — Stripe-only; Paddle's item is a dumb row, as is
@@ -287,6 +290,7 @@ enum Capability: string {
     case SubscriptionQuantity = 'subscription.quantity';        // a seat count at creation
     case SubscriptionQuantityUpdate = 'subscription.quantity.update';   // ...and changing it later
     case SubscriptionMetadata = 'subscription.metadata';
+    case SubscriptionNoProration = 'subscription.no_proration';   // suppress proration on swap/quantity
     case PaymentMethodsAdd = 'payment_methods.add';
     case PaymentMethodsList = 'payment_methods.list';
     case PaymentMethodsDelete = 'payment_methods.delete';
@@ -386,9 +390,10 @@ resolves it by language rule (own > trait > parent), so a driver's trait beats t
 
 Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
 today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
-14 of the 23 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
-the code; the other 9 cannot be read off anything (`swapSubscription()` is one method behind two
-timings, `checkout()` one method behind two shapes, four are `SubscriptionBuilder` setters, and
+14 of the 24 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+the code; the other 10 cannot be read off anything (`swapSubscription()` is one method behind two
+timings, `checkout()` one method behind two shapes, four are `SubscriptionBuilder` setters,
+`SubscriptionNoProration` is a per-call intent on swap and quantity rather than a method (#53), and
 `Discounts` backs no operation at all — an invoice-shape flag, #31) and stay declared via
 `declaredCapabilities()`. That split is why interfaces could never have replaced the enum.
 (Pause was in that declared group until #72 removed pause-at-period-end; `pauseSubscription()` is one

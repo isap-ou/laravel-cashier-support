@@ -21,6 +21,7 @@ use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\PaymentStatus;
+use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Money\Currency;
@@ -63,6 +64,12 @@ class FakeGateway implements GatewayProvider
     public ?string $lastQuantityPrice = null;
 
     /**
+     * The proration intent the last updateSubscriptionQuantity() call was given — proof it reached
+     * the gateway rather than being dropped at the guard.
+     */
+    public ?Proration $lastQuantityProration = null;
+
+    /**
      * The resume date the last pauseSubscription() call was given — the only way to prove $until
      * reached the gateway rather than being dropped at the Billable gate.
      */
@@ -77,6 +84,8 @@ class FakeGateway implements GatewayProvider
     public string|array|null $lastSwapPrices = null;
 
     public ?SwapTiming $lastSwapTiming = null;
+
+    public ?Proration $lastSwapProration = null;
 
     /**
      * The raw bytes and headers the last webhook() call was given — lets a test see
@@ -297,19 +306,21 @@ class FakeGateway implements GatewayProvider
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Paused);
     }
 
-    public function swapSubscription(Model $billable, string $type, string|array $prices, SwapTiming $timing = SwapTiming::Immediate, array $options = []): Subscription
+    public function swapSubscription(Model $billable, string $type, string|array $prices, SwapTiming $timing = SwapTiming::Immediate, Proration $proration = Proration::Prorate, array $options = []): Subscription
     {
         $this->lastSwapPrices = $prices;
         $this->lastSwapTiming = $timing;
+        $this->lastSwapProration = $proration;
 
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
 
-    public function updateSubscriptionQuantity(Model $billable, string $type, int $quantity, string $price): Subscription
+    public function updateSubscriptionQuantity(Model $billable, string $type, int $quantity, string $price, Proration $proration = Proration::Prorate): Subscription
     {
         $this->lastQuantity = $quantity;
         $this->lastQuantityType = $type;
         $this->lastQuantityPrice = $price;
+        $this->lastQuantityProration = $proration;
 
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
     }
