@@ -11,8 +11,11 @@ application the **same developer experience as `laravel/cashier-stripe`**
 letting you **swap the payment gateway** (Revolut, Adyen, Wise, ...) without
 touching application code.
 
-It contains **only** interfaces, DTOs, enums, exceptions, abstract models,
-traits and events — **zero business logic, zero HTTP calls**. Concrete drivers
+It is **mostly** interfaces, DTOs, enums, exceptions, abstract models, traits
+and events, with a thin layer of provider-agnostic behaviour — invoice assembly
+(`src/Invoice/`) and local customer/invoice persistence (`src/Gateway/`). It makes
+**zero *outbound* HTTP calls**: it is only ever *called* by a gateway (through the
+webhook controller), never the other way round. Concrete drivers
 (e.g. `isapp/laravel-cashier-revolut`) implement the contracts and are drop-in
 replacements for each other.
 

@@ -164,19 +164,24 @@ src/
 ├── Enums/               # String-backed BackedEnum
 │   ├── PaymentStatus.php, SubscriptionStatus.php
 │   ├── RefundReason.php, BillingReason.php
-│   ├── Interval.php, CheckoutMode.php, SwapTiming.php
-│   └── Capability.php               # Granular feature flags per provider
+│   ├── Interval.php, CheckoutMode.php, SwapTiming.php, PauseTiming.php
+│   ├── Capability.php               # Granular feature flags per provider
+│   └── Concerns/
+│       └── HasCashierLabel.php      # enum-helper labels via cashier-support::enums.* namespace
 ├── Exceptions/          # Hierarchy from CashierException
 │   ├── CashierException.php, PaymentFailedException.php
 │   ├── IncompletePaymentException.php, CustomerNotFoundException.php
 │   ├── InvalidConfigurationException.php, WebhookVerificationException.php
 │   ├── SubscriptionUpdateFailure.php
+│   ├── InvoiceNotFoundException.php       # a missing invoice is catchable, not a 404 (#68)
 │   ├── UnsupportedOperationException.php  # Thrown for unsupported capabilities
 │   └── UnexpectedWebhookEventException.php # Gateway sent an event the driver skips
 ├── Concerns/            # Traits for Billable model
 │   ├── ManagesCustomer.php, ManagesSubscriptions.php
 │   ├── ManagesPaymentMethods.php, ManagesInvoices.php
 │   ├── PerformsCharges.php, HandlesCheckout.php, HandlesTaxes.php
+│   └── InteractsWithProvider.php   # shared base for the 7 concerns above
+│                                    # (cashierProvider()/ensureCashierSupports()); not in Billable itself
 ├── Builders/
 │   └── GuardedSubscriptionBuilder.php  # wraps a provider's builder, gates every
 │                                        # capability it exposes (trials, quantity, metadata)
@@ -196,6 +201,7 @@ src/
 │   │   ├── DecidesAccess.php        # valid()/active() + scopes; the status lists both read
 │   │   ├── ReportsStatus.php        # pastDue()/incomplete() + scopes
 │   │   ├── TracksCancellation.php   # canceled()/onGracePeriod()/hasEnded() + scopes
+│   │   ├── TracksPause.php          # paused()/onPausedGracePeriod() + scopes
 │   │   └── TracksTrialPeriod.php    # onTrial() + scopes
 │   └── Invoice.php              # Local invoice model (provider-independent)
 ├── Invoice/                     # Invoice DATA assembly (shared); rendering is the driver's (Contracts\InvoiceRenderer)
