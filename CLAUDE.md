@@ -89,7 +89,7 @@ $user->trialEndsAt('default');                // the subscription's trial only �
 $user->subscription('default')->cancel();
 $user->subscription('default')->cancelNow();
 $user->subscription('default')->resume();
-$user->subscription('default')->pause(PauseTiming::AtPeriodEnd);   // AtPeriodEnd is the default — see PauseTiming
+$user->subscription('default')->pause();   // immediate-only; #72 removed pause-at-period-end
 $user->subscription('default')->swap('price_yearly', SwapTiming::AtPeriodEnd);
 // Quantity mutation is STILL on Billable, and the gateway is only ever told the absolute number.
 $user->updateSubscriptionQuantity('default', 5);
@@ -164,7 +164,7 @@ src/
 ├── Enums/               # String-backed BackedEnum
 │   ├── PaymentStatus.php, SubscriptionStatus.php
 │   ├── RefundReason.php, BillingReason.php
-│   ├── Interval.php, CheckoutMode.php, SwapTiming.php, PauseTiming.php
+│   ├── Interval.php, CheckoutMode.php, SwapTiming.php
 │   ├── Capability.php               # Granular feature flags per provider
 │   └── Concerns/
 │       └── HasCashierLabel.php      # enum-helper labels via cashier-support::enums.* namespace
@@ -280,7 +280,6 @@ enum Capability: string {
     case CustomersUpdate = 'customers.update';
     case Subscriptions = 'subscriptions';
     case SubscriptionPauseImmediate = 'subscription.pause.immediate';
-    case SubscriptionPauseAtPeriodEnd = 'subscription.pause.at_period_end';
     case SubscriptionResume = 'subscription.resume';
     case SubscriptionSwapImmediate = 'subscription.swap.immediate';
     case SubscriptionSwapAtPeriodEnd = 'subscription.swap.at_period_end';
@@ -317,9 +316,9 @@ trait ManagesSubscriptions {
     }
 }
 
-// App-level check — pause is timing-granular, like swap: ask for the timing you need.
-if (Cashier::supports(Capability::SubscriptionPauseAtPeriodEnd)) {
-    $user->pauseSubscription('default', PauseTiming::AtPeriodEnd);
+// App-level check — pause is immediate-only (#72 removed pause-at-period-end).
+if (Cashier::supports(Capability::SubscriptionPauseImmediate)) {
+    $user->subscription('default')->pause();
 }
 ```
 
@@ -387,12 +386,13 @@ resolves it by language rule (own > trait > parent), so a driver's trait beats t
 
 Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
 today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
-13 of the 24 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
-the code; the other 11 cannot be read off anything (`swapSubscription()` is one method behind two
-timings, `pauseSubscription()` one method behind two timings since #30, `checkout()` one method
-behind two shapes, four are `SubscriptionBuilder` setters, and `Discounts` backs no operation at
-all — an invoice-shape flag, #31) and stay declared via
+14 of the 23 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+the code; the other 9 cannot be read off anything (`swapSubscription()` is one method behind two
+timings, `checkout()` one method behind two shapes, four are `SubscriptionBuilder` setters, and
+`Discounts` backs no operation at all — an invoice-shape flag, #31) and stay declared via
 `declaredCapabilities()`. That split is why interfaces could never have replaced the enum.
+(Pause was in that declared group until #72 removed pause-at-period-end; `pauseSubscription()` is one
+method behind one capability now, read off the code like resume.)
 **Count those two numbers against the enum before repeating them** — they were wrong here
 until #37 (the file said 12 of 20 when the code said 13 of 21), which is #38's whole shape.
 

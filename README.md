@@ -162,7 +162,7 @@ the capability before every operation; unsupported operations throw `Unsupported
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Facades\Cashier;
 
-if (Cashier::supports(Capability::SubscriptionPauseAtPeriodEnd)) {
+if (Cashier::supports(Capability::SubscriptionPauseImmediate)) {
     $user->subscription('default')->pause();
 }
 ```
@@ -207,28 +207,28 @@ if ($subscription->hasPendingPriceChange()) {
 `SubscriptionUpdated` when it actually lands — so a listener that provisions
 entitlements does not grant the new plan a cycle early.
 
-**Pause timing.** Pause splits the same way, and the default inverts swap's on
-purpose. Paddle pauses at the end of the cycle unless told otherwise; Stripe pauses
-only immediately. So the bare verb defers — matching `cancel()`/`cancelNow()` — and
-`PauseTiming::Immediate` is the opt-in:
+**Pause is immediate-only.** Unlike swap, pause has no timing. Every gateway that
+pauses does it now — Stripe's `pause_collection` pauses immediately — and
+pause-at-period-end was Paddle-only with no driver behind it, so it was removed
+(#72). A gateway that cannot pause says so:
 
 ```php
-use Isapp\CashierSupport\Enums\PauseTiming;
-
-// Default: pause at the end of the current billing period.
+// Pause now. Throws UnsupportedOperationException on a gateway that cannot pause.
 $user->subscription('default')->pause();
 
-// Pause now. Throws UnsupportedOperationException on a defer-only gateway.
-$user->subscription('default')->pause(PauseTiming::Immediate);
+// Optionally carry an auto-resume date, where the gateway accepts one
+// (Stripe's pause_collection.resumes_at).
+$user->subscription('default')->pause($resumesAt);
 ```
 
-A pause scheduled for period end leaves the subscription usable until it lands —
-`paused_at` is the instant it takes effect, so tense tells the two states apart:
+The paused state has its own columns, independent of how the pause was requested.
+`paused_at` is the instant the pause takes effect, so tense tells a pause in force
+apart from one a gateway reports as not yet effective:
 
 ```php
 $subscription = $user->subscription('default');
 
-$subscription->onPausedGracePeriod();  // paused_at in the future — scheduled, still serving
+$subscription->onPausedGracePeriod();  // paused_at in the future — not yet effective, still serving
 $subscription->paused();               // paused_at in the past — the pause is in force
 ```
 

@@ -55,7 +55,7 @@ extend it against `FakeGateway`.
   lives only in the `fake()` helper.
 - **FR-3** — `FakeGateway` records each mutating operation for later assertion: charges, refunds,
   created subscriptions (recorded in the builder's `create()`/`add()`), cancellations, customer
-  create/update, checkouts. Existing spy properties (`lastPauseTiming`, `lastCheckoutRequest`, …) stay;
+  create/update, checkouts. Existing spy properties (`lastPauseUntil`, `lastCheckoutRequest`, …) stay;
   recording is additive.
 - **FR-4** — `FakeGateway` exposes assertions matching the issue examples, each taking an optional
   `?callable $callback` predicate over the recorded record: `assertCharged` / `assertNotCharged`,

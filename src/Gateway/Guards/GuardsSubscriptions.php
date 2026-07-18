@@ -10,14 +10,14 @@ use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 
 /**
  * Capability gating for the SubscriptionOperations surface, composed into GuardedProvider.
  *
- * Timing-driven operations (pause, swap) gate on the caller's intent — a defer-only gateway
- * must reject an Immediate swap — so the capability comes from the timing, not the method.
+ * Swap gates on the caller's intent — a defer-only gateway must reject an Immediate swap — so
+ * its capability comes from the timing, not the method. Pause is immediate-only (#72), so it
+ * gates its one capability directly, like resume and cancel.
  */
 trait GuardsSubscriptions
 {
@@ -74,12 +74,11 @@ trait GuardsSubscriptions
     public function pauseSubscription(
         Model $billable,
         string $type = 'default',
-        PauseTiming $timing = PauseTiming::AtPeriodEnd,
         ?DateTimeInterface $until = null,
     ): Subscription {
-        $this->ensure($timing->capability());
+        $this->ensure(Capability::SubscriptionPauseImmediate);
 
-        return $this->inner()->pauseSubscription($billable, $type, $timing, $until);
+        return $this->inner()->pauseSubscription($billable, $type, $until);
     }
 
     /**

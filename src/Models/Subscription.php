@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -262,21 +261,21 @@ abstract class Subscription extends Model
     }
 
     /**
-     * Pause this subscription.
+     * Pause this subscription immediately.
      *
-     * Mirrors vendor/laravel/cashier-paddle/src/Subscription.php:734 (pause()). The timing is the
-     * caller's intent — AtPeriodEnd by default, see Enums\PauseTiming — and the guarded provider
-     * refuses a gateway that cannot honour it.
+     * Mirrors vendor/laravel/cashier-paddle/src/Subscription.php:769 (pauseNow()). Pause is
+     * immediate-only — pause-at-period-end was Paddle-reference-only and removed in #72 — and the
+     * guarded provider refuses a gateway that cannot pause.
      *
      * @param  DateTimeInterface|null  $until  When collection auto-resumes, where the gateway
      *                                         accepts it (Stripe's pause_collection.resumes_at).
      *
-     * @throws UnsupportedOperationException When the gateway cannot pause with the given timing.
+     * @throws UnsupportedOperationException When the gateway cannot pause.
      * @throws RuntimeException When the subscription row has no owner to act on.
      */
-    public function pause(PauseTiming $timing = PauseTiming::AtPeriodEnd, ?DateTimeInterface $until = null): static
+    public function pause(?DateTimeInterface $until = null): static
     {
-        Cashier::provider($this->provider)->pauseSubscription($this->cashierOwner(), $this->type, $timing, $until);
+        Cashier::provider($this->provider)->pauseSubscription($this->cashierOwner(), $this->type, $until);
 
         return $this->refresh();
     }

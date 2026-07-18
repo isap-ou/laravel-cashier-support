@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Isapp\CashierSupport\Tests\Unit;
 
 use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\PaymentStatus;
 use Isapp\CashierSupport\Enums\RefundReason;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
@@ -65,14 +64,17 @@ class EnumTest extends TestCase
     }
 
     /**
-     * The pause timing routes to the capability a gateway must declare — the single mapping
-     * RefusesSubscriptions and ManagesSubscriptions both read, so it is pinned here rather than
-     * left to be re-derived at each call site.
+     * Pause is single-intent since #72: SubscriptionPauseImmediate and SubscriptionResume remain,
+     * and pause-at-period-end (Paddle-reference-only, no driver) is gone. Pinned so the removed
+     * case cannot creep back in and the surviving pair cannot be dropped.
      */
-    public function test_pause_timing_maps_to_its_capability(): void
+    public function test_pause_capabilities_are_single_intent(): void
     {
-        $this->assertSame(Capability::SubscriptionPauseImmediate, PauseTiming::Immediate->capability());
-        $this->assertSame(Capability::SubscriptionPauseAtPeriodEnd, PauseTiming::AtPeriodEnd->capability());
+        $names = array_map(fn (Capability $c): string => $c->name, Capability::cases());
+
+        $this->assertContains('SubscriptionPauseImmediate', $names);
+        $this->assertContains('SubscriptionResume', $names);
+        $this->assertNotContains('SubscriptionPauseAtPeriodEnd', $names);
     }
 
     /**

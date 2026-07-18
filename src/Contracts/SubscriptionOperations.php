@@ -8,7 +8,6 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Isapp\CashierSupport\DTO\Subscription;
-use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\CashierException;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
@@ -58,22 +57,20 @@ interface SubscriptionOperations
     public function resumeSubscription(Model $billable, string $type = 'default'): Subscription;
 
     /**
-     * Pause an active subscription.
+     * Pause an active subscription immediately.
      *
-     * $timing is the caller's intent, not a hint: a gateway that can only pause immediately
-     * cannot honour AtPeriodEnd, and one that can only defer cannot honour Immediate — each
-     * says so rather than silently pausing at the wrong moment. $until, where a gateway accepts
-     * it, is when collection auto-resumes (Stripe's pause_collection.resumes_at); null leaves the
-     * pause open-ended.
+     * Pause is immediate-only: every shipped driver pauses now (Stripe's pause_collection), and
+     * pause-at-period-end was Paddle-reference-only, removed in #72. $until, where a gateway
+     * accepts it, is when collection auto-resumes (Stripe's pause_collection.resumes_at); null
+     * leaves the pause open-ended.
      *
-     * @throws UnsupportedOperationException When the provider cannot pause with this timing.
+     * @throws UnsupportedOperationException When the provider cannot pause.
      * @throws SubscriptionUpdateFailure When there is no such subscription to pause.
      * @throws CashierException When the gateway call fails.
      */
     public function pauseSubscription(
         Model $billable,
         string $type = 'default',
-        PauseTiming $timing = PauseTiming::AtPeriodEnd,
         ?DateTimeInterface $until = null,
     ): Subscription;
 

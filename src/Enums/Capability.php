@@ -23,12 +23,11 @@ enum Capability: string
     case CustomersUpdate = 'customers.update';
     case Subscriptions = 'subscriptions';
     case SubscriptionCancelNow = 'subscription.cancel_now';
-    // Timing is not a detail of a pause; it IS the pause, exactly as with swap above. Stripe's
-    // pause is immediate-only (pause_collection, which does not even change the status); Paddle
-    // does both and defers by default. A gateway that can only do one cannot honour the other,
-    // and an app must be able to say which it needs — see Enums\PauseTiming.
+    // Pause is immediate-only across every shipped driver: Stripe's pause_collection pauses now
+    // (and does not even change the status). Pause-at-period-end was Paddle-reference-only — no
+    // driver implements it or ever will — so #72 removed it; the `.immediate` value stays as the
+    // wire name. Pause is now a single intent, read off pauseSubscription() like resume.
     case SubscriptionPauseImmediate = 'subscription.pause.immediate';
-    case SubscriptionPauseAtPeriodEnd = 'subscription.pause.at_period_end';
     case SubscriptionResume = 'subscription.resume';
     // Timing is not a detail of a swap; it IS the swap. A gateway that only
     // changes the plan at cycle end cannot honour "upgrade me now", and an app
@@ -69,14 +68,11 @@ enum Capability: string
      * drift apart. A capability holds only when EVERY method here is overridden: a gateway
      * that can list invoices but not render one does not support Invoices.
      *
-     * **Eleven cases return `[]`, and that is the design, not a gap.** An interface — or a
+     * **Nine cases return `[]`, and that is the design, not a gap.** An interface — or a
      * method — can say *the operation exists*; it cannot say *which intent it honours*:
      *
      *  - `swapSubscription()` is ONE method behind SwapImmediate and SwapAtPeriodEnd. Revolut
      *    schedules a swap for cycle end and cannot do it now: same method, one capability.
-     *  - `pauseSubscription()` is ONE method behind PauseImmediate and PauseAtPeriodEnd, for
-     *    the same reason: Stripe pauses only immediately, Paddle both — same method, and which
-     *    timings a gateway honours cannot be read off the code.
      *  - `checkout()` is ONE method behind CheckoutPrices and CheckoutAmount — see
      *    DTO\CheckoutRequest::capability().
      *  - Trials, Quantity, Metadata and Taxes are setters on Contracts\SubscriptionBuilder,
@@ -84,7 +80,7 @@ enum Capability: string
      *  - Discounts backs no operation and no setter — it is a fact about the shape a gateway's
      *    DTO\Invoice can carry (the `discount` field), so there is no method to read it off.
      *
-     * Those eleven are declared by the driver (`BaseGateway::declaredCapabilities()`). The
+     * Those nine are declared by the driver (`BaseGateway::declaredCapabilities()`). The
      * split is not cosmetic: it is why interfaces alone could never have replaced this enum.
      *
      * @return array<int, string>
@@ -103,6 +99,9 @@ enum Capability: string
             self::Subscriptions => ['newSubscription', 'cancelSubscription'],
             self::SubscriptionCancelNow => ['cancelSubscriptionNow'],
             self::SubscriptionResume => ['resumeSubscription'],
+            // One method, one intent, read off the code exactly like resume above — since #72
+            // removed pause-at-period-end there is no second timing to make it unreadable.
+            self::SubscriptionPauseImmediate => ['pauseSubscription'],
             // The mutation is the gateway's; the setter below is the builder's. Only this one
             // can be read off a method — which is exactly why the two cannot share a case.
             self::SubscriptionQuantityUpdate => ['updateSubscriptionQuantity'],
@@ -114,8 +113,6 @@ enum Capability: string
 
             self::SubscriptionSwapImmediate,
             self::SubscriptionSwapAtPeriodEnd,
-            self::SubscriptionPauseImmediate,
-            self::SubscriptionPauseAtPeriodEnd,
             self::CheckoutPrices,
             self::CheckoutAmount,
             self::SubscriptionTrials,

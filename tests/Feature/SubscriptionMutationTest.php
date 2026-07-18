@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -149,35 +148,25 @@ class SubscriptionMutationTest extends TestCase
         $subscription->resume();
     }
 
-    public function test_pause_passes_its_timing_and_resume_date_to_the_gateway(): void
+    public function test_pause_passes_its_resume_date_to_the_gateway(): void
     {
-        $gateway = $this->driverSupporting([Capability::Subscriptions, Capability::SubscriptionPauseAtPeriodEnd]);
+        // Pause is single-intent since #72; $until (Stripe's pause_collection.resumes_at) is the
+        // one thing that must reach the gateway rather than being dropped at the Billable gate.
+        $gateway = $this->driverSupporting([Capability::Subscriptions, Capability::SubscriptionPauseImmediate]);
         $until = CarbonImmutable::parse('2026-09-01T00:00:00Z');
 
-        $this->subscription()->pause(PauseTiming::AtPeriodEnd, $until);
+        $this->subscription()->pause($until);
 
-        $this->assertSame(PauseTiming::AtPeriodEnd, $gateway->lastPauseTiming);
         $this->assertSame($until, $gateway->lastPauseUntil);
     }
 
-    public function test_pause_defaults_to_at_period_end(): void
+    public function test_pause_is_refused_without_the_pause_capability(): void
     {
-        // Pause defers by default (see Enums\PauseTiming). Supporting ONLY Immediate and calling
-        // with no timing must refuse — if the default were Immediate it would pass.
-        $this->driverSupporting([Capability::Subscriptions, Capability::SubscriptionPauseImmediate]);
+        $this->driverSupporting([Capability::Subscriptions]);
         $subscription = $this->subscription();
 
         $this->expectException(UnsupportedOperationException::class);
         $subscription->pause();
-    }
-
-    public function test_pause_is_refused_for_a_timing_the_gateway_cannot_do(): void
-    {
-        $this->driverSupporting([Capability::Subscriptions, Capability::SubscriptionPauseAtPeriodEnd]);
-        $subscription = $this->subscription();
-
-        $this->expectException(UnsupportedOperationException::class);
-        $subscription->pause(PauseTiming::Immediate);
     }
 
     public function test_swap_defaults_to_immediate(): void

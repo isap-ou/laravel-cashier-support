@@ -275,6 +275,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Manager::getDrivers()` cannot answer it: that returns already-resolved instances, so it
   is empty until something resolves one.
 
+### Removed
+
+- **Pause is immediate-only; `Enums\PauseTiming` and `Capability::SubscriptionPauseAtPeriodEnd`
+  are gone.** (#72) Pause-at-period-end was expressible only because Paddle — a _reference_, never
+  a shipped driver — defers by default; Stripe's `pause_collection` is immediate-only, and no
+  shipped driver implements deferred pause or ever will. So the pause half of the #30 timing split
+  is removed (swap's stays — `SwapAtPeriodEnd` is backed by a real driver, Revolut).
+  `pauseSubscription()` and `Models\Subscription::pause()` drop the `PauseTiming $timing` parameter;
+  the guard and the refusal default now gate `Capability::SubscriptionPauseImmediate` directly; and
+  that capability moves into `Capability::methods()`, so `supports()` reads it off `pauseSubscription()`
+  like resume rather than the driver declaring it (now 14 method-backed / 9 declared / 23 cases).
+  Pause _state_ — `paused_at` / `resumes_at`, `Models\Concerns\TracksPause`, the `DTO\Subscription`
+  fields — is unchanged. **Breaking:** removes the public `PauseTiming` type, the
+  `SubscriptionPauseAtPeriodEnd` case, and the `$timing` argument; a driver overriding
+  `pauseSubscription()` takes the new signature in its own coordinated release.
+
 ### Changed
 
 - **A missing invoice is now a catchable `InvoiceNotFoundException`, not a Symfony 404.**
