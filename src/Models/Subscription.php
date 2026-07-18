@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Enums\SubscriptionStatus;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
@@ -285,18 +286,20 @@ abstract class Subscription extends Model
      *
      * Mirrors vendor/laravel/cashier/src/Subscription.php:715 (swap()). The timing is the caller's
      * intent — Immediate by default, see Enums\SwapTiming — and the guarded provider both refuses
-     * a gateway that cannot honour the timing and gates the owner's declared tax rates.
+     * a gateway that cannot honour the timing and gates the owner's declared tax rates. Proration
+     * is the caller's intent too — Prorate by default, see Enums\Proration.
      *
      * @param  string|array<int, string>  $prices
      * @param  array<string, mixed>  $options
      *
-     * @throws UnsupportedOperationException When the gateway cannot swap with the given timing, or
-     *                                       the owner declares tax rates it cannot apply.
+     * @throws UnsupportedOperationException When the gateway cannot swap with the given timing,
+     *                                       cannot honour the requested proration, or the owner
+     *                                       declares tax rates it cannot apply.
      * @throws RuntimeException When the subscription row has no owner to act on.
      */
-    public function swap(string|array $prices, SwapTiming $timing = SwapTiming::Immediate, array $options = []): static
+    public function swap(string|array $prices, SwapTiming $timing = SwapTiming::Immediate, Proration $proration = Proration::Prorate, array $options = []): static
     {
-        Cashier::provider($this->provider)->swapSubscription($this->cashierOwner(), $this->type, $prices, $timing, $options);
+        Cashier::provider($this->provider)->swapSubscription($this->cashierOwner(), $this->type, $prices, $timing, $proration, $options);
 
         return $this->refresh();
     }

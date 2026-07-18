@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Proration is expressible on a swap and a quantity change, as a capability rather than a port
+  (#53).** New `Enums\Proration` `{Prorate, NoProrate}`, in the shape of `Enums\SwapTiming`: the
+  caller states its intent and the gate answers. It carries only the one axis the two references
+  agree on — prorate, or do not — and none of either gateway's wire vocabulary (Stripe and Paddle
+  share a `Prorates` concern filename and three method names yet agree on no value string, and their
+  one common name `noProrate()` means opposite things). `swapSubscription()` and
+  `updateSubscriptionQuantity()` (and `Models\Subscription::swap()` +
+  `Concerns\ManagesSubscriptions`' quantity methods) take an optional `Proration $proration =
+  Proration::Prorate`. The gate is asymmetric: `Prorate` is the ungated baseline both references
+  default to, so no existing swap or quantity change newly refuses; only `NoProrate` names a new
+  `Capability::SubscriptionNoProration`, which a gateway that can only ever prorate refuses by name
+  rather than silently prorating anyway. The invoice-now axis (Stripe `always_invoice` / Paddle's
+  immediate modes), Paddle's suppress-billing opt-out, and cancel-now proration are deliberately left
+  as named future capabilities. Driver signatures for the two methods change (a coordinated release).
+  (#53)
+
 - **Subscription lifecycle mutations moved onto the model, and every capability gate moved to one
   boundary (#39).** `cancel()`, `cancelNow()`, `resume()`, `pause()` and `swap()` now live on
   `Models\Subscription` — `$user->subscription('default')->cancel()`, matching Stripe/Paddle and

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use InvalidArgumentException;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
+use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
@@ -147,13 +148,15 @@ trait ManagesSubscriptions
      * @param  string  $type  The subscription type.
      * @param  int  $quantity  The new quantity, which must be at least 1.
      * @param  string|null  $price  Which item to change; omit when the subscription has one.
+     * @param  Proration  $proration  Whether to prorate the change; Prorate by default.
      *
-     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws UnsupportedOperationException When the provider cannot change a quantity, or cannot
+     *                                       honour the requested proration.
      * @throws SubscriptionUpdateFailure When there is no such subscription, or no such price on it.
      * @throws InvalidArgumentException When $quantity is below 1, or the subscription has
      *                                  several prices and none was named.
      */
-    public function updateSubscriptionQuantity(string $type, int $quantity, ?string $price = null): Subscription
+    public function updateSubscriptionQuantity(string $type, int $quantity, ?string $price = null, Proration $proration = Proration::Prorate): Subscription
     {
         $this->ensureCashierQuantityIsPositive($quantity);
 
@@ -161,7 +164,7 @@ trait ManagesSubscriptions
         // before a gateway has to guess which line to bill.
         $item = $this->cashierQuantityItem($type, $price);
 
-        return $this->cashierSetQuantity($type, $quantity, $item);
+        return $this->cashierSetQuantity($type, $quantity, $item, $proration);
     }
 
     /**
@@ -170,20 +173,22 @@ trait ManagesSubscriptions
      * @param  string  $type  The subscription type.
      * @param  int  $count  How many to add, at least 1.
      * @param  string|null  $price  Which item to change; omit when the subscription has one.
+     * @param  Proration  $proration  Whether to prorate the change; Prorate by default.
      *
-     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws UnsupportedOperationException When the provider cannot change a quantity, or cannot
+     *                                       honour the requested proration.
      * @throws SubscriptionUpdateFailure When there is no such subscription or price, or the
      *                                   current quantity is unknown.
      * @throws InvalidArgumentException When $count is below 1, or the subscription has several
      *                                  prices and none was named.
      */
-    public function incrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null): Subscription
+    public function incrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null, Proration $proration = Proration::Prorate): Subscription
     {
         $this->ensureCashierCountIsPositive($count, 'increment');
 
         $item = $this->cashierQuantityItem($type, $price);
 
-        return $this->cashierSetQuantity($type, $this->cashierKnownQuantity($item) + $count, $item);
+        return $this->cashierSetQuantity($type, $this->cashierKnownQuantity($item) + $count, $item, $proration);
     }
 
     /**
@@ -195,14 +200,16 @@ trait ManagesSubscriptions
      * @param  string  $type  The subscription type.
      * @param  int  $count  How many to remove, at least 1.
      * @param  string|null  $price  Which item to change; omit when the subscription has one.
+     * @param  Proration  $proration  Whether to prorate the change; Prorate by default.
      *
-     * @throws UnsupportedOperationException When the provider cannot change a quantity.
+     * @throws UnsupportedOperationException When the provider cannot change a quantity, or cannot
+     *                                       honour the requested proration.
      * @throws SubscriptionUpdateFailure When there is no such subscription or price, or the
      *                                   current quantity is unknown.
      * @throws InvalidArgumentException When $count is below 1, or the subscription has several
      *                                  prices and none was named.
      */
-    public function decrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null): Subscription
+    public function decrementSubscriptionQuantity(string $type = 'default', int $count = 1, ?string $price = null, Proration $proration = Proration::Prorate): Subscription
     {
         $this->ensureCashierCountIsPositive($count, 'decrement');
 
@@ -212,6 +219,7 @@ trait ManagesSubscriptions
             $type,
             max(1, $this->cashierKnownQuantity($item) - $count),
             $item,
+            $proration,
         );
     }
 
@@ -251,11 +259,11 @@ trait ManagesSubscriptions
      * @throws UnsupportedOperationException When the provider cannot change a quantity.
      * @throws InvalidArgumentException When $quantity is below 1.
      */
-    private function cashierSetQuantity(string $type, int $quantity, SubscriptionItemRecord $item): Subscription
+    private function cashierSetQuantity(string $type, int $quantity, SubscriptionItemRecord $item, Proration $proration = Proration::Prorate): Subscription
     {
         $this->ensureCashierQuantityIsPositive($quantity);
 
-        return $this->cashierProvider()->updateSubscriptionQuantity($this, $type, $quantity, $item->price);
+        return $this->cashierProvider()->updateSubscriptionQuantity($this, $type, $quantity, $item->price, $proration);
     }
 
     /**
