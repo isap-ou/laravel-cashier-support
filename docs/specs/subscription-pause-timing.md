@@ -1,8 +1,17 @@
 # Spec: Pause with a timing, and somewhere for the paused state to live
 
-Status: Implemented
+Status: Implemented (pause-timing half superseded by #72)
 
 Issue: [isap-ou/laravel-cashier-support#30](https://github.com/isap-ou/laravel-cashier-support/issues/30)
+
+> **Superseded in part by [#72](https://github.com/isap-ou/laravel-cashier-support/issues/72):**
+> pause-at-period-end existed only in Paddle (a reference, no driver), so it was removed. Pause is
+> now single-intent — `Enums\PauseTiming` is gone, `pauseSubscription()`/`pause()` take no timing,
+> and `SubscriptionPauseImmediate` is read off the code like resume. **FR-1, FR-2, FR-5 and AC-2,
+> AC-4 below no longer hold.** The paused-**state** half (FR-3/FR-4/FR-6, `paused_at`/`resumes_at`,
+> `TracksPause`, `DTO\Subscription` fields, AC-1/AC-3) is unchanged. See
+> [`remove-pause-at-period-end.md`](remove-pause-at-period-end.md). This document is left as the
+> point-in-time #30 record.
 
 > **Later change (#39):** the app-facing pause moved off `Billable` onto the model —
 > `$user->subscription('default')->pause(PauseTiming::…)` — and the capability check moved to the

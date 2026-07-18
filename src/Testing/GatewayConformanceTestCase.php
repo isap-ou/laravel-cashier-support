@@ -19,7 +19,6 @@ use Isapp\CashierSupport\DTO\PaymentMethod;
 use Isapp\CashierSupport\DTO\Refund;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
-use Isapp\CashierSupport\Enums\PauseTiming;
 use Isapp\CashierSupport\Enums\SwapTiming;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Money\Currency;
@@ -242,10 +241,8 @@ abstract class GatewayConformanceTestCase extends TestCase
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->cancelSubscriptionNow($b, 'default')],
             ['method' => 'resumeSubscription', 'label' => 'resumeSubscription', 'returns' => Subscription::class,
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->resumeSubscription($b, 'default')],
-            ['method' => 'pauseSubscription', 'label' => 'pauseSubscription (at period end)', 'returns' => Subscription::class,
-                'invoke' => fn (GatewayProvider $g, Model $b) => $g->pauseSubscription($b, 'default', PauseTiming::AtPeriodEnd)],
-            ['method' => 'pauseSubscription', 'label' => 'pauseSubscription (immediate)', 'returns' => Subscription::class,
-                'invoke' => fn (GatewayProvider $g, Model $b) => $g->pauseSubscription($b, 'default', PauseTiming::Immediate)],
+            ['method' => 'pauseSubscription', 'label' => 'pauseSubscription', 'returns' => Subscription::class,
+                'invoke' => fn (GatewayProvider $g, Model $b) => $g->pauseSubscription($b, 'default')],
             ['method' => 'swapSubscription', 'label' => 'swapSubscription (immediate)', 'returns' => Subscription::class,
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->swapSubscription($b, 'default', $this->samplePriceId(), SwapTiming::Immediate)],
             ['method' => 'swapSubscription', 'label' => 'swapSubscription (at period end)', 'returns' => Subscription::class,
