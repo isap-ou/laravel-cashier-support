@@ -3,7 +3,17 @@
     "description": "Provider-agnostic Laravel Cashier contracts — drop-in billing interfaces mirroring laravel/cashier-stripe API for seamless provider switching (Revolut, Adyen, Wise)",
     "type": "library",
     "license": "MIT",
-    "keywords": ["laravel", "cashier", "contracts", "billing", "subscriptions", "payments", "revolut", "adyen", "wise"],
+    "keywords": [
+        "laravel",
+        "cashier",
+        "contracts",
+        "billing",
+        "subscriptions",
+        "payments",
+        "revolut",
+        "adyen",
+        "wise"
+    ],
     "homepage": "https://github.com/isap-ou/laravel-cashier-support",
     "authors": [
         {
@@ -17,6 +27,7 @@
     },
     "require": {
         "php": "^8.2",
+        "ext-intl": "*",
         "illuminate/console": "^11.0|^12.0|^13.0",
         "illuminate/contracts": "^11.0|^12.0|^13.0",
         "illuminate/database": "^11.0|^12.0|^13.0",
@@ -29,6 +40,7 @@
         "nesbot/carbon": "^3.0",
         "psr/log": "^3.0",
         "spatie/laravel-data": "^4.23",
+        "symfony/console": "^7.0|^8.0",
         "symfony/http-foundation": "^7.0|^8.0",
         "symfony/http-kernel": "^7.0|^8.0"
     },

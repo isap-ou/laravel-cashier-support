@@ -73,9 +73,16 @@ Publish the config if you need to customise it:
 php artisan vendor:publish --tag=cashier-support-config
 ```
 
-`config/cashier-support.php` exposes the default `driver`, the default
-`currency`, the concrete `models` bindings, and `invoices` (view, paper size,
-seller details).
+`config/cashier-support.php` exposes five keys: `default` (the driver),
+`currency` and `currency_locale` (what `Cashier::formatAmount()` renders with),
+the concrete `models` bindings, and `webhook` (the route's prefix, accepted HTTP
+methods and middleware — throttling is a value inside `middleware`, not a key of
+its own).
+
+There is no `invoices` block — the `invoices.*` config and the packaged blade
+view left this package when invoice *rendering* became the driver's job, behind
+`Contracts\InvoiceRenderer`. Assembling the invoice DATA is still shared, and
+needs no configuration.
 
 The abstract `Subscription`, `SubscriptionItem` and `Invoice` models are
 optional local records. If you want to persist them, publish and run the
@@ -396,8 +403,18 @@ Cashier::macro('chargeInCents', function (Model $billable, int $amount): Payment
 ```
 
 Methods a custom gateway exposes beyond the `GatewayProvider` contract are not
-visible through the `Billable` trait — call them via `Cashier::provider()` (or
-`Cashier::driver('name')`) and narrow the type.
+visible through the `Billable` trait. Reach them with `Cashier::driver('name')`
+and narrow the type.
+
+**Not `Cashier::provider()`** — that returns the `final` `Gateway\GuardedProvider`,
+which implements only `GatewayProvider`, has no `__call`, and hands back a `final`
+`GuardedSubscriptionBuilder` carrying only the contract's setters. It cannot expose
+a driver-specific method, by construction.
+
+`Cashier::driver()` is the raw, **unguarded** driver: the capability gate
+`Cashier::provider()` applies is not in front of it. That is the trade — it is the
+only way to a driver-specific method, and in exchange you ask `Cashier::supports()`
+yourself before calling anything the gateway may not do.
 
 ## Quality
 

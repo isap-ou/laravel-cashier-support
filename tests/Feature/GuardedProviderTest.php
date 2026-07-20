@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Feature;
 
+use InvalidArgumentException;
 use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\GatewayProvider;
 use Isapp\CashierSupport\DTO\CheckoutRequest;
@@ -14,6 +15,7 @@ use Isapp\CashierSupport\Gateway\GuardedProvider;
 use Isapp\CashierSupport\Testing\FakeGateway;
 use Isapp\CashierSupport\Tests\Fixtures\User;
 use Isapp\CashierSupport\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * The one boundary every billing operation passes through. Cashier::provider() wraps each driver
@@ -123,5 +125,118 @@ class GuardedProviderTest extends TestCase
 
         $this->expectException(UnsupportedOperationException::class);
         $guard->checkout(new User, CheckoutRequest::forPrices(['price_1' => 1]));
+    }
+
+    /**
+     * @return array<string, array{string|array<int, string>}>
+     */
+    public static function emptyPrices(): array
+    {
+        return [
+            'an empty array' => [[]],
+            'an empty string' => [''],
+            'an array holding an empty string' => [['']],
+        ];
+    }
+
+    /**
+     * @param  string|array<int, string>  $prices
+     */
+    #[DataProvider('emptyPrices')]
+    public function test_subscribing_to_no_price_is_refused(string|array $prices): void
+    {
+        // Contracts\SubscriptionOperations:29 has declared this since it was written and
+        // nothing in this package threw it — the fourth instance of the defect
+        // .claude/rules/exceptions.md exists for, after charge(), quantity() and trialDays().
+        // It held only by accident of which driver was installed: Revolut happens to check,
+        // FakeGateway does not, so an app's own test suite proved nothing.
+        //
+        // The reference's wording, deliberately — laravel/cashier's Subscription::swap() says
+        // "Please provide at least one price when swapping", and DTO\CheckoutRequest already
+        // borrowed it for checkout.
+        $guard = $this->guard([Capability::Subscriptions]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('at least one price');
+
+        $guard->newSubscription(new User, 'default', $prices);
+    }
+
+    /**
+     * @param  string|array<int, string>  $prices
+     */
+    #[DataProvider('emptyPrices')]
+    public function test_swapping_to_no_price_is_refused(string|array $prices): void
+    {
+        // Contracts\SubscriptionOperations:95, the same declaration on the same contract. A swap
+        // to nothing is the case the reference names by name.
+        $guard = $this->guard([Capability::Subscriptions, Capability::SubscriptionSwapImmediate]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('at least one price');
+
+        $guard->swapSubscription(new User, 'default', $prices);
+    }
+
+    /**
+     * @return array<string, array{array<int, mixed>}>
+     */
+    public static function unusablePrices(): array
+    {
+        return [
+            'null' => [[null]],
+            'a nested array' => [[['price_1']]],
+            'an integer' => [[123]],
+            'a boolean' => [[true]],
+        ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $prices
+     */
+    #[DataProvider('unusablePrices')]
+    public function test_a_price_that_is_not_a_string_is_refused_as_an_argument_error(array $prices): void
+    {
+        // array_filter is an internal function, so its callback runs in WEAK mode regardless of
+        // this package's declare(strict_types=1). With the callback typed `string`, these four
+        // produced three different wrong answers: [123] and [true] were coerced and sailed
+        // through to the driver, while [null] and a nested array raised a TypeError — which is
+        // outside the CashierException hierarchy AND contradicts the @throws this guard exists
+        // to honour. `$request->input('prices')` on an absent or nested field is how a caller
+        // gets there.
+        //
+        // PHPStan cannot catch this: the parameter is annotated array<int, string>, so level 8
+        // trusts the annotation and never models what the array holds at runtime. Only a test
+        // that actually passes the wrong thing can.
+        /** @var array<int, string> $prices */
+        $guard = $this->guard([Capability::Subscriptions]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('at least one price');
+
+        $guard->newSubscription(new User, 'default', $prices);
+    }
+
+    public function test_the_capability_gate_outranks_the_empty_price_guard(): void
+    {
+        // Same ordering as quantity and trialDays: a gateway that cannot subscribe at all must
+        // say THAT, not quibble with the argument — otherwise an app fixing the "no price" it
+        // was told about reaches the real answer only on the second try.
+        $guard = $this->guard([]);
+
+        $this->expectException(UnsupportedOperationException::class);
+
+        $guard->newSubscription(new User, 'default', []);
+    }
+
+    public function test_a_real_price_still_reaches_the_driver(): void
+    {
+        // The guard must not tax the ordinary path.
+        $guard = $this->guard([Capability::Subscriptions]);
+
+        $this->assertInstanceOf(
+            GuardedSubscriptionBuilder::class,
+            $guard->newSubscription(new User, 'default', ['price_1']),
+        );
     }
 }

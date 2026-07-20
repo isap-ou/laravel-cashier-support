@@ -6,6 +6,7 @@ namespace Isapp\CashierSupport\Gateway\Guards;
 
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
 use Isapp\CashierSupport\DTO\Subscription;
@@ -30,6 +31,7 @@ trait GuardsSubscriptions
     public function newSubscription(Model $billable, string $type, string|array $prices): SubscriptionBuilder
     {
         $this->ensure(Capability::Subscriptions);
+        $this->ensurePricesArePresent($prices, 'subscribing');
         $this->ensureTaxRatesSupported($billable);
 
         // Wrap the driver's builder so its capability-bearing setters (trial, quantity,
@@ -96,6 +98,7 @@ trait GuardsSubscriptions
         array $options = [],
     ): Subscription {
         $this->ensure($timing->capability());
+        $this->ensurePricesArePresent($prices, 'swapping');
         // Tax rates are consumed on a swap as well as on create — guarding only the first
         // would let a swap discard them in silence.
         $this->ensureTaxRatesSupported($billable);
@@ -105,6 +108,60 @@ trait GuardsSubscriptions
         }
 
         return $this->inner()->swapSubscription($billable, $type, $prices, $timing, $proration, $options);
+    }
+
+    /**
+     * Refuse a subscription or a swap that names no price to bill.
+     *
+     * **Contracts\SubscriptionOperations has declared this on both methods since it was
+     * written** — ":29" and ":95", "@throws InvalidArgumentException When the prices are
+     * empty" — and nothing in this package threw it. Fourth instance of the defect
+     * `.claude/rules/exceptions.md` exists for, after charge(), quantity() and trialDays(),
+     * and the worst-behaved of the four: the promise held only by accident of which driver
+     * was installed. A driver that happens to check made it true; Testing\FakeGateway does
+     * not, so an app's own test suite proved nothing either way.
+     *
+     * A price is what a subscription bills on, so naming none is a programmer error and not
+     * a decline — SPL's InvalidArgumentException, per the exceptions rule. The wording is the
+     * reference's: laravel/cashier's Subscription::swap() says "Please provide at least one
+     * price when swapping", and DTO\CheckoutRequest:64 already borrowed it for checkout.
+     *
+     * The SECOND half of the contract's sentence — "or more of them are given than the
+     * provider bills a subscription on" — deliberately stays the driver's. Only a driver
+     * knows how many prices its gateway bills one subscription on; support does not, and
+     * guessing a number here would be the abstraction describing one gateway.
+     *
+     * The parameter is annotated `mixed`-valued on purpose, and it is the only place in this
+     * package that is. Everywhere else `array<int, string>` is a promise the contract makes;
+     * here it is the very thing being checked, so accepting it as given would make the check
+     * circular — PHPStan would report `is_string()` as always-true off the annotation while
+     * the runtime array happily holds a null. This method is the boundary at which that
+     * promise stops being assumed.
+     *
+     * @param  string|array<int, mixed>  $prices
+     *
+     * @throws InvalidArgumentException When $prices names no usable price.
+     */
+    private function ensurePricesArePresent(string|array $prices, string $action): void
+    {
+        // `mixed` and an explicit is_string, not a `string` parameter, and the difference is
+        // not stylistic. array_filter is an internal function, so its callback is invoked in
+        // WEAK mode — this file's declare(strict_types=1) does not reach it. A `string` hint
+        // would therefore coerce `[123]` and `[true]` into passing, and raise a TypeError for
+        // `[null]` or a nested array: three different wrong answers, and the TypeError one
+        // escapes the CashierException hierarchy while contradicting the @throws above.
+        // `$request->input('prices')` on an absent or nested field is exactly how a caller
+        // reaches those. PHPStan cannot see any of it — the param is annotated
+        // array<int, string>, so level 8 trusts the annotation and never models the runtime
+        // array.
+        $named = array_filter(
+            is_array($prices) ? $prices : [$prices],
+            static fn (mixed $price): bool => is_string($price) && trim($price) !== '',
+        );
+
+        if ($named === []) {
+            throw new InvalidArgumentException("Please provide at least one price when {$action}.");
+        }
     }
 
     /**
