@@ -155,10 +155,14 @@ class InvoiceBuilder
             $this->lines
         ));
 
-        if ($this->tax !== null && $lineTax > 0 && $this->tax !== $lineTax) {
+        // The aggregate may EXCEED what the lines itemise — a mixed invoice, where one line
+        // states its VAT and another does not, is perfectly ordinary, and demanding equality
+        // would refuse it. What it may not do is fall short: tax the lines already account for
+        // cannot vanish from the total.
+        if ($this->tax !== null && $this->tax < $lineTax) {
             throw new InvalidArgumentException(
-                "The invoice tax ({$this->tax}) does not match the sum of its lines' tax ({$lineTax}). "
-                .'State it once — either per line, or as the aggregate.'
+                "The invoice tax ({$this->tax}) does not match its lines: they already itemise "
+                ."{$lineTax}, which is more. State it once — either per line, or as the aggregate."
             );
         }
 
@@ -166,9 +170,17 @@ class InvoiceBuilder
         $amount = $subtotal + ($tax ?? 0) - ($this->discount ?? 0);
 
         if ($amount < 0) {
+            // Names the actual cause rather than assuming a discount: a negative line amount
+            // gets here with no discount() call at all, and blaming an absent discount
+            // interpolated as an empty string ("A discount of  makes…") sends the reader
+            // looking in the wrong place.
+            $cause = $this->discount !== null
+                ? "a discount of {$this->discount} against a subtotal of {$subtotal}"
+                : "line amounts totalling {$subtotal}";
+
             throw new InvalidArgumentException(
-                "A discount of {$this->discount} makes the invoice total negative ({$amount}). "
-                .'An invoice is not a refund; the discount cannot exceed what is being discounted.'
+                "The invoice total is negative ({$amount}) — {$cause}. "
+                .'An invoice is not a refund; it cannot resolve to less than nothing.'
             );
         }
 
