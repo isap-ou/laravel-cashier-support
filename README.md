@@ -19,16 +19,6 @@ webhook controller), never the other way round. Concrete drivers
 (e.g. `isapp/laravel-cashier-revolut`) implement the contracts and are drop-in
 replacements for each other.
 
-> **Status — pre-release.** No version is tagged on Packagist yet. Until the
-> first `v1.0.0` is published, require it from the VCS repository (add to your
-> app's `composer.json`):
->
-> ```json
-> "repositories": [
->     { "type": "vcs", "url": "https://github.com/isap-ou/laravel-cashier-support" }
-> ]
-> ```
-
 ## Contents
 
 - [Requirements](#requirements)
