@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`RELEASING.md` records that this package is released FIRST, and why nothing local can check
+  it.** Drivers require `isapp/laravel-cashier-support: ^1.0`, so this tag must exist and be on
+  Packagist before any driver is tagged — tag the driver first and every consumer's
+  `composer require` fails. The verification step now says to resolve the release in a scratch
+  project **outside the monorepo**: the driver reaches this package through a `path` repository
+  with a hardcoded `"versions": {"...": "1.0.0"}`, which satisfies `^1.0` forever both here and in
+  the driver's CI, so an unsatisfiable published constraint is invisible from inside.
+
 - **A written backward-compatibility promise, and `@internal` on the machinery it excludes.**
   A 1.0 tag otherwise freezes every `public` method in `src/`, including wiring no consumer was
   ever meant to name. README gains a "What SemVer covers here" section drawing the line: the
@@ -682,6 +690,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interfaces alone could never have replaced this enum.
 
 ### Fixed
+
+- **`ext-intl` and `symfony/console` are now declared, and the dependency sweep can finally see
+  them.** Two more of exactly the defect #43 was filed about, both shipped for as long as the code
+  did. `Cashier::formatAmount()` builds a `NumberFormatter` (`src/CashierManager.php`) — a class
+  that exists only when ext-intl is compiled in, and `moneyphp/money` merely *suggests* it — so a
+  consumer on a build without intl installed cleanly and fatalled on the first call.
+  `src/Console/WebhookCommand.php` imports `Symfony\Component\Console\Attribute\AsCommand` with
+  `symfony/console` undeclared; it loaded only because `illuminate/console` happens to pull it in,
+  and a transitive install is not a declaration.
+
+  **`DeclaredDependenciesTest` was blind to both, which is the part worth fixing.** It swept
+  `Illuminate\` imports only — so the vendor namespace next door and the extension-provided global
+  class were exactly the "import this sweep silently skips" its own docblock warns about. It now
+  runs three sweeps: Illuminate, Symfony (`Symfony\Component\<Name>` → `symfony/<kebab-name>`), and
+  PHP extensions — the last by asking Reflection which extension declares an unqualified imported
+  class, so a newly imported one is classified without anyone remembering to teach the test about
+  it. Verified non-vacuous: removing either declaration fails two of the three.
+
+- **`newSubscription()` and `swapSubscription()` refuse a subscription that names no price
+  (#58's siblings).** `Contracts\SubscriptionOperations` has declared
+  `@throws InvalidArgumentException When the prices are empty` on both methods since it was
+  written, and nothing in this package threw it. Fourth and fifth instances of the defect
+  `.claude/rules/exceptions.md` exists for — and the worst-behaved of them, because the promise
+  held only by accident of which driver was installed: a driver that happens to check made it
+  true, `Testing\FakeGateway` does not, so an app's own test suite proved nothing either way.
+  The guard rejects an empty array, an empty string, and an array of nothing but blanks, and runs
+  **after** the capability check so a gateway that cannot subscribe at all still says THAT. The
+  message is the reference's — laravel/cashier's `Subscription::swap()`: "Please provide at least
+  one price when swapping". The second half of the contract's sentence — "or more of them are
+  given than the provider bills a subscription on" — deliberately stays the driver's: only a
+  driver knows how many prices its gateway bills one subscription on.
 
 - **`->trialDays()` refuses a negative number of days, which its contract had promised since it
   was written (#58).** `Contracts\SubscriptionBuilder` declares `@throws InvalidArgumentException

@@ -1,9 +1,19 @@
 {
     "name": "isapp/laravel-cashier-support",
-    "description": "Provider-agnostic Laravel Cashier contracts — drop-in billing interfaces mirroring laravel/cashier-stripe API for seamless provider switching (Revolut, Adyen, Wise)",
+    "description": "Provider-agnostic Laravel Cashier contracts \u2014 drop-in billing interfaces mirroring laravel/cashier-stripe API for seamless provider switching (Revolut, Adyen, Wise)",
     "type": "library",
     "license": "MIT",
-    "keywords": ["laravel", "cashier", "contracts", "billing", "subscriptions", "payments", "revolut", "adyen", "wise"],
+    "keywords": [
+        "laravel",
+        "cashier",
+        "contracts",
+        "billing",
+        "subscriptions",
+        "payments",
+        "revolut",
+        "adyen",
+        "wise"
+    ],
     "homepage": "https://github.com/isap-ou/laravel-cashier-support",
     "authors": [
         {
@@ -17,6 +27,7 @@
     },
     "require": {
         "php": "^8.2",
+        "ext-intl": "*",
         "illuminate/console": "^11.0|^12.0|^13.0",
         "illuminate/contracts": "^11.0|^12.0|^13.0",
         "illuminate/database": "^11.0|^12.0|^13.0",
@@ -29,6 +40,7 @@
         "nesbot/carbon": "^3.0",
         "psr/log": "^3.0",
         "spatie/laravel-data": "^4.23",
+        "symfony/console": "^7.0|^8.0",
         "symfony/http-foundation": "^7.0|^8.0",
         "symfony/http-kernel": "^7.0|^8.0"
     },
@@ -41,7 +53,7 @@
         "phpunit/phpunit": "^11.0"
     },
     "suggest": {
-        "phpunit/phpunit": "To use the shipped Testing utilities — FakeGateway assertions and Cashier::fake() (^11.0).",
+        "phpunit/phpunit": "To use the shipped Testing utilities \u2014 FakeGateway assertions and Cashier::fake() (^11.0).",
         "orchestra/testbench": "To extend Testing\\GatewayConformanceTestCase in a driver's own test suite (^9.0|^10.0|^11.0)."
     },
     "autoload": {

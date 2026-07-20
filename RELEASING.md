@@ -65,7 +65,30 @@ git push origin vX.Y.Z
       version appears (or click **Update** on the package page).
 - [ ] (Optional) Create a GitHub Release from the tag, pasting the `X.Y.Z`
       CHANGELOG section as the body.
-- [ ] `composer require isapp/laravel-cashier-support:^X.Y` resolves the release.
+- [ ] `composer require isapp/laravel-cashier-support:^X.Y` resolves the release —
+      run it in a scratch project **outside this monorepo**. Inside it, the driver's
+      `path` repository can satisfy the constraint locally and prove nothing.
+
+## 6. This package is released FIRST
+
+**Drivers depend on this one, so its tag must exist and be on Packagist before any
+driver is tagged.** `isapp/laravel-cashier-revolut` requires
+`isapp/laravel-cashier-support: ^1.0`; tag the driver first and every consumer's
+`composer require` fails, because nothing satisfies that constraint.
+
+The order is:
+
+1. Tag this package.
+2. Confirm Packagist has ingested the version (step 5 above) — not just that the tag
+   was pushed.
+3. Only then hand off to the driver's own `RELEASING.md`.
+
+This is not hypothetical: the constraint sat broken and unnoticed for months, because
+the driver resolves this package through a `path` repository with a hardcoded
+`"versions": {"isapp/laravel-cashier-support": "1.0.0"}`. That satisfies `^1.0`
+forever, in the monorepo and in the driver's CI — so nothing local can tell you the
+published constraint is unsatisfiable. Step 5's scratch project is the only check that
+can.
 
 ## Diffing versions
 

@@ -73,9 +73,15 @@ Publish the config if you need to customise it:
 php artisan vendor:publish --tag=cashier-support-config
 ```
 
-`config/cashier-support.php` exposes the default `driver`, the default
-`currency`, the concrete `models` bindings, and `invoices` (view, paper size,
-seller details).
+`config/cashier-support.php` exposes five keys: `default` (the driver),
+`currency` and `currency_locale` (what `Cashier::formatAmount()` renders with),
+the concrete `models` bindings, and `webhook` (the route's prefix, middleware
+and throttle).
+
+There is no `invoices` block — the `invoices.*` config and the packaged blade
+view left this package when invoice *rendering* became the driver's job, behind
+`Contracts\InvoiceRenderer`. Assembling the invoice DATA is still shared, and
+needs no configuration.
 
 The abstract `Subscription`, `SubscriptionItem` and `Invoice` models are
 optional local records. If you want to persist them, publish and run the

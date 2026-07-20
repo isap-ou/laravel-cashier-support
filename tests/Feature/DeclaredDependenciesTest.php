@@ -90,6 +90,146 @@ class DeclaredDependenciesTest extends TestCase
         );
     }
 
+    public function test_every_symfony_package_shipped_code_imports_is_declared(): void
+    {
+        // The same sweep, one vendor over — added because the Illuminate-only version let
+        // `symfony/console` ship undeclared for as long as it existed. `src/Console/
+        // WebhookCommand.php` imports `Symfony\Component\Console\Attribute\AsCommand` and
+        // nothing required the package; it loaded only because `illuminate/console` happens
+        // to pull it in. A transitive dependency is not a declared one — the day that
+        // package drops it, this becomes #43's fatal in a different file.
+        //
+        // `Symfony\Component\<Name>` → `symfony/<kebab-name>` is the same
+        // namespace-root-is-the-package rule, and Symfony holds to it exactly.
+        $declared = $this->declaredPackages();
+        $missing = [];
+
+        foreach ($this->symfonyImports() as $package => $evidence) {
+            if (! in_array($package, $declared, true)) {
+                $missing[$package] = $evidence;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            "Shipped code imports from Symfony packages that composer.json does not require:\n"
+            .implode("\n", array_map(
+                static fn (string $package, string $why): string => "  [{$package}] — {$why}",
+                array_keys($missing),
+                $missing
+            ))
+            ."\nA transitive install is not a declaration. Either require the package, or stop importing from it."
+        );
+    }
+
+    public function test_every_php_extension_shipped_code_needs_is_declared(): void
+    {
+        // The third way the same fatal arrives, and the one no vendor-namespace sweep can
+        // see: a global class that a PHP *extension* provides. `Cashier::formatAmount()`
+        // builds a `NumberFormatter` (`src/CashierManager.php`) — that class exists only
+        // when ext-intl is compiled in, and `moneyphp/money` merely *suggests* it. A
+        // consumer on a build without intl installs cleanly and fatals on the first call.
+        //
+        // Asked of the runtime rather than a hand-kept list: Reflection knows which
+        // extension declares a class, so a newly imported one is classified without anyone
+        // remembering to teach this test about it.
+        $declared = $this->declaredPackages();
+        $missing = [];
+
+        foreach ($this->extensionsUsed() as $extension => $evidence) {
+            if (! in_array($extension, $declared, true)) {
+                $missing[$extension] = $evidence;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            "Shipped code needs PHP extensions that composer.json does not require:\n"
+            .implode("\n", array_map(
+                static fn (string $extension, string $why): string => "  [{$extension}] — {$why}",
+                array_keys($missing),
+                $missing
+            ))
+            ."\nComposer can refuse to install on a host without the extension, but only if we say we need it."
+        );
+    }
+
+    /**
+     * Every `symfony/*` package our shipped code imports from, mapped to one import that
+     * proves it.
+     *
+     * @return array<string, string>
+     */
+    private function symfonyImports(): array
+    {
+        $found = [];
+
+        foreach ($this->shippedFiles() as $file) {
+            preg_match_all(
+                '/^use\s+\\\\?Symfony\\\\Component\\\\([A-Za-z0-9_]+)\\\\[A-Za-z0-9_\\\\]+\s*(?:as\s+[A-Za-z0-9_]+\s*)?;$/m',
+                (string) file_get_contents($file),
+                $matches,
+                PREG_SET_ORDER
+            );
+
+            foreach ($matches as $match) {
+                // HttpFoundation → http-foundation, Console → console.
+                $package = 'symfony/'.strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $match[1]));
+
+                $found[$package] ??= $match[0].' ('.basename($file).')';
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Every `ext-*` our shipped code needs, mapped to the import that proves it.
+     *
+     * Only unqualified imports are candidates — `use NumberFormatter;` — because that is
+     * what a global, extension-provided class looks like in a namespaced file. Classes from
+     * extensions that are always compiled in are not worth declaring; the rest are.
+     *
+     * @return array<string, string>
+     */
+    private function extensionsUsed(): array
+    {
+        // Bundled and non-optional in every supported PHP build, so requiring them says
+        // nothing. Composer's own platform checks treat them the same way.
+        $alwaysPresent = ['Core', 'standard', 'SPL', 'date', 'pcre', 'Reflection', 'json'];
+
+        $found = [];
+
+        foreach ($this->shippedFiles() as $file) {
+            preg_match_all(
+                '/^use\s+\\\\?([A-Za-z0-9_]+)\s*(?:as\s+[A-Za-z0-9_]+\s*)?;$/m',
+                (string) file_get_contents($file),
+                $matches,
+                PREG_SET_ORDER
+            );
+
+            foreach ($matches as $match) {
+                $class = $match[1];
+
+                if (! class_exists($class) && ! interface_exists($class)) {
+                    continue;
+                }
+
+                $extension = (new \ReflectionClass($class))->getExtensionName();
+
+                if ($extension === false || in_array($extension, $alwaysPresent, true)) {
+                    continue;
+                }
+
+                $found['ext-'.strtolower($extension)] ??= $class.' ('.basename($file).')';
+            }
+        }
+
+        return $found;
+    }
+
     /**
      * Every `illuminate/*` package our shipped code imports from, mapped to one import
      * that proves it.
