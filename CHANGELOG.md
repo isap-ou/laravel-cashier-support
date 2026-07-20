@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.0.0] - 2026-07-20
+
 > The first release, **1.0.0**. The package was never published to a consumer, so
 > its pre-release history has been collapsed into this one entry rather than
 > carried as a version trail that describes tags nobody ever installed.
@@ -1026,4 +1030,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gating already did. Calling a `GatewayProvider` directly is a driver-level
   contract and is not gated.
 
-[Unreleased]: https://github.com/isap-ou/laravel-cashier-support/commits/main
+[Unreleased]: https://github.com/isap-ou/laravel-cashier-support/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/isap-ou/laravel-cashier-support/releases/tag/v1.0.0
