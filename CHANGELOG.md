@@ -691,6 +691,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The eight migrations are four, and every one is dated (BREAKING for anyone who ran the old
+  ones — nobody has, which is why it is now).** They shipped with no `YYYY_MM_DD_HHMMSS_` prefix,
+  and Laravel only re-stamps a published migration that *already* has one
+  (`VendorPublishCommand::ensureMigrationNameIsUpToDate()` guards on
+  `preg_match('/\d{4}_(\d{2})_(\d{2})_(\d{6})_/')` and otherwise returns the name untouched). So
+  they published undated and sorted **after** every dated migration the consuming app already
+  had — any app migration touching a cashier table ran first and died on "no such table". Both
+  references get this right; we did not. `MigrationsTest` now fails the build on an undated file,
+  because the symptom appears only in a consumer's app: Testbench loads ours by path rather than
+  publishing them, so no suite of ours could ever have caught it.
+
+  With zero installs there was no history to preserve, so the four `extend_*`/`make_*` migrations
+  were folded into the `create_*` they amended. Two things were fixed while the tables were open,
+  both of which are far cheaper now than after a tag: `subscription_id` on items and invoices had
+  a column and an index but **no constraint** — items now `cascadeOnDelete` (an item without its
+  subscription records nothing) while invoices `nullOnDelete` (an invoice is a financial record
+  and must outlive what it paid for). And `cashier_invoices` gained
+  `(owner_type, owner_id, provider, issued_at)`, because `ManagesLocalInvoices::invoiceQuery()`
+  filters on the first three and sorts by the fourth — previously a filesort over every invoice a
+  billable had ever had, on exactly the billing-history endpoint the table exists for.
+
+- **`Cashier::fake()` no longer breaks half of `Billable`.** It registered the gateway and swapped
+  the default driver but bound no models — and `Models\*` are abstract, so `$user->charge()`
+  worked while `$user->subscribed()`, `->subscription()` and `->subscriptions()` raised
+  `InvalidConfigurationException`. That contradicted `fake()`'s own docblock ("test its billing
+  code with no real driver installed"), and the exception's advice could not be followed: the
+  fake has no service provider to call `useModels()` from, and with no driver installed there was
+  no concrete class to name. Four thin models now ship — `Testing\FakeSubscription`,
+  `FakeSubscriptionItem`, `FakeCustomer`, `FakeInvoice` — and `fake()` binds them. This also
+  repairs a regression rather than only a gap: bindings are per-driver, so calling `fake()` in a
+  suite that *had* a working driver used to take its model bindings away with it.
+
+- **An invoice's per-line tax now reaches its total.** `addLine(taxAmount: …)` was accepted,
+  stored on the DTO and rendered on the document while contributing nothing — so
+  `addLine('Pro', 1000, taxAmount: 200)` produced an invoice showing €2.00 of VAT on its line and
+  a Total of €10.00. Not a rounding quibble: that document is wrong for a VAT filing, and the
+  caller did exactly what the API invited. Per-line tax now sums into the total; when `tax()` is
+  *also* called the two must agree, because two sources for one number cannot be reconciled by
+  silently preferring either. `tax()` and `discount()` refuse a negative, and a discount that
+  would drive the total below zero is refused at `build()` — an invoice is not a refund.
+
+- **`Contracts\ChargeOperations` says that a charge is not idempotent unless you make it one.**
+  The contract was silent, so an app had no signal that dispatching `charge()` from a queued job
+  risks a double charge on the first retry — the gateway takes the money, the worker dies before
+  returning, Laravel retries the job. `$options['idempotency_key']` is now named as the
+  conventional key, with the reason it must come from the *caller* (a key minted per request
+  protects the transport's own retry and nothing above it). Deliberately documentation and not a
+  default: neither reference documents idempotency at the Cashier level, and whether a gateway
+  deduplicates at all is the driver's fact — inventing one here would make the same call safe or
+  unsafe depending on which driver is installed. `refund()` carries the same note; a double
+  refund and a double charge are one defect pointing opposite ways.
+
+- **The dependency sweep could not catch the case it was written for, and the polyfill names were
+  wrong.** `extensionsUsed()` skipped an unqualified import whose class `class_exists()` could not
+  resolve — which is precisely a class from an extension the CI runner lacks, i.e. the shape the
+  test exists to prevent. It only worked for `ext-intl` because the runner had intl installed
+  alongside; remove that and the guard went green while the bug returned. Unresolvable imports now
+  fail loudly. Separately, `Symfony\Polyfill\Intl\Idn` derived `symfony/polyfill-intl` — a package
+  that does not exist — because only the first segment was consumed; all four Intl polyfills
+  mis-derived, so the failure advised requiring a phantom.
+
 - **`ext-intl` and `symfony/console` are now declared, and the dependency sweep can finally see
   them.** Two more of exactly the defect #43 was filed about, both shipped for as long as the code
   did. `Cashier::formatAmount()` builds a `NumberFormatter` (`src/CashierManager.php`) — a class
