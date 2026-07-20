@@ -244,4 +244,40 @@ class MigrationsTest extends TestCase
             }
         }
     }
+
+    public function test_every_shipped_migration_is_dated(): void
+    {
+        // Laravel re-stamps a published migration's date ONLY when it already has one:
+        // VendorPublishCommand::ensureMigrationNameIsUpToDate() guards on
+        // preg_match('/\d{4}_(\d{2})_(\d{2})_(\d{6})_/', $to) and otherwise returns the name
+        // untouched. So an undated file publishes undated — and since migrations run in
+        // filename order, `create_cashier_subscriptions_table.php` sorts AFTER every dated
+        // migration the app already had. Any app migration touching a cashier table then runs
+        // first and dies on "no such table".
+        //
+        // Both references get this right (laravel/cashier ships 2019_05_03_000001_…); we did
+        // not, until the tables were consolidated before 1.0. This is the guard, because the
+        // failure appears only in a consumer's app and never in our own suite — Testbench
+        // loads these by path, not by publishing them.
+        $undated = [];
+
+        foreach (glob(dirname(__DIR__, 2).'/database/migrations/*.php') ?: [] as $path) {
+            if (preg_match('/^\d{4}_\d{2}_\d{2}_\d{6}_/', basename($path)) !== 1) {
+                $undated[] = basename($path);
+            }
+        }
+
+        $this->assertSame([], $undated, sprintf(
+            "Every shipped migration must be prefixed YYYY_MM_DD_HHMMSS_, or it publishes\n"
+            ."undated and sorts after the consuming app's own migrations:\n  %s",
+            implode("\n  ", $undated)
+        ));
+
+        // Guards the guard: a wrong path would make the loop vacuous and pass by finding
+        // nothing to check.
+        $this->assertNotEmpty(
+            glob(dirname(__DIR__, 2).'/database/migrations/*.php'),
+            'Found no migrations — this test is not looking where it thinks.'
+        );
+    }
 }

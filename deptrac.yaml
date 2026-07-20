@@ -210,6 +210,24 @@ deptrac:
       - DTO
       - Contracts
       - ServiceProvider
+      # Models, for the four Fake* records Cashier::fake() binds — and for nothing else.
+      # Models\* are abstract so each driver names its own concrete class, which left
+      # Cashier::fake() unable to answer $user->subscribed(): there was no concrete class
+      # to register for the [fake] driver, and no service provider to register it from.
+      # Supplying one means extending the abstract base, so this edge is intrinsic — the
+      # fake is doing exactly what a driver does, and a driver is allowed to.
+      #
+      # It is a narrow allowance, not an opening: Testing still may not reach Concerns,
+      # Builders, Gateway, Invoice, Manager or Casts, so a test double cannot grow into a
+      # second implementation of the package.
+      - Models
+      # Models\Invoice casts through CurrencyEloquentCast, so extending it pulls Casts in
+      # by inheritance rather than by choice. Same for Facades: the abstract models reach
+      # the gateway and the model registry through Cashier::, so a concrete subclass
+      # inherits that edge whether it wants it or not. Both are consequences of extending,
+      # not new couplings the fake introduces.
+      - Casts
+      - Facades
 
     ServiceProvider:
       - Manager

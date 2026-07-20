@@ -183,7 +183,7 @@ class DeclaredDependenciesTest extends TestCase
                 }
 
                 $matched = preg_match(
-                    '/^use\s+\\\\?Symfony\\\\(Component|Contracts|Polyfill)\\\\([A-Za-z0-9_]+)\\\\[A-Za-z0-9_\\\\]+\s*(?:as\s+[A-Za-z0-9_]+\s*)?;$/',
+                    '/^use\s+\\\\?Symfony\\\\(Component|Contracts|Polyfill)\\\\(([A-Za-z0-9_]+)(?:\\\\[A-Za-z0-9_]+)*)\s*(?:as\s+[A-Za-z0-9_]+\s*)?;$/',
                     $statement,
                     $match
                 );
@@ -197,12 +197,24 @@ class DeclaredDependenciesTest extends TestCase
                 // HttpFoundation → http-foundation, Console → console. Symfony holds the
                 // namespace-root-is-the-package rule exactly for its Components; Contracts and
                 // Polyfill append their own suffix instead.
-                $name = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $match[2]));
+                $kebab = static fn (string $segment): string => strtolower(
+                    (string) preg_replace('/(?<!^)[A-Z]/', '-$0', $segment)
+                );
+
+                // $match[2] is everything after the vendor segment, $match[3] just its head.
+                $segments = explode('\\', $match[2]);
 
                 $package = match ($match[1]) {
-                    'Contracts' => "symfony/{$name}-contracts",
-                    'Polyfill' => "symfony/polyfill-{$name}",
-                    default => "symfony/{$name}",
+                    'Contracts' => 'symfony/'.$kebab($match[3]).'-contracts',
+                    // A polyfill's package name consumes every segment BUT the class:
+                    // Symfony\Polyfill\Intl\Idn\Idn is symfony/polyfill-intl-idn, and there is
+                    // no symfony/polyfill-intl at all. Taking only the head named a package
+                    // that does not exist, so the failure advised requiring a phantom.
+                    'Polyfill' => 'symfony/polyfill-'.implode(
+                        '-',
+                        array_map($kebab, array_slice($segments, 0, -1))
+                    ),
+                    default => 'symfony/'.$kebab($match[3]),
                 };
 
                 $found[$package] ??= $match[0].' ('.basename($file).')';
@@ -236,6 +248,7 @@ class DeclaredDependenciesTest extends TestCase
         $alwaysPresent = ['Core', 'standard', 'SPL', 'date', 'pcre', 'Reflection', 'json'];
 
         $found = [];
+        $unresolvable = [];
 
         foreach ($this->shippedFiles() as $file) {
             preg_match_all(
@@ -249,6 +262,15 @@ class DeclaredDependenciesTest extends TestCase
                 $class = $match[1];
 
                 if (! class_exists($class) && ! interface_exists($class)) {
+                    // NOT a silent skip, and this is the whole point. Reflection is how the
+                    // extension is identified, so a class from an extension the CI runner does
+                    // not have would be unclassifiable — and skipping it means this guard goes
+                    // green on exactly the case it exists to catch: shipped code importing a
+                    // class a consumer's PHP may not provide. The first version of this sweep
+                    // did skip, so it only ever worked because the runner happened to have
+                    // ext-intl installed alongside.
+                    $unresolvable[] = $class.' ('.basename($file).')';
+
                     continue;
                 }
 
@@ -261,6 +283,16 @@ class DeclaredDependenciesTest extends TestCase
                 $found['ext-'.strtolower($extension)] ??= $class.' ('.basename($file).')';
             }
         }
+
+        $this->assertSame(
+            [],
+            $unresolvable,
+            'Shipped code imports an unqualified class this PHP build cannot resolve, so this '
+            ."test cannot tell which extension provides it:\n  "
+            .implode("\n  ", $unresolvable)
+            ."\nEither the extension is missing from this environment — install it, and declare "
+            .'it in composer.json — or the import is dead and should go.'
+        );
 
         return $found;
     }
