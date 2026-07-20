@@ -178,6 +178,45 @@ class GuardedProviderTest extends TestCase
         $guard->swapSubscription(new User, 'default', $prices);
     }
 
+    /**
+     * @return array<string, array{array<int, mixed>}>
+     */
+    public static function unusablePrices(): array
+    {
+        return [
+            'null' => [[null]],
+            'a nested array' => [[['price_1']]],
+            'an integer' => [[123]],
+            'a boolean' => [[true]],
+        ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $prices
+     */
+    #[DataProvider('unusablePrices')]
+    public function test_a_price_that_is_not_a_string_is_refused_as_an_argument_error(array $prices): void
+    {
+        // array_filter is an internal function, so its callback runs in WEAK mode regardless of
+        // this package's declare(strict_types=1). With the callback typed `string`, these four
+        // produced three different wrong answers: [123] and [true] were coerced and sailed
+        // through to the driver, while [null] and a nested array raised a TypeError — which is
+        // outside the CashierException hierarchy AND contradicts the @throws this guard exists
+        // to honour. `$request->input('prices')` on an absent or nested field is how a caller
+        // gets there.
+        //
+        // PHPStan cannot catch this: the parameter is annotated array<int, string>, so level 8
+        // trusts the annotation and never models what the array holds at runtime. Only a test
+        // that actually passes the wrong thing can.
+        /** @var array<int, string> $prices */
+        $guard = $this->guard([Capability::Subscriptions]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('at least one price');
+
+        $guard->newSubscription(new User, 'default', $prices);
+    }
+
     public function test_the_capability_gate_outranks_the_empty_price_guard(): void
     {
         // Same ordering as quantity and trialDays: a gateway that cannot subscribe at all must

@@ -131,15 +131,32 @@ trait GuardsSubscriptions
      * knows how many prices its gateway bills one subscription on; support does not, and
      * guessing a number here would be the abstraction describing one gateway.
      *
-     * @param  string|array<int, string>  $prices
+     * The parameter is annotated `mixed`-valued on purpose, and it is the only place in this
+     * package that is. Everywhere else `array<int, string>` is a promise the contract makes;
+     * here it is the very thing being checked, so accepting it as given would make the check
+     * circular — PHPStan would report `is_string()` as always-true off the annotation while
+     * the runtime array happily holds a null. This method is the boundary at which that
+     * promise stops being assumed.
+     *
+     * @param  string|array<int, mixed>  $prices
      *
      * @throws InvalidArgumentException When $prices names no usable price.
      */
     private function ensurePricesArePresent(string|array $prices, string $action): void
     {
+        // `mixed` and an explicit is_string, not a `string` parameter, and the difference is
+        // not stylistic. array_filter is an internal function, so its callback is invoked in
+        // WEAK mode — this file's declare(strict_types=1) does not reach it. A `string` hint
+        // would therefore coerce `[123]` and `[true]` into passing, and raise a TypeError for
+        // `[null]` or a nested array: three different wrong answers, and the TypeError one
+        // escapes the CashierException hierarchy while contradicting the @throws above.
+        // `$request->input('prices')` on an absent or nested field is exactly how a caller
+        // reaches those. PHPStan cannot see any of it — the param is annotated
+        // array<int, string>, so level 8 trusts the annotation and never models the runtime
+        // array.
         $named = array_filter(
             is_array($prices) ? $prices : [$prices],
-            static fn (string $price): bool => trim($price) !== '',
+            static fn (mixed $price): bool => is_string($price) && trim($price) !== '',
         );
 
         if ($named === []) {

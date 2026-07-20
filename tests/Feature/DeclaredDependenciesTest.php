@@ -165,22 +165,57 @@ class DeclaredDependenciesTest extends TestCase
     private function symfonyImports(): array
     {
         $found = [];
+        $unrecognised = [];
 
         foreach ($this->shippedFiles() as $file) {
-            preg_match_all(
-                '/^use\s+\\\\?Symfony\\\\Component\\\\([A-Za-z0-9_]+)\\\\[A-Za-z0-9_\\\\]+\s*(?:as\s+[A-Za-z0-9_]+\s*)?;$/m',
-                (string) file_get_contents($file),
-                $matches,
-                PREG_SET_ORDER
-            );
+            // The same loose denominator the Illuminate sweep uses, and for the same reason:
+            // a strict pattern classifies what it anticipates and *silently skips* the rest,
+            // which is the failure mode this whole test exists to prevent. A first draft
+            // matched only `use Symfony\Component\X\Y;` — so a group use, a trailing comment,
+            // `use function`, and every `Symfony\Contracts\*` / `Symfony\Polyfill\*` import
+            // passed unnoticed. The first two of those are installed in this tree today and
+            // are ordinary things for a Laravel package to import.
+            preg_match_all('/^use\s+[^;]*;/m', (string) file_get_contents($file), $statements);
 
-            foreach ($matches as $match) {
-                // HttpFoundation → http-foundation, Console → console.
-                $package = 'symfony/'.strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $match[1]));
+            foreach ($statements[0] as $statement) {
+                if (! str_contains($statement, 'Symfony')) {
+                    continue;
+                }
+
+                $matched = preg_match(
+                    '/^use\s+\\\\?Symfony\\\\(Component|Contracts|Polyfill)\\\\([A-Za-z0-9_]+)\\\\[A-Za-z0-9_\\\\]+\s*(?:as\s+[A-Za-z0-9_]+\s*)?;$/',
+                    $statement,
+                    $match
+                );
+
+                if ($matched !== 1) {
+                    $unrecognised[] = basename($file).': '.preg_replace('/\s+/', ' ', $statement);
+
+                    continue;
+                }
+
+                // HttpFoundation → http-foundation, Console → console. Symfony holds the
+                // namespace-root-is-the-package rule exactly for its Components; Contracts and
+                // Polyfill append their own suffix instead.
+                $name = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $match[2]));
+
+                $package = match ($match[1]) {
+                    'Contracts' => "symfony/{$name}-contracts",
+                    'Polyfill' => "symfony/polyfill-{$name}",
+                    default => "symfony/{$name}",
+                };
 
                 $found[$package] ??= $match[0].' ('.basename($file).')';
             }
         }
+
+        $this->assertSame(
+            [],
+            $unrecognised,
+            "This test could not classify a Symfony import, so it cannot vouch for it:\n  "
+            .implode("\n  ", $unrecognised)
+            ."\nTeach the pattern that form rather than letting it pass unchecked."
+        );
 
         return $found;
     }

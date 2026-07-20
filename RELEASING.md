@@ -4,6 +4,10 @@ This package is versioned with [Semantic Versioning](https://semver.org) and
 distributed via git tags (Packagist reads the tags — there is intentionally no
 `version` field in `composer.json`).
 
+> **This package is released FIRST.** Drivers require `isapp/laravel-cashier-support:
+> ^1.0`, so this tag must exist *and be live on Packagist* before any driver is tagged.
+> Tag a driver first and every consumer's `composer require` fails. Details in §6.
+
 ## 1. Pre-flight
 
 - [ ] All intended changes are merged into `main`.
