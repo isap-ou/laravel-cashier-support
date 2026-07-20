@@ -10,6 +10,16 @@ distributed via git tags (Packagist reads the tags — there is intentionally no
 
 ## 1. Pre-flight
 
+- [ ] **Ask Packagist what is already published — not git.** `git tag` and `gh release list`
+      describe the repository, not the registry, and the two can disagree: a deleted tag
+      leaves the published version in place, immutable and invisible from here.
+      ```bash
+      curl -s https://repo.packagist.org/p2/isapp/laravel-cashier-support.json \
+        | python3 -c "import sys,json; print([p['version'] for p in json.load(sys.stdin)['packages']['isapp/laravel-cashier-support']])"
+      ```
+      The next version must be strictly above everything that command returns *and* above
+      anything the package page lists as deleted or missing upstream. A number that was ever
+      published cannot be reused — deleting the version does not free it.
 - [ ] All intended changes are merged into `main`.
 - [ ] `main` is green in CI (tests matrix + quality job).
 - [ ] Locally on an up-to-date `main`, everything passes:
@@ -67,8 +77,15 @@ git push origin vX.Y.Z
 
 - [ ] Packagist updates automatically via the GitHub webhook; confirm the new
       version appears (or click **Update** on the package page).
-- [ ] (Optional) Create a GitHub Release from the tag, pasting the `X.Y.Z`
-      CHANGELOG section as the body.
+- [ ] Create a GitHub Release from the tag, pasting the `X.Y.Z` CHANGELOG section as the
+      body. **Not optional, and the reason is not presentation.** A Release is a record on
+      GitHub rather than a ref in git, so it survives the tag being deleted — which is
+      exactly what went wrong on 2026-07-20: `1.0.0` and `1.1.0` had been published on
+      2026-07-01 and their tags later removed, so `git tag` and `gh release list` were both
+      empty and the repository looked as though it had never been released. It had. Hours
+      were spent tagging a version Packagist would refuse, and the number was burned.
+
+      A Release would have said so on the first check.
 - [ ] `composer require isapp/laravel-cashier-support:^X.Y` resolves the release —
       run it in a scratch project **outside this monorepo**. Inside it, the driver's
       `path` repository can satisfy the constraint locally and prove nothing.

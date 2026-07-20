@@ -9,11 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _Nothing yet._
 
-## [1.0.0] - 2026-07-20
+## [1.2.0] - 2026-07-20
 
-> The first release, **1.0.0**. The package was never published to a consumer, so
-> its pre-release history has been collapsed into this one entry rather than
-> carried as a version trail that describes tags nobody ever installed.
+> **Why 1.2.0 and not 1.0.0.** Versions `1.0.0` and `1.1.0` were published to Packagist on
+> 2026-07-01 and their tags later deleted from git — so the repository looked untagged while
+> Packagist still served them. Published versions there are immutable: deleting the `1.0.0`
+> record and re-tagging did not free the number, and Packagist restored its original commit
+> reference. `1.2.0` is the first number strictly above everything ever published, so it can
+> never collide. This is the first release of the package as it now stands.
+
+
+> The pre-release history is collapsed into this one entry rather than carried as a version
+> trail. Packagist reports 0 installs across the 2026-07-01 versions, so no consumer is being
+> deprived of a changelog they relied on.
 
 ### Added
 
@@ -1030,5 +1038,5 @@ _Nothing yet._
   gating already did. Calling a `GatewayProvider` directly is a driver-level
   contract and is not gated.
 
-[Unreleased]: https://github.com/isap-ou/laravel-cashier-support/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/isap-ou/laravel-cashier-support/releases/tag/v1.0.0
+[Unreleased]: https://github.com/isap-ou/laravel-cashier-support/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/isap-ou/laravel-cashier-support/releases/tag/v1.2.0
