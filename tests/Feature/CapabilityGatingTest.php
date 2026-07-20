@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Isapp\CashierSupport\Tests\Feature;
 
+use InvalidArgumentException;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
 use Isapp\CashierSupport\Facades\Cashier;
@@ -116,6 +117,54 @@ class CapabilityGatingTest extends TestCase
         $this->assertSame('sub_fake', $subscription->id);
         // The guard must forward, not merely not-throw.
         $this->assertSame(14, $gateway->lastBuilder?->trialDays);
+    }
+
+    public function test_a_negative_trial_is_refused(): void
+    {
+        // The contract has promised this since it was written — Contracts\SubscriptionBuilder:25
+        // declares "@throws InvalidArgumentException When the number of days is negative" — and
+        // nothing threw it. Third instance of the defect .claude/rules/exceptions.md was written
+        // about, after charge() and ->quantity(0): a declared guard that exists only in the
+        // docblock sends the caller's own typo to the gateway, where it comes back a 4xx and
+        // arrives as a *billing* failure the app is invited to catch and swallow.
+        $gateway = new FakeGateway([...self::BASE, Capability::SubscriptionTrials]);
+        Cashier::extend('fake', fn () => $gateway);
+
+        try {
+            (new User)->newSubscription('default', 'price_1')->trialDays(-1);
+            $this->fail('Expected a negative trial to be refused.');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('-1', $e->getMessage());
+        }
+
+        $this->assertNull($gateway->lastBuilder?->trialDays, 'Nothing may reach the driver\'s builder.');
+    }
+
+    public function test_a_trial_of_zero_days_is_legal_and_reaches_the_builder(): void
+    {
+        // Where this parts company with its neighbour ->quantity(0), deliberately. Zero seats is
+        // a typo — there is no such subscription. Zero trial days is an ordinary answer, and the
+        // shape that produces it is ordinary too: trialDays(max(0, $daysLeftOnTheOldPlan)).
+        // Refusing it would turn "this customer has no trial left" into an exception the app has
+        // to pre-empt with an if, which is the guard doing the caller's arithmetic for it.
+        $gateway = new FakeGateway([...self::BASE, Capability::SubscriptionTrials]);
+        Cashier::extend('fake', fn () => $gateway);
+
+        (new User)->newSubscription('default', 'price_1')->trialDays(0)->create();
+
+        $this->assertSame(0, $gateway->lastBuilder?->trialDays);
+    }
+
+    public function test_the_capability_gate_outranks_the_trial_guard(): void
+    {
+        // Same order as quantity, for the same reason: a gateway with no trials at all must say
+        // THAT, not quibble with the number — otherwise an app fixing the "invalid trial" it was
+        // told about reaches the real answer only on the second try.
+        $this->driverSupporting(self::BASE);
+
+        $this->expectException(UnsupportedOperationException::class);
+
+        (new User)->newSubscription('default', 'price_1')->trialDays(-1);
     }
 
     public function test_the_guard_forwards_every_other_builder_call(): void

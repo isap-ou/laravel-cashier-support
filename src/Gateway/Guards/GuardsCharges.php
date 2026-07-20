@@ -11,6 +11,8 @@ use Isapp\CashierSupport\Enums\Capability;
 
 /**
  * Capability gating for the ChargeOperations surface, composed into GuardedProvider.
+ *
+ * @internal Composed into Gateway\GuardedProvider, which is what Cashier::provider() returns. An app reaches this through the facade, never by name. Not public surface: outside the backward-compatibility promise in README.
  */
 trait GuardsCharges
 {

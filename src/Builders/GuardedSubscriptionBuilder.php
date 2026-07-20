@@ -22,6 +22,8 @@ use Isapp\CashierSupport\Facades\Cashier;
  * and the value went nowhere. A trial that does not trial, a quantity that is
  * not billed, metadata a gateway has nowhere to put: silence, and data on the
  * floor.
+ *
+ * @internal Returned by Gateway\GuardedProvider::newSubscription(); an app holds it as a Contracts\SubscriptionBuilder and never constructs it. That CONTRACT is public and covered; this wrapper is not.
  */
 final class GuardedSubscriptionBuilder implements SubscriptionBuilder
 {
@@ -43,10 +45,31 @@ final class GuardedSubscriptionBuilder implements SubscriptionBuilder
 
     /**
      * {@inheritDoc}
+     *
+     * **Another guard the contract had already promised** — Contracts\SubscriptionBuilder:25
+     * says "@throws InvalidArgumentException When the number of days is negative", and nothing
+     * threw it. Third instance of the defect `.claude/rules/exceptions.md` was written about,
+     * after charge() and quantity(): a guard that lives only in a docblock lets the caller's own
+     * typo travel to the gateway, where it returns a 4xx and arrives as a *billing* failure the
+     * app is invited to catch — inverting the boundary exactly.
+     *
+     * **Zero is legal here, and that is the deliberate difference from its neighbour.**
+     * quantity(0) is refused because there is no such subscription — zero seats is a typo. Zero
+     * trial days is an ordinary answer, and the expression that produces it is ordinary too:
+     * `trialDays(max(0, $daysLeftOnTheOldPlan))`. Refusing it would make the guard do the
+     * caller's arithmetic, forcing an `if` around a call that already means "no trial".
+     *
+     * @throws InvalidArgumentException When $days is negative.
      */
     public function trialDays(int $days): static
     {
         Cashier::ensureSupports(Capability::SubscriptionTrials, $this->driver);
+
+        if ($days < 0) {
+            throw new InvalidArgumentException(
+                "A trial cannot run for a negative number of days, {$days} given. To start billing immediately, pass 0 or omit the trial."
+            );
+        }
 
         $this->builder = $this->builder->trialDays($days);
 

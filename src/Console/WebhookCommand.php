@@ -30,7 +30,7 @@ class WebhookCommand extends Command
     protected $signature = 'cashier:webhook
             {provider? : The gateway driver to register with; defaults to the configured one}
             {--url= : The publicly reachable webhook URL; defaults to this app\'s cashier.webhook route}
-            {--events=* : Native event names to subscribe to; defaults to every event the driver handles}';
+            {--events=* : Native event names to subscribe to; defaults to the gateway\'s whole catalogue}';
 
     protected $description = 'Register this application\'s webhook endpoint with a gateway.';
 
@@ -85,6 +85,12 @@ class WebhookCommand extends Command
         $this->info("Webhook registered with [{$provider}]: {$url}");
         $this->line("Endpoint id: {$registration->id}");
 
+        // Contracts\RegistersWebhooks creates and does not read (#77), so neither this command
+        // nor the driver can tell a first registration from a fifth. The gateway will deliver to
+        // every endpoint it holds, and the duplicates are invisible from here — so say it rather
+        // than let it be discovered by events arriving two and three times.
+        $this->line('If an endpoint for this URL already existed, this created a second one — remove the extras in the gateway\'s dashboard.');
+
         if ($registration->secret === null) {
             // Stripe's case, and its own command says the same thing: the gateway does
             // not hand the secret back here. Not a failure.
@@ -121,11 +127,12 @@ class WebhookCommand extends Command
     }
 
     /**
-     * The requested events, or none — which the driver reads as "all of mine".
+     * The requested events, or none — which the driver reads as "the gateway's whole
+     * catalogue", not "the ones I apply" (#76).
      *
      * Not validated here: the catalogue is native, gateway-specific names, and a copy of
      * it in this package would be a second source of truth that goes stale. The driver
-     * refuses an unknown one, per RegistersWebhooks::registerWebhook().
+     * refuses a name the gateway does not document, per RegistersWebhooks::registerWebhook().
      *
      * @return array<int, string>
      */

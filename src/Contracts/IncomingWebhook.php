@@ -69,7 +69,11 @@ interface IncomingWebhook
      * we merely have no opinion about into a failed delivery the gateway retries forever.
      * Bodies that are not events at all are parse()'s business, not this method's.
      *
-     * @return bool True when the event was applied; false when the driver does not map it.
+     * @return bool True when the delivery had an effect; false when it did not. Not mapping the
+     *              event is only the commonest reason for false — a driver that DOES map it and
+     *              then finds nothing to apply it to (a resource it holds no local record of, an
+     *              owner that resolves to nobody, a body naming a resource that is gone) must
+     *              also answer false. "Recognised" is not "applied".
      *              The controller dispatches WebhookHandled only for true — announcing a
      *              webhook was handled when nothing happened is the silence #42 removed,
      *              wearing the opposite mask.

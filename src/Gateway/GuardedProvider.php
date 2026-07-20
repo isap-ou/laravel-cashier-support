@@ -41,6 +41,8 @@ use Isapp\CashierSupport\Gateway\Guards\GuardsSubscriptions;
  *
  * The thrown type is unchanged (UnsupportedOperationException), so a caller that
  * catches it, and every test that asserts it, is unaffected by where the gate moved.
+ *
+ * @internal The wrapper Cashier::provider() returns around every driver. Constructed by CashierManager, never by an app or a driver. Not public surface: outside the backward-compatibility promise in README.
  */
 final class GuardedProvider implements GatewayProvider
 {

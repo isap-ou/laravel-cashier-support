@@ -19,6 +19,8 @@ use Isapp\CashierSupport\Enums\SwapTiming;
  * Swap gates on the caller's intent — a defer-only gateway must reject an Immediate swap — so
  * its capability comes from the timing, not the method. Pause is immediate-only (#72), so it
  * gates its one capability directly, like resume and cancel.
+ *
+ * @internal Composed into Gateway\GuardedProvider, which is what Cashier::provider() returns. An app reaches this through the facade, never by name. Not public surface: outside the backward-compatibility promise in README.
  */
 trait GuardsSubscriptions
 {

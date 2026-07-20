@@ -17,6 +17,8 @@ use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
  * that mixed this in alongside a trait of its own implementing charge() would hit the fatal
  * trait collision that made BaseGateway a class in the first place; inherited from the base
  * it is simply overridden. See BaseGateway.
+ *
+ * @internal Composed into Gateway\BaseGateway, which a driver extends — never used directly (two traits defining one method is a fatal collision; see BaseGateway's docblock). Not public surface: outside the backward-compatibility promise in README.
  */
 trait RefusesCharges
 {

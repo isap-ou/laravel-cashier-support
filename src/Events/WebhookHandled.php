@@ -13,10 +13,13 @@ use Illuminate\Queue\SerializesModels;
  * match, or an app has to read one webhook two different ways. Both references
  * dispatch the same array to both events.
  *
- * Unlike WebhookReceived, this one does NOT fire for an event the driver did not
- * map: nothing was handled, and saying otherwise would trade the old silence for a
- * lie. The reference draws the same line — it dispatches WebhookHandled only when a
- * handler existed (laravel/cashier's WebhookController.php:47-52).
+ * Unlike WebhookReceived, this one does NOT fire when the delivery had no effect:
+ * nothing was handled, and saying otherwise would trade the old silence for a lie.
+ * That covers more than an event the driver did not map — a driver that maps the
+ * event and then finds nothing to apply it to must report the same, so a listener
+ * reconciling on this event is never told about a change that did not happen. The
+ * reference draws the same line — it dispatches WebhookHandled only when a handler
+ * existed (laravel/cashier's WebhookController.php:47-52).
  *
  * What keeps that true here is the bool from Contracts\IncomingWebhook::pipeline(),
  * which is that method_exists() check moved behind the contract. It has to be a

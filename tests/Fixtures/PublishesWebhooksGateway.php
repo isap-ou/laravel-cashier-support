@@ -42,8 +42,9 @@ class PublishesWebhooksGateway extends FakeGateway implements RegistersWebhooks
 
     public function registerWebhook(string $url, array $events): WebhookRegistration
     {
-        // Both contract rules, honoured the way a driver must: empty means all of mine,
-        // and an unknown name throws rather than subscribing the endpoint to nothing.
+        // Both contract rules, honoured the way a driver must: empty means the gateway's whole
+        // catalogue — not the subset this driver applies (#76) — and a name outside that
+        // catalogue throws rather than subscribing the endpoint to nothing.
         $events = $events === [] ? self::EVENTS : $events;
 
         foreach ($events as $event) {

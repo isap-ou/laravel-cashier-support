@@ -13,6 +13,8 @@ use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
  * Contracts\CheckoutOperations, refused.
  *
  * Composed into Gateway\BaseGateway — see its docblock before using this directly.
+ *
+ * @internal Composed into Gateway\BaseGateway, which a driver extends — never used directly (two traits defining one method is a fatal collision; see BaseGateway's docblock). Not public surface: outside the backward-compatibility promise in README.
  */
 trait RefusesCheckout
 {

@@ -47,11 +47,23 @@ class WebhookCommandTest extends TestCase
         $this->assertStringContainsString('/webhook/cashier/fake', (string) $this->gateway->registeredUrl);
     }
 
-    public function test_it_defaults_to_every_event_the_driver_handles(): void
+    public function test_it_defaults_to_the_gateways_whole_catalogue(): void
     {
         $this->artisan('cashier:webhook')->assertSuccessful();
 
         $this->assertSame(['order.completed', 'order.failed'], $this->gateway->registeredEvents);
+    }
+
+    public function test_it_warns_that_a_second_run_creates_a_second_endpoint(): void
+    {
+        // #77 froze Contracts\RegistersWebhooks at create-only, so neither this command nor a
+        // driver can tell a first registration from a fifth — the gateway will deliver to every
+        // endpoint it holds. Undetectable is not the same as unsayable, and the alternative to
+        // saying it is an operator discovering duplicates by events arriving twice. Asserted
+        // here because a warning nothing pins is a warning that can be deleted by accident.
+        $this->artisan('cashier:webhook')
+            ->expectsOutputToContain('already existed')
+            ->assertSuccessful();
     }
 
     public function test_an_unknown_event_is_refused_and_nothing_is_registered(): void

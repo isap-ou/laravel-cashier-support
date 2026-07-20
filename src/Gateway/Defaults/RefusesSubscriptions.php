@@ -21,6 +21,8 @@ use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
  * each separately absent from real gateways (Revolut has none of the three).
  *
  * Composed into Gateway\BaseGateway — see its docblock before using this directly.
+ *
+ * @internal Composed into Gateway\BaseGateway, which a driver extends — never used directly (two traits defining one method is a fatal collision; see BaseGateway's docblock). Not public surface: outside the backward-compatibility promise in README.
  */
 trait RefusesSubscriptions
 {
