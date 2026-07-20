@@ -111,8 +111,9 @@ class FakeGateway implements GatewayProvider
     public ?Throwable $webhookParseFailure = null;
 
     /**
-     * What pipeline() returns. False is the case that matters: an event this driver
-     * does not map, which must NOT throw.
+     * What pipeline() returns. False is the case that matters: a delivery that had no
+     * effect — an event the driver does not map, or one it maps and finds nothing to
+     * apply to — which must NOT throw.
      */
     public bool $webhookHandled = true;
 

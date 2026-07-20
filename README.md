@@ -417,6 +417,47 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed between versions, and
 [RELEASING.md](RELEASING.md) for the release process. This package follows
 [Semantic Versioning](https://semver.org).
 
+### What SemVer covers here
+
+"Public API" is narrower than "every `public` method in `src/`", and the difference
+matters in both directions — so it is written down rather than left to be inferred from
+a tag.
+
+**Covered — a breaking change to any of these requires a major release:**
+
+- The `Billable` trait's surface, and the `Concerns\*` traits it composes.
+- `Models\Subscription`, `Models\SubscriptionItem`, `Models\Customer`, `Models\Invoice` —
+  their predicates, query scopes, relations and lifecycle mutators.
+- Every `DTO\*` class, `Enums\*` case and `Events\*` payload.
+- The `Contracts\*` interfaces **as an app consumes them** — signatures, return types and
+  the `@throws` each one declares.
+- The published config keys and the shipped migrations' column names.
+
+**Not covered:**
+
+- Anything marked `@internal` — `Gateway\Defaults\*`, `Gateway\Guards\*`,
+  `Gateway\GuardedProvider`, `Builders\GuardedSubscriptionBuilder`. These are the wiring
+  behind `Cashier::provider()`; you reach their behaviour through the contracts above, and
+  they may change shape in a minor release.
+- `Tests\*`. Note that `Testing\*` is **not** in this list: `Testing\FakeGateway`,
+  `Testing\GatewayConformanceTestCase` and their collaborators ship on the production
+  autoloader precisely so apps and drivers can depend on them, and they are covered.
+
+**The one asymmetry worth knowing if you write a driver:** *adding* a method to an
+operations contract is **not** breaking, provided its refusal lands in the matching
+`Gateway\Defaults\Refuses*` trait in the same commit — a driver that extends
+`Gateway\BaseGateway` inherits the refusal and reports the new capability unsupported by
+itself. This is what #28 bought, and it is why the contracts can keep growing inside a
+major.
+
+That guarantee is opt-in and has two edges. It covers only drivers extending
+`BaseGateway` — one that implements `GatewayProvider` directly still takes the fatal. And
+it covers *adding* only: **changing** an existing method's signature is a fatal in every
+driver that overrode it, and no default can absorb that. `Contracts\RegistersWebhooks` and
+`Contracts\RendersInvoices` sit outside the guarantee entirely — they are opt-in
+`instanceof` interfaces with no `BaseGateway` default, so any method added to them is a
+major release. `RegistersWebhooks` is frozen at one method for that reason (#77).
+
 ## License
 
 Released under the MIT License. See [LICENSE](LICENSE).

@@ -17,6 +17,8 @@ use Isapp\CashierSupport\Exceptions\UnsupportedOperationException;
  * added to the contract was not a fatal error, and so a driver in progress still loads.
  *
  * Composed into Gateway\BaseGateway — see its docblock before using this directly.
+ *
+ * @internal Composed into Gateway\BaseGateway, which a driver extends — never used directly (two traits defining one method is a fatal collision; see BaseGateway's docblock). Not public surface: outside the backward-compatibility promise in README.
  */
 trait RefusesWebhooks
 {

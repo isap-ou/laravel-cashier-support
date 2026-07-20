@@ -114,10 +114,11 @@ class WebhookController
         // can fix from a config file, so the delivery deserves the 5xx that makes the
         // gateway retry it into writes that are idempotent by design.
         if (! $handled) {
-            // An event this driver does not map. Acknowledged, so the gateway stops
-            // retrying something no handler will ever accept — and harmless in a way it
-            // was not before, because the hatch above already fired. No WebhookHandled:
-            // nothing was handled.
+            // A delivery that had no effect — commonly an event this driver does not map,
+            // but equally one it maps and found nothing to apply to. Acknowledged, so the
+            // gateway stops retrying something no handler will ever accept — and harmless
+            // in a way it was not before, because the hatch above already fired. No
+            // WebhookHandled: nothing was handled.
             return new Response('Webhook ignored.', 200);
         }
 

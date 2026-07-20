@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A written backward-compatibility promise, and `@internal` on the machinery it excludes.**
+  A 1.0 tag otherwise freezes every `public` method in `src/`, including wiring no consumer was
+  ever meant to name. README gains a "What SemVer covers here" section drawing the line: the
+  `Billable` surface, the models' predicates/scopes/mutators, every `DTO`, `Enums` case and
+  `Events` payload, the `Contracts\*` interfaces as an app consumes them (signatures, returns and
+  each declared `@throws`), the published config keys and the shipped migrations' column names.
+  Excluded, and now marked `@internal` in code: `Gateway\Defaults\*` (7 traits),
+  `Gateway\Guards\*` (6), `Gateway\GuardedProvider` and `Builders\GuardedSubscriptionBuilder` —
+  the wiring behind `Cashier::provider()`. **`Testing\*` is deliberately NOT excluded**: it ships
+  on the production autoloader so apps can `Cashier::fake()` and drivers can extend the
+  conformance suite, which only works if it is covered. The section also records the #28
+  asymmetry a driver author needs — *adding* a contract method is free when its
+  `Defaults\Refuses*` refusal ships in the same commit, *changing* a signature never is, the
+  guarantee holds only for drivers extending `BaseGateway`, and the opt-in `instanceof`
+  interfaces (`RegistersWebhooks`, `RendersInvoices`) sit outside it entirely.
+
 - **Proration is expressible on a swap and a quantity change, as a capability rather than a port
   (#53).** New `Enums\Proration` `{Prorate, NoProrate}`, in the shape of `Enums\SwapTiming`: the
   caller states its intent and the gate answers. It carries only the one axis the two references
@@ -308,6 +324,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `pauseSubscription()` takes the new signature in its own coordinated release.
 
 ### Changed
+
+- **An empty `$events` on `registerWebhook()` means the gateway's whole catalogue, not the subset
+  the driver applies (#76).** `Contracts\RegistersWebhooks` said "every event this driver handles",
+  which cannot tell an event the driver *receives* from one it *applies* — and registration reads
+  that sentence to decide what to subscribe to. Read the applied way, a driver subscribes only to
+  what it already maps, which makes `Events\WebhookReceived` unreachable for exactly the events it
+  exists to catch: the ones no driver maps yet. That escape hatch is what #42 and #47 were built to
+  guarantee. The rule is now **subscribe wide, apply narrow** — validation still throws on an
+  unknown name, but "unknown" is measured against the gateway's catalogue, and what a driver does
+  with a delivery it does not map is a separate question answered by `Events\WebhookHandled`.
+  Docblock and command help only; no signature changed. `cashier:webhook --events` and its
+  `--events` description were reworded to match, because they restated the old rule. (#76)
+
+- **`Contracts\RegistersWebhooks` is frozen at one method, on purpose (#77).** Listing existing
+  endpoints and deleting one are operator work done in the gateway's dashboard: this interface
+  exists so an app can create the endpoint *its own route* serves, from the URL that route reports,
+  so the two cannot drift — reading and deleting answer an operations question the app has no route
+  to compare against. Recorded now rather than left open because there is no `Gateway\BaseGateway`
+  default to inherit here (that net covers `GatewayProvider`'s operations contracts, and this
+  interface is deliberately outside them), so a method added after 1.0 is an immediate fatal in
+  every implementer. `php artisan cashier:webhook` now **says** that a second run creates a second
+  endpoint and that duplicates must be cleaned up in the dashboard — the command cannot detect it,
+  and the symptom is otherwise discovered by events arriving twice. (#77)
 
 - **A missing invoice is now a catchable `InvoiceNotFoundException`, not a Symfony 404.**
   `downloadInvoice()`/`storeInvoice()` threw Symfony `NotFoundHttpException` for a missing or non-owned
@@ -643,6 +682,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interfaces alone could never have replaced this enum.
 
 ### Fixed
+
+- **`->trialDays()` refuses a negative number of days, which its contract had promised since it
+  was written (#58).** `Contracts\SubscriptionBuilder` declares `@throws InvalidArgumentException
+  When the number of days is negative` and nothing threw it, so `->trialDays(-1)` sailed into the
+  driver. Third instance of the defect `.claude/rules/exceptions.md` exists for — after `charge()`
+  and `->quantity(0)` — and it fails the same way each time: the caller's own typo travels to the
+  gateway, comes back a 4xx, and arrives as a *billing* failure the app is invited to catch and
+  swallow. A typo must not be catchable as a decline. The guard runs **after** the capability
+  check, so a gateway with no trials at all still says THAT rather than quibbling with the number.
+  **`->trialDays(0)` stays legal and reaches the builder**, deliberately parting company with its
+  neighbour `->quantity(0)`: zero seats is a typo because there is no such subscription, but zero
+  trial days is an ordinary answer, and `trialDays(max(0, $daysLeft))` is an ordinary way to reach
+  it. Refusing it would make the guard do the caller's arithmetic. (#58)
 
 - **Every `illuminate/*` package `src/` imports from is now declared, and a test keeps it
   that way.** `composer.json` did not require `illuminate/queue`, and nothing it did require
