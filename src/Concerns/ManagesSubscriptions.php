@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use InvalidArgumentException;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
+use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Exceptions\SubscriptionUpdateFailure;
@@ -136,6 +137,24 @@ trait ManagesSubscriptions
         // the guarded provider now — Cashier::provider() hands back a GuardedProvider whose
         // newSubscription() does exactly that. The concern only names the operation.
         return $this->cashierProvider()->newSubscription($this, $type, $prices);
+    }
+
+    /**
+     * The latest payment on the entity's subscription of the given type, or null when it has none.
+     *
+     * Mirrors Laravel\Cashier\Subscription::latestPayment() (vendor/laravel/cashier/
+     * src/Subscription.php:1412; on the subscription object there, but Models\Subscription may not
+     * depend on a DTO here — deptrac Models layer — so the read that returns one lives on Billable,
+     * the way asCustomer()/defaultPaymentMethod() do). Chiefly for a subscription created
+     * incomplete/pending: the returned Payment carries the clientSecret the client SDK completes
+     * the first charge with (see DTO\Payment::$clientSecret). Null when there is no such
+     * subscription or nothing is outstanding. Gating is the guarded provider's.
+     *
+     * @throws UnsupportedOperationException When the provider does not expose a subscription's payment.
+     */
+    public function subscriptionLatestPayment(string $type = 'default'): ?Payment
+    {
+        return $this->cashierProvider()->subscriptionLatestPayment($this, $type);
     }
 
     /**

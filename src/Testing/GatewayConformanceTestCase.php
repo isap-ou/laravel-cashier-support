@@ -249,6 +249,8 @@ abstract class GatewayConformanceTestCase extends TestCase
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->swapSubscription($b, 'default', $this->samplePriceId(), SwapTiming::AtPeriodEnd)],
             ['method' => 'updateSubscriptionQuantity', 'label' => 'updateSubscriptionQuantity', 'returns' => Subscription::class,
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->updateSubscriptionQuantity($b, 'default', 3, $this->samplePriceId())],
+            ['method' => 'subscriptionLatestPayment', 'label' => 'subscriptionLatestPayment', 'returns' => Payment::class, 'nullable' => true,
+                'invoke' => fn (GatewayProvider $g, Model $b) => $g->subscriptionLatestPayment($b, 'default')],
             ['method' => 'invoices', 'label' => 'invoices', 'returns' => 'array',
                 'invoke' => fn (GatewayProvider $g, Model $b) => $g->invoices($b)],
             ['method' => 'findInvoice', 'label' => 'findInvoice', 'returns' => Invoice::class, 'nullable' => true,
