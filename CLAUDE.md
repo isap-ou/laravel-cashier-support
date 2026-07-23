@@ -390,7 +390,7 @@ resolves it by language rule (own > trait > parent), so a driver's trait beats t
 
 Two things follow. A driver that does **not** extend `BaseGateway` — `Tests\Fixtures\FakeGateway`
 today — still eats the fatal, so the guarantee is opt-in. And `Enums\Capability::methods()` now maps
-14 of the 24 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
+15 of the 25 cases to the methods that implement them, so `BaseGateway::supports()` reads them off
 the code; the other 10 cannot be read off anything (`swapSubscription()` is one method behind two
 timings, `checkout()` one method behind two shapes, four are `SubscriptionBuilder` setters,
 `SubscriptionNoProration` is a per-call intent on swap and quantity rather than a method (#53), and

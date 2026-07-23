@@ -7,6 +7,7 @@ namespace Isapp\CashierSupport\Contracts;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Proration;
 use Isapp\CashierSupport\Enums\SwapTiming;
@@ -144,4 +145,22 @@ interface SubscriptionOperations
         string $price,
         Proration $proration = Proration::Prorate,
     ): Subscription;
+
+    /**
+     * The latest payment on a subscription, or null when it has none yet.
+     *
+     * Mirrors Laravel\Cashier\Subscription::latestPayment() (vendor/laravel/cashier/
+     * src/Subscription.php:1412; Paddle's second opinion is Subscription::lastPayment()). Its
+     * primary use is a subscription created incomplete/pending: the returned Payment carries the
+     * `clientSecret` the client SDK needs to complete the first charge (Stripe's PaymentIntent
+     * client_secret, a Revolut setup-order token — see DTO\Payment::$clientSecret) and a
+     * requiresPaymentMethod()/requiresAction() status. Null when there is no such subscription,
+     * nothing is outstanding, or the plan is billed without an upfront payment (e.g. a pure
+     * trial): a read answers absence with null rather than a throw, as the reference's
+     * latestPayment() and this package's InvoiceOperations::findInvoice() both do.
+     *
+     * @throws UnsupportedOperationException When the provider does not expose a subscription's payment.
+     * @throws CashierException When the gateway call fails.
+     */
+    public function subscriptionLatestPayment(Model $billable, string $type = 'default'): ?Payment;
 }

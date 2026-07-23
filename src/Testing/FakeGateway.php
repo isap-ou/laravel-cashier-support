@@ -136,6 +136,12 @@ class FakeGateway implements GatewayProvider
     public ?string $nextChargeClientSecret = null;
 
     /**
+     * The payment the next subscriptionLatestPayment() returns — set it to a pending Payment to
+     * stand in for a subscription created incomplete, or leave null for "nothing outstanding".
+     */
+    public ?Payment $nextSubscriptionPayment = null;
+
+    /**
      * Every step of a delivery, in the order it happened. A test appends to this from a
      * listener too, which is the only way to prove the event fires BETWEEN parse and
      * pipeline rather than merely that all three happened.
@@ -324,6 +330,11 @@ class FakeGateway implements GatewayProvider
         $this->lastQuantityProration = $proration;
 
         return new Subscription(id: 'sub_fake', type: $type, status: SubscriptionStatus::Active);
+    }
+
+    public function subscriptionLatestPayment(Model $billable, string $type = 'default'): ?Payment
+    {
+        return $this->nextSubscriptionPayment;
     }
 
     public function invoices(Model $billable, array $parameters = []): array

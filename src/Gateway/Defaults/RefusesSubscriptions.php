@@ -7,6 +7,7 @@ namespace Isapp\CashierSupport\Gateway\Defaults;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
+use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\Proration;
@@ -74,5 +75,10 @@ trait RefusesSubscriptions
     public function updateSubscriptionQuantity(Model $billable, string $type, int $quantity, string $price, Proration $proration = Proration::Prorate): Subscription
     {
         throw UnsupportedOperationException::forCapability(Capability::SubscriptionQuantityUpdate);
+    }
+
+    public function subscriptionLatestPayment(Model $billable, string $type = 'default'): ?Payment
+    {
+        throw UnsupportedOperationException::forCapability(Capability::SubscriptionLatestPayment);
     }
 }

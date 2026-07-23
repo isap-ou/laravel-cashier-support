@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- **`Billable::subscriptionLatestPayment(): ?Payment` and the `subscriptionLatestPayment()`
+  gateway operation behind it** — the read that completes a subscription created incomplete/pending.
+  Mirrors Laravel Cashier's `Subscription::latestPayment()` (Paddle's `lastPayment()` agrees);
+  it lives on Billable rather than `Models\Subscription` because the Models layer may not depend
+  on a DTO (deptrac), the way `asCustomer()`/`defaultPaymentMethod()` already do;
+  the returned `DTO\Payment` carries the `clientSecret` a client SDK finishes the first charge
+  with (Stripe PaymentIntent client_secret, a Revolut setup-order token — the field #35 already
+  built for this) and a `requiresPaymentMethod()`/`requiresAction()` status. Gated by the new
+  `Capability::SubscriptionLatestPayment`; a gateway that does not expose it refuses catchably.
+  Non-breaking for drivers on `Gateway\BaseGateway` — the `Defaults\RefusesSubscriptions`
+  refusal ships with the contract method (#28).
 
 ## [1.2.0] - 2026-07-20
 

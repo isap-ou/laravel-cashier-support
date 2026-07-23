@@ -29,6 +29,13 @@ enum Capability: string
     // wire name. Pause is now a single intent, read off pauseSubscription() like resume.
     case SubscriptionPauseImmediate = 'subscription.pause.immediate';
     case SubscriptionResume = 'subscription.resume';
+    // Reading a subscription's latest payment is its own fact about a gateway, and the
+    // references prove it rather than suggest it: Stripe exposes it (latestPayment(),
+    // Subscription.php:1412), Paddle exposes it (lastPayment()). Its point is a subscription
+    // created incomplete/pending — the Payment carries the clientSecret that completes the
+    // first charge. A gateway that never leaves a subscription unpaid, or cannot read a payment
+    // back, must be able to refuse rather than return a silent null that reads as "nothing due".
+    case SubscriptionLatestPayment = 'subscription.latest_payment';
     // Timing is not a detail of a swap; it IS the swap. A gateway that only
     // changes the plan at cycle end cannot honour "upgrade me now", and an app
     // must be able to say which it needs — see Enums\SwapTiming.
@@ -108,6 +115,9 @@ enum Capability: string
             self::Subscriptions => ['newSubscription', 'cancelSubscription'],
             self::SubscriptionCancelNow => ['cancelSubscriptionNow'],
             self::SubscriptionResume => ['resumeSubscription'],
+            // One method, one intent, read off the code like resume: a driver that overrides it
+            // supports the capability, one that inherits the refusal does not.
+            self::SubscriptionLatestPayment => ['subscriptionLatestPayment'],
             // One method, one intent, read off the code exactly like resume above — since #72
             // removed pause-at-period-end there is no second timing to make it unreadable.
             self::SubscriptionPauseImmediate => ['pauseSubscription'],

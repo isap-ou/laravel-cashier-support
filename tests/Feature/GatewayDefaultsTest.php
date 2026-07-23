@@ -229,7 +229,7 @@ class GatewayDefaultsTest extends TestCase
             }
         }
 
-        $this->assertCount(24, Capability::cases());
+        $this->assertCount(25, Capability::cases());
     }
 
     public function test_a_default_returns_nothing_it_only_refuses(): void

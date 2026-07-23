@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Isapp\CashierSupport\Builders\GuardedSubscriptionBuilder;
 use Isapp\CashierSupport\Contracts\SubscriptionBuilder;
+use Isapp\CashierSupport\DTO\Payment;
 use Isapp\CashierSupport\DTO\Subscription;
 use Isapp\CashierSupport\Enums\Capability;
 use Isapp\CashierSupport\Enums\Proration;
@@ -181,5 +182,15 @@ trait GuardsSubscriptions
         }
 
         return $this->inner()->updateSubscriptionQuantity($billable, $type, $quantity, $price, $proration);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function subscriptionLatestPayment(Model $billable, string $type = 'default'): ?Payment
+    {
+        $this->ensure(Capability::SubscriptionLatestPayment);
+
+        return $this->inner()->subscriptionLatestPayment($billable, $type);
     }
 }
